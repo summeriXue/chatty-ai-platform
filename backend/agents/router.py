@@ -1,0 +1,1515 @@
+"""
+Chatty — Multi-agent management + per-agent chat/context/conversation routes.
+
+Agent CRUD:
+  GET    /api/agents                               — list all agents
+  POST   /api/agents                               — create a new agent
+  GET    /api/agents/{agent_id}                    — get agent details
+  PUT    /api/agents/{agent_id}                    — update agent settings
+  DELETE /api/agents/{agent_id}                    — delete agent + data
+
+Per-agent (chat, context, conversations):
+  POST   /api/agents/{agent_id}/chat               — SSE chat stream
+  GET    /api/agents/{agent_id}/onboarding/progress
+  GET    /api/agents/{agent_id}/context
+  GET    /api/agents/{agent_id}/context/{filename}
+  PUT    /api/agents/{agent_id}/context/{filename}
+  DELETE /api/agents/{agent_id}/context/{filename}
+  GET    /api/agents/{agent_id}/conversations
+  POST   /api/agents/{agent_id}/conversations
+  GET    /api/agents/{agent_id}/conversations/search
+  GET    /api/agents/{agent_id}/conversations/{conv_id}
+  DELETE /api/agents/{agent_id}/conversations/{conv_id}
+  PATCH  /api/agents/{agent_id}/conversations/{conv_id}/title
+"""
+
+import io
+import json as _json_mod
+import re
+import shutil
+import logging
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+
+from core.auth import get_current_user
+from core.agents.context_manager import _safe_oneline
+from core.storage import atomic_write, atomic_write_bytes
+from core.providers import get_ai_provider
+from core.providers.base import _sse
+from core.providers.credentials import CredentialStore
+from core.agents.tool_registry import ToolRegistry
+from .tool_loader import INTEGRATION_MODULES, load_integration_tools, build_agent_handlers
+from . import db as agent_db
+from .engine import (
+    build_agent_config,
+    get_context_manager,
+    get_chat_service,
+    ensure_memory_db,
+    invalidate_cache,
+    DATA_DIR,
+)
+from .templates import seed_context_files
+from core.agents import ai_service
+from core.agents.memory import commitments as commitments_svc
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+_PENDING_SETUP_NAMES = {
+    "telegram": "Telegram Bot",
+    "whatsapp": "WhatsApp",
+    "odoo": "Odoo ERP",
+    "quickbooks": "QuickBooks Online",
+    "bamboohr": "BambooHR",
+    "crm_lite": "CRM",
+    "todoist": "Todoist",
+}
+
+
+def _inject_pending_setup_context(context_dir: Path, pending: dict) -> None:
+    """Write a _pending-setup.md file into the agent's context directory."""
+    parts = [
+        "# Pending Integration Setup\n",
+        "Your human selected these during onboarding but hasn't set them up yet.",
+        "Proactively offer to help set them up early in your first conversation.\n",
+    ]
+    messaging = pending.get("messaging", [])
+    integrations = pending.get("integrations", [])
+    if messaging:
+        parts.append("## Messaging Platforms")
+        for m in messaging:
+            parts.append(f"- [ ] {_PENDING_SETUP_NAMES.get(m, m)}")
+        parts.append("")
+    if integrations:
+        parts.append("## Business Integrations")
+        for i in integrations:
+            parts.append(f"- [ ] {_PENDING_SETUP_NAMES.get(i, i)}")
+        parts.append("")
+    parts.append("Once set up, check off items and delete this file when all are done.")
+    atomic_write(context_dir / "_pending-setup.md", "\n".join(parts))
+
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _get_agent_or_404(agent_id: str) -> dict:
+    agent = agent_db.get_agent(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return agent
+
+
+
+def _safe_filename(filename: str) -> bool:
+    if not filename or not filename.endswith(".md"):
+        return False
+    if "/" in filename or "\\" in filename or ".." in filename:
+        return False
+    return True
+
+
+def _build_playbook_expansion(agent_slug: str, messages: list, playbook_slug: str) -> str:
+    """Expand a playbook invocation (chip / slash command) into the provider-bound
+    activation message. Persisted history keeps the compact [playbook:slug] marker."""
+    from core.agents.playbooks.service import build_activation_message, is_safe_slug
+    if not is_safe_slug(playbook_slug):
+        raise HTTPException(status_code=400, detail="invalid playbook_slug")
+    last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
+    raw = last_user.get("content", "") if last_user else ""
+    user_text = raw if isinstance(raw, str) else ""
+    # Unanchored on purpose: the upload path prepends attached-file text before
+    # the marker. Targets the invoked slug specifically so user text that
+    # happens to mention another [playbook:...] marker is left intact.
+    user_text = re.sub(rf"\[playbook:{re.escape(playbook_slug)}\]\s*", "", user_text, count=1)
+    expansion = build_activation_message(agent_slug, playbook_slug, user_text)
+    if expansion is None:
+        # Fail loudly: proceeding without the expansion would show the playbook
+        # pill in the UI while the model never received the procedure.
+        raise HTTPException(status_code=404, detail="Playbook not found or archived")
+    return expansion
+
+
+# ── Request models ────────────────────────────────────────────────────────────
+
+class CreateAgentRequest(BaseModel):
+    agent_name: str
+    personality: str = ""
+
+
+class UpdateAgentRequest(BaseModel):
+    agent_name: str | None = None
+    personality: str | None = None
+    avatar_url: str | None = None
+    onboarding_complete: bool | None = None
+    provider_override: str | None = None
+    model_override: str | None = None
+    gmail_enabled: bool | None = None
+    gmail_send_enabled: bool | None = None
+    calendar_enabled: bool | None = None
+    calendar_write_enabled: bool | None = None
+    drive_enabled: bool | None = None
+    drive_write_enabled: bool | None = None
+    google_accounts: dict | None = None
+    model_tier: str | None = None
+    telegram_enabled: bool | None = None
+    telegram_group_enabled: bool | None = None
+
+
+class ChatRequest(BaseModel):
+    messages: list[dict]
+    conversation_id: str | None = None
+    training_mode: bool = False
+    training_type: str | None = None
+    plan_mode: bool = False
+    tool_mode: str = "normal"
+    approved_tool: dict | None = None
+    playbook_slug: str | None = None
+
+
+class ToolExecuteRequest(BaseModel):
+    tool: str
+    args: dict
+
+
+class ContextWriteRequest(BaseModel):
+    content: str
+
+
+class UpdateTitleRequest(BaseModel):
+    title: str
+
+
+class AvatarSelectRequest(BaseModel):
+    index: int
+
+
+# ── Agent CRUD ────────────────────────────────────────────────────────────────
+
+@router.get("")
+async def list_agents(user=Depends(get_current_user)):
+    """List all agents with alert counts."""
+    agents = agent_db.list_agents()
+    try:
+        from core.agents.alerts.service import get_alert_counts
+        counts = get_alert_counts()
+        for a in agents:
+            a["alert_count"] = counts.get(a["slug"], 0)
+    except Exception as e:
+        logger.debug("alert_count enrichment skipped: %s", e)
+    return {"agents": agents}
+
+
+@router.post("")
+async def create_agent(body: CreateAgentRequest, user=Depends(get_current_user)):
+    """Create a new agent and seed default context files."""
+    if not body.agent_name.strip():
+        raise HTTPException(status_code=400, detail="agent_name is required")
+
+    existing_count = len(agent_db.list_agents())
+    agent = agent_db.create_agent(body.agent_name.strip(), personality=body.personality)
+
+    # Seed default context files (soul.md, identity.md, user.md, bootstrap, guide, integration-setup)
+    context_dir = DATA_DIR / agent["slug"] / "context"
+    seed_context_files(context_dir, agent["agent_name"])
+
+    # Inject pending integration setup selections from onboarding (first agent only)
+    from integrations.pending_setup import load_pending, clear_pending
+    pending = load_pending()
+    if pending and (pending.get("messaging") or pending.get("integrations")):
+        _inject_pending_setup_context(context_dir, pending)
+        clear_pending()
+
+    # Bootstrap shared knowledge when 2+ agents exist and bootstrap hasn't completed
+    if existing_count >= 1:
+        from core.agents.shared_context.bootstrap import run_bootstrap_sync, should_bootstrap
+        if should_bootstrap():
+            def _bootstrap_thread():
+                try:
+                    run_bootstrap_sync()
+                except Exception:
+                    logger.exception("Shared knowledge bootstrap thread failed")
+
+            import threading
+            threading.Thread(
+                target=_bootstrap_thread,
+                daemon=True,
+                name="shared-knowledge-bootstrap",
+            ).start()
+            logger.info("Shared knowledge bootstrap triggered (2nd agent created)")
+
+    return agent
+
+
+@router.get("/{agent_id}")
+async def get_agent(agent_id: str, user=Depends(get_current_user)):
+    """Get a single agent by ID."""
+    return _get_agent_or_404(agent_id)
+
+
+@router.put("/{agent_id}")
+async def update_agent(agent_id: str, body: UpdateAgentRequest, user=Depends(get_current_user)):
+    """Update agent settings."""
+    import json as _json
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    if "model_tier" in updates:
+        if updates["model_tier"] not in ("auto", "top", "mid", "light"):
+            raise HTTPException(status_code=400, detail="model_tier must be one of: auto, top, mid, light")
+        updates["model_override"] = ""
+
+    if "model_override" in updates and updates["model_override"]:
+        updates["model_tier"] = "auto"
+
+    if "google_accounts" in updates:
+        ga = updates["google_accounts"]
+        _ALLOWED_GA_KEYS = {"gmail", "calendar", "drive"}
+        if not isinstance(ga, dict) or not set(ga.keys()).issubset(_ALLOWED_GA_KEYS):
+            raise HTTPException(status_code=400, detail="google_accounts keys must be a subset of {gmail, calendar, drive}")
+        for svc, ids in ga.items():
+            if not isinstance(ids, list) or not all(isinstance(i, str) and i for i in ids):
+                raise HTTPException(status_code=400, detail=f"google_accounts[{svc}] must be a list of non-empty strings")
+            if len(ids) != len(set(ids)):
+                raise HTTPException(status_code=400, detail=f"google_accounts[{svc}] contains duplicate account IDs")
+        from integrations.registry import list_google_accounts
+        existing = list_google_accounts()
+        for svc, acct_ids in ga.items():
+            for acct_id in acct_ids:
+                if acct_id not in existing:
+                    raise HTTPException(status_code=400, detail=f"Invalid Google account assignment for {svc}")
+                acct = existing[acct_id]
+                if acct.get("connection_status") == "broken":
+                    raise HTTPException(status_code=400, detail=f"Google account {acct.get('email', acct_id)} has a broken connection")
+                grants = acct.get("scope_grants", {})
+                if grants.get(svc, "none") == "none":
+                    raise HTTPException(status_code=400, detail=f"Google account {acct.get('email', acct_id)} does not have {svc} access")
+        updates["google_accounts"] = _json.dumps(ga)
+
+    for field in (
+        "onboarding_complete",
+        "gmail_enabled", "gmail_send_enabled",
+        "calendar_enabled", "calendar_write_enabled",
+        "drive_enabled", "drive_write_enabled",
+        "telegram_enabled", "telegram_group_enabled",
+    ):
+        if field in updates:
+            updates[field] = int(updates[field])
+    was_complete = _get_agent_or_404(agent_id).get("onboarding_complete")
+    agent = agent_db.update_agent(agent_id, **updates)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    invalidate_cache(agent["slug"])
+
+    if not was_complete and agent.get("onboarding_complete"):
+        try:
+            from core.agents.scheduled_actions.service import ensure_default_actions
+            ensure_default_actions(agent["slug"])
+        except Exception as e:
+            logger.warning("Failed to create default actions for %s: %s", agent["slug"], e)
+
+    return agent
+
+
+@router.delete("/{agent_id}")
+async def delete_agent(agent_id: str, user=Depends(get_current_user)):
+    """Delete an agent and all its data."""
+    agent = _get_agent_or_404(agent_id)
+    slug = agent["slug"]
+    agent_db.delete_agent(agent_id)
+    invalidate_cache(slug)
+    agent_dir = DATA_DIR / slug
+    if agent_dir.exists():
+        shutil.rmtree(agent_dir)
+        logger.info("Deleted agent data directory: %s", agent_dir)
+    return {"deleted": True, "agent_id": agent_id}
+
+
+# ── Per-agent: Avatar ────────────────────────────────────────────────────────
+
+# Server-side storage for generated avatar URLs (keyed by agent_id)
+_avatar_urls: dict[str, list[str]] = {}
+_avatar_cooldowns: dict[str, float] = {}
+_AVATAR_COOLDOWN_SECONDS = 300  # 5 minutes between generations
+
+
+@router.get("/{agent_id}/avatar/availability")
+async def avatar_availability(agent_id: str, user=Depends(get_current_user)):
+    """Check whether avatar generation is available (requires OpenAI)."""
+    _get_agent_or_404(agent_id)
+    store = CredentialStore()
+    _, profile = store.get_active_profile(provider_override="openai")
+    openai_connected = bool(profile and (profile.get("access") or profile.get("key")))
+    return {"generate_available": openai_connected, "upload_available": True}
+
+
+@router.post("/{agent_id}/avatar/generate")
+async def avatar_generate(agent_id: str, user=Depends(get_current_user)):
+    """Generate 3 avatar options using DALL-E 3 based on agent personality."""
+    import time as _time
+    from .avatar import generate_avatar_options
+
+    agent = _get_agent_or_404(agent_id)
+
+    # Rate limit: one generation per agent per 5 minutes
+    last_gen = _avatar_cooldowns.get(agent_id, 0)
+    if _time.time() - last_gen < _AVATAR_COOLDOWN_SECONDS:
+        remaining = int(_AVATAR_COOLDOWN_SECONDS - (_time.time() - last_gen))
+        raise HTTPException(429, f"Please wait {remaining}s before generating again")
+
+    ctx_manager = get_context_manager(agent["slug"])
+    identity = ctx_manager.read_context("profile.md")
+    soul = ctx_manager.read_context("preferences.md")
+    db_personality = agent.get("personality", "")
+    if db_personality:
+        soul = f"{soul}\n\n{db_personality}" if soul else db_personality
+    agent_name = agent.get("agent_name") or "Assistant"
+
+    store = CredentialStore()
+    _, profile = store.get_active_profile(provider_override="openai")
+    p = profile or {}
+    openai_token = p.get("key") or p.get("access") or ""
+
+    try:
+        urls = await generate_avatar_options(identity, soul, agent_name, openai_token, count=3)
+        _avatar_urls[agent_id] = urls
+        _avatar_cooldowns[agent_id] = _time.time()
+        return {"urls": urls, "count": len(urls), "partial": len(urls) < 3}
+    except ValueError as e:
+        raise HTTPException(503, f"Avatar generation not available: {e}")
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    except Exception as e:
+        logger.error("Avatar generation unexpected error: %s", e)
+        raise HTTPException(502, f"Avatar generation failed: {e}")
+
+
+@router.post("/{agent_id}/avatar/select")
+async def avatar_select(agent_id: str, req: AvatarSelectRequest, user=Depends(get_current_user)):
+    """Download and save a chosen avatar by index. URL is resolved server-side."""
+    from .avatar import download_and_save_avatar
+
+    urls = _avatar_urls.get(agent_id)
+    if not urls:
+        # Clear stale cooldown so user can re-generate (e.g. after server restart)
+        _avatar_cooldowns.pop(agent_id, None)
+        raise HTTPException(400, "No avatar options available — generate first")
+    if req.index < 0 or req.index >= len(urls):
+        raise HTTPException(400, f"Invalid index {req.index}, must be 0-{len(urls) - 1}")
+
+    agent = _get_agent_or_404(agent_id)
+    slug = agent["slug"]
+    agent_dir = DATA_DIR / slug
+    gcs_prefix = f"agents/{slug}/"
+
+    try:
+        await download_and_save_avatar(urls[req.index], agent_dir, gcs_prefix)
+        agent_db.update_agent(agent_id, avatar_url=f"/api/agents/{agent_id}/avatar")
+        _avatar_urls.pop(agent_id, None)
+        return {"ok": True, "avatar_url": f"/api/agents/{agent_id}/avatar"}
+    except Exception as e:
+        logger.error("Avatar save failed: %s", e)
+        raise HTTPException(502, f"Avatar save failed: {e}")
+
+
+@router.post("/{agent_id}/avatar/upload")
+async def avatar_upload(
+    agent_id: str,
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+):
+    """Upload a custom avatar image."""
+    from core.storage import upload_file
+
+    if file.content_type not in ("image/png", "image/jpeg", "image/webp"):
+        raise HTTPException(400, "Avatar must be PNG, JPEG, or WebP")
+
+    max_size = 2 * 1024 * 1024
+    contents = await file.read(max_size + 1)
+    if len(contents) > max_size:
+        raise HTTPException(400, "Avatar must be under 2MB")
+
+    agent = _get_agent_or_404(agent_id)
+    slug = agent["slug"]
+    agent_dir = DATA_DIR / slug
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    avatar_path = agent_dir / "avatar.png"
+    atomic_write_bytes(avatar_path, contents)
+
+    upload_file(avatar_path, f"agents/{slug}/avatar.png")
+    agent_db.update_agent(agent_id, avatar_url=f"/api/agents/{agent_id}/avatar")
+
+    return {"ok": True, "avatar_url": f"/api/agents/{agent_id}/avatar"}
+
+
+@router.delete("/{agent_id}/avatar")
+async def avatar_delete(agent_id: str, user=Depends(get_current_user)):
+    """Remove the agent's avatar, reverting to the default letter badge."""
+    from core.storage import delete_config
+
+    agent = _get_agent_or_404(agent_id)
+    slug = agent["slug"]
+
+    avatar_path = DATA_DIR / slug / "avatar.png"
+    if avatar_path.exists():
+        avatar_path.unlink()
+
+    delete_config("avatar.png", prefix=f"agents/{slug}/")
+    agent_db.update_agent(agent_id, avatar_url="")
+
+    return {"ok": True}
+
+
+@router.get("/{agent_id}/avatar")
+async def get_avatar(agent_id: str, user=Depends(get_current_user)):
+    """Serve the agent's avatar image.
+
+    Requires Bearer auth — the frontend fetches avatars as blobs (useAuthedImage)
+    so the session token never appears in an image URL.
+    """
+    from fastapi.responses import FileResponse
+
+    agent = _get_agent_or_404(agent_id)
+    avatar_path = DATA_DIR / agent["slug"] / "avatar.png"
+    if not avatar_path.exists():
+        raise HTTPException(404, "No avatar set")
+    return FileResponse(str(avatar_path), media_type="image/png")
+
+
+# ── Per-agent: Chat (shared helper) ──────────────────────────────────────────
+
+def _stream_chat(agent: dict, messages: list, training_mode: bool, conversation_id: str | None,
+                  training_type: str | None = None, plan_mode: bool = False,
+                  tool_mode: str = "normal", approved_tool: dict | None = None,
+                  import_mode: bool = False, has_attachments: bool = False,
+                  playbook_expansion: str | None = None, pre_stream=None,
+                  playbook_slug: str | None = None):
+    """Build provider, registry, and return a StreamingResponse for agent chat."""
+    config = build_agent_config(agent)
+    ctx_manager = get_context_manager(agent["slug"])
+    chat_service = get_chat_service(agent["slug"])
+
+    # Ensure MemoryDB is initialized (lazy, cached after first call)
+    try:
+        ensure_memory_db(agent["slug"])
+    except Exception:
+        pass  # Non-critical — search will degrade gracefully
+
+    store = CredentialStore()
+
+    # ── Tier resolution ──────────────────────────────────────────────
+    # model_override takes absolute precedence — skip all tier logic
+    triage_info: dict | None = None
+    resolved_model = config.model_override or None
+
+    if not resolved_model and config.model_tier != "auto":
+        from core.providers.tiers import resolve_tier_model
+        provider_key = config.provider_override or store.data.get("active_provider", "")
+        resolved_model = resolve_tier_model(provider_key, config.model_tier)
+        triage_info = {"tier": config.model_tier, "method": "manual"}
+
+    provider = get_ai_provider(
+        agent_provider=config.provider_override or None,
+        agent_model=resolved_model,
+        agent_model_tier=config.model_tier if not resolved_model else None,
+    )
+    if not provider:
+        raise HTTPException(status_code=400, detail="No AI provider configured")
+
+    ga = config.google_accounts
+    gmail_ids = ga.get("gmail", [])
+    calendar_ids = ga.get("calendar", [])
+    drive_ids = ga.get("drive", [])
+    google_connected = bool(gmail_ids or calendar_ids or drive_ids)
+
+    from integrations.registry import list_google_accounts as _list_ga
+    all_ga = _list_ga()
+    account_info_map = {
+        aid: {"email": a.get("email", ""), "scope_grants": a.get("scope_grants", {}), "connection_status": a.get("connection_status", "ok")}
+        for aid, a in all_ga.items()
+    }
+
+    integration_tool_defs, integration_executors = load_integration_tools()
+
+    from integrations.registry import get_tool_mode, get_credentials
+    integration_tool_modes = {
+        name: get_tool_mode(name)
+        for name in INTEGRATION_MODULES
+        if "tool_mode" in get_credentials(name)
+    }
+    reminder_handlers, sa_handlers = build_agent_handlers(agent["slug"])
+    registry = ToolRegistry(
+        context_dir=config.context_dir,
+        gcs_prefix=config.gcs_prefix,
+        google_connected=google_connected,
+        gmail_account_ids=gmail_ids,
+        calendar_account_ids=calendar_ids,
+        drive_account_ids=drive_ids,
+        account_info_map=account_info_map,
+        integration_executors=integration_executors,
+        agent_slug=agent["slug"],
+        agent_name=config.agent_name,
+        reminder_handlers=reminder_handlers,
+        scheduled_action_handlers=sa_handlers,
+    )
+
+    if import_mode and conversation_id:
+        from agents.import_service.sessions import get_session_by_conversation
+        import_session = get_session_by_conversation(conversation_id)
+        if import_session:
+            registry._import_session = import_session
+
+    _, anthropic_profile = store.get_active_profile(provider_override="anthropic")
+    anthropic_api_key = (anthropic_profile or {}).get("key", "")
+
+    async def event_generator():
+        nonlocal triage_info, provider
+
+        # Pre-stream phase (e.g. audio transcription): yields SSE progress
+        # events and mutates `messages` before the AI turn starts. A yielded
+        # error event aborts the turn (the generator returns without setting
+        # its completion flag).
+        if pre_stream is not None:
+            completed = False
+            async for chunk in pre_stream:
+                if chunk is _PRE_STREAM_OK:
+                    completed = True
+                    continue
+                yield chunk
+            if not completed:
+                return
+
+        # Playbook invocation: normally expanded before this function is
+        # called, but when an audio upload is present the caller defers
+        # expansion (playbook_expansion=None, playbook_slug set) until now —
+        # AFTER pre_stream has prepended the transcript to the last user
+        # message — so the expansion actually includes the recording instead
+        # of replacing it with a transcript-less activation message.
+        effective_expansion = playbook_expansion
+        if playbook_slug and effective_expansion is None:
+            try:
+                effective_expansion = _build_playbook_expansion(agent["slug"], messages, playbook_slug)
+            except HTTPException as e:
+                yield _sse({"type": "error", "error": e.detail})
+                return
+
+        # Run auto-triage if tier is "auto" and we haven't resolved yet
+        if not triage_info and config.model_tier == "auto" and not config.model_override:
+            skip_triage = training_mode or plan_mode or approved_tool is not None
+            if not skip_triage:
+                from core.providers.tiers import supports_auto_triage
+                provider_key = config.provider_override or store.data.get("active_provider", "")
+                if supports_auto_triage(provider_key):
+                    from core.providers.triage import classify_tier, extract_classifier_credentials
+                    last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
+                    raw_content = last_user.get("content", "") if last_user else ""
+                    user_text = raw_content if isinstance(raw_content, str) else " ".join(
+                        p.get("text", "") for p in raw_content if isinstance(p, dict) and p.get("type") == "text"
+                    )
+                    creds = extract_classifier_credentials(provider_key, store)
+                    tier, method = await classify_tier(
+                        user_message=user_text,
+                        provider=provider_key,
+                        credentials=creds,
+                        conversation_id=conversation_id,
+                        has_attachments=has_attachments,
+                    )
+                    triage_info = {"tier": tier, "method": method}
+                    if tier != "top":
+                        from core.providers.tiers import resolve_tier_model
+                        resolved = resolve_tier_model(provider_key, tier)
+                        if resolved:
+                            new_provider = get_ai_provider(
+                                agent_provider=config.provider_override or None,
+                                agent_model=resolved,
+                            )
+                            if new_provider:
+                                provider = new_provider
+
+        async for event in ai_service.chat(
+            config=config,
+            provider=provider,
+            registry=registry,
+            ctx_manager=ctx_manager,
+            messages=messages,
+            training_mode=training_mode,
+            training_type=training_type,
+            plan_mode=plan_mode,
+            import_mode=import_mode,
+            conversation_id=conversation_id,
+            chat_service=chat_service,
+            anthropic_api_key=anthropic_api_key,
+            integration_tool_defs=integration_tool_defs or None,
+            tool_mode=tool_mode,
+            approved_tool=approved_tool,
+            integration_tool_modes=integration_tool_modes,
+            triage_info=triage_info,
+            playbook_expansion=effective_expansion,
+        ):
+            yield event
+
+    async def guarded_generator():
+        # Advisory busy lease: the live-meeting coach defers its turns (and
+        # nudge saves) while a user turn is streaming in this conversation.
+        from core.agents.live.session import (
+            clear_conversation_busy,
+            mark_conversation_busy,
+        )
+        if conversation_id:
+            mark_conversation_busy(conversation_id)
+        try:
+            async for event in event_generator():
+                yield event
+        finally:
+            if conversation_id:
+                clear_conversation_busy(conversation_id)
+
+    return StreamingResponse(
+        guarded_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/{agent_id}/chat")
+async def agent_chat(agent_id: str, req: ChatRequest, user=Depends(get_current_user)):
+    """Stream a chat response for a specific agent."""
+    agent = _get_agent_or_404(agent_id)
+
+    import_mode = False
+    if req.conversation_id:
+        chat_svc = get_chat_service(agent["slug"])
+        conv = chat_svc.get_conversation(req.conversation_id)
+        if conv and conv.get("mode") == "import":
+            import_mode = True
+
+    tool_mode = req.tool_mode
+    from core.admin_settings import load_admin_settings
+    if load_admin_settings().get("always_power_mode"):
+        tool_mode = "power"
+
+    # Playbook invocation (chip / slash command): expand the playbook into the
+    # provider-bound message for this turn.
+    playbook_expansion = None
+    if req.playbook_slug:
+        playbook_expansion = _build_playbook_expansion(
+            agent["slug"], req.messages, req.playbook_slug)
+
+    return _stream_chat(agent, req.messages, req.training_mode, req.conversation_id,
+                        training_type=req.training_type, plan_mode=req.plan_mode,
+                        tool_mode=tool_mode, approved_tool=req.approved_tool,
+                        import_mode=import_mode, playbook_expansion=playbook_expansion)
+
+
+# ── Per-agent: Plan mode approve/iterate ──────────────────────────────────────
+
+
+class PlanApproveRequest(BaseModel):
+    messages: list[dict]
+    conversation_id: str | None = None
+    plan_text: str = ""
+
+
+class PlanIterateRequest(BaseModel):
+    messages: list[dict]
+    conversation_id: str | None = None
+    feedback: str = ""
+
+
+@router.post("/{agent_id}/plan/approve")
+async def plan_approve(agent_id: str, req: PlanApproveRequest, user=Depends(get_current_user)):
+    """Approve a plan and execute it in power mode."""
+    agent = _get_agent_or_404(agent_id)
+    # Append the plan + approval as a user message
+    messages = list(req.messages)
+    messages.append({
+        "role": "user",
+        "content": f"[Plan Approved] Execute this plan:\n\n{req.plan_text}",
+    })
+    return _stream_chat(agent, messages, False, req.conversation_id,
+                        tool_mode="power")
+
+
+@router.post("/{agent_id}/plan/iterate")
+async def plan_iterate(agent_id: str, req: PlanIterateRequest, user=Depends(get_current_user)):
+    """Send feedback on a plan and stay in plan mode."""
+    agent = _get_agent_or_404(agent_id)
+    messages = list(req.messages)
+    messages.append({
+        "role": "user",
+        "content": req.feedback or "Please revise the plan.",
+    })
+    return _stream_chat(agent, messages, False, req.conversation_id,
+                        plan_mode=True)
+
+
+# ── Per-agent: Onboarding progress ───────────────────────────────────────────
+
+@router.get("/{agent_id}/onboarding/progress")
+async def onboarding_progress(agent_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    ctx_manager = get_context_manager(agent["slug"])
+    content = ctx_manager.read_context("_onboarding-progress.md")
+    if not content:
+        return {"topics": [], "completed": 0, "total": 0}
+
+    topics = []
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- [x]"):
+            topics.append({"name": stripped[6:].strip(), "status": "done"})
+        elif stripped.startswith("- [~]"):
+            topics.append({"name": stripped[6:].strip(), "status": "skipped"})
+        elif stripped.startswith("- [ ]"):
+            topics.append({"name": stripped[6:].strip(), "status": "pending"})
+
+    done = sum(1 for t in topics if t["status"] == "done")
+    return {"topics": topics, "completed": done, "total": len(topics)}
+
+
+# ── Per-agent: Context CRUD ───────────────────────────────────────────────────
+
+@router.get("/{agent_id}/context")
+async def list_context(agent_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    ctx_manager = get_context_manager(agent["slug"])
+    return {"files": ctx_manager.list_context_files()}
+
+
+@router.get("/{agent_id}/context/{filename}")
+async def get_context(agent_id: str, filename: str, user=Depends(get_current_user)):
+    if not _safe_filename(filename):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    agent = _get_agent_or_404(agent_id)
+    ctx_manager = get_context_manager(agent["slug"])
+    content = ctx_manager.read_context(filename)
+    if not content and not (ctx_manager.data_dir / filename).exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"filename": filename, "content": content}
+
+
+@router.put("/{agent_id}/context/{filename}")
+async def put_context(
+    agent_id: str, filename: str, req: ContextWriteRequest, user=Depends(get_current_user)
+):
+    if not _safe_filename(filename):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    agent = _get_agent_or_404(agent_id)
+    ctx_manager = get_context_manager(agent["slug"])
+    ctx_manager.write_context(filename, req.content)
+    return {"filename": filename, "ok": True}
+
+
+@router.delete("/{agent_id}/context/{filename}")
+async def delete_context(agent_id: str, filename: str, user=Depends(get_current_user)):
+    if not _safe_filename(filename):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    agent = _get_agent_or_404(agent_id)
+    ctx_manager = get_context_manager(agent["slug"])
+    if not ctx_manager.delete_context(filename):
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"filename": filename, "deleted": True}
+
+
+# ── Per-agent: Conversations ──────────────────────────────────────────────────
+
+@router.get("/{agent_id}/conversations/search")
+async def search_conversations(agent_id: str, q: str = "", user=Depends(get_current_user)):
+    _get_agent_or_404(agent_id)
+    if not q.strip():
+        return {"results": []}
+    chat_service = get_chat_service(agent_db.get_agent(agent_id)["slug"])
+    return {"results": chat_service.search_conversations(q.strip())}
+
+
+@router.get("/{agent_id}/conversations")
+async def list_conversations(
+    agent_id: str, limit: int = 50, offset: int = 0, user=Depends(get_current_user)
+):
+    agent = _get_agent_or_404(agent_id)
+    chat_service = get_chat_service(agent["slug"])
+    return {"conversations": chat_service.list_conversations(limit, offset)}
+
+
+@router.post("/{agent_id}/conversations")
+async def create_conversation(agent_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    chat_service = get_chat_service(agent["slug"])
+    return chat_service.create_conversation()
+
+
+_UI_RESULT_PREVIEW_CAP = 2000  # matches the activity-log preview cap
+
+
+def _merge_tool_result_previews(message: dict) -> None:
+    """Fold a capped preview of each full tool_result into the message's
+    tool_calls entries (keyed by tool_use_id), so the UI can show results on
+    reload. In-place; leaves rows without one or both columns untouched. Only
+    fills a `result` that isn't already present (older rows kept their own)."""
+    raw_calls = message.get("tool_calls")
+    raw_results = message.get("tool_results")
+    if not raw_calls or not raw_results:
+        return
+    try:
+        calls = _json_mod.loads(raw_calls)
+        results = _json_mod.loads(raw_results)
+    except (ValueError, TypeError):
+        return
+    if not isinstance(calls, list) or not isinstance(results, list):
+        return
+    by_id = {r.get("tool_use_id"): r.get("content") for r in results
+             if isinstance(r, dict)}
+    changed = False
+    for tc in calls:
+        if not isinstance(tc, dict) or tc.get("result") is not None:
+            continue
+        content = by_id.get(tc.get("tool_use_id") or tc.get("id"))
+        if isinstance(content, str):
+            tc["result"] = content[:_UI_RESULT_PREVIEW_CAP]
+            changed = True
+    if changed:
+        message["tool_calls"] = _json_mod.dumps(calls)
+
+
+@router.get("/{agent_id}/conversations/{conv_id}")
+async def get_conversation(agent_id: str, conv_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    chat_service = get_chat_service(agent["slug"])
+    result = chat_service.get_conversation(conv_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    # The browser renders historical tool activity from each tool_call's `result`
+    # preview, but per-iteration rows store full results in the separate
+    # tool_results column (uncapped — server-side context reconstruction only).
+    # Merge a capped preview back into the matching tool_calls entries, then drop
+    # the heavy column so the UI shows results on reload without shipping the
+    # uncapped payload.
+    for m in result.get("messages", []):
+        _merge_tool_result_previews(m)
+        m.pop("tool_results", None)
+    return result
+
+
+@router.delete("/{agent_id}/conversations/{conv_id}")
+async def delete_conversation(agent_id: str, conv_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    chat_service = get_chat_service(agent["slug"])
+    if not chat_service.delete_conversation(conv_id):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"deleted": True}
+
+
+@router.patch("/{agent_id}/conversations/{conv_id}/title")
+async def update_title(
+    agent_id: str, conv_id: str, req: UpdateTitleRequest, user=Depends(get_current_user)
+):
+    agent = _get_agent_or_404(agent_id)
+    chat_service = get_chat_service(agent["slug"])
+    new_title = chat_service.rename_conversation(conv_id, req.title)
+    if new_title is None:
+        raise HTTPException(status_code=404, detail="Conversation not found or title empty")
+    return {"title": new_title}
+
+
+# ── Per-agent: File upload chat ──────────────────────────────────────────────
+
+_ALLOWED_EXTENSIONS = {"csv", "xlsx", "md", "txt", "pdf", "docx"}
+_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+_MAX_FILES = 5
+# ponytail: 2GB x _MAX_FILES ceiling; tighten if disk pressure shows up
+_MAX_AUDIO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GB per recording; mirrors the frontend cap
+
+# Sentinel yielded by a pre_stream generator to signal successful completion
+# (anything else it yields is forwarded to the client as SSE).
+_PRE_STREAM_OK = object()
+
+# Meeting transcripts longer than this are truncated in the inline chat
+# message; the full text is always available via the read_meeting tool.
+_MAX_INLINE_TRANSCRIPT = 60_000
+
+
+def _meeting_title_from_filename(filename: str) -> str:
+    stem = Path(filename).stem.lstrip(".")
+    title = re.sub(r"[_\-]+", " ", stem).strip()
+    title = _safe_oneline(title)
+    return title or "Meeting recording"
+
+
+def _build_transcription_pre_stream(agent: dict, messages: list, audio_items: list[dict],
+                                    temp_dir: str, conversation_id: str | None):
+    """Async generator: transcribe uploaded recordings, stream SSE progress,
+    save transcripts under meetings/, prepend them to the user message, and
+    log usage. Yields _PRE_STREAM_OK last on success; on failure yields an
+    SSE error event instead (which aborts the AI turn)."""
+
+    async def pre_stream():
+        import shutil as _shutil
+        from core.agents.activity_log import log_transcription_event
+        from core.agents.security.delimiters import wrap_result
+        from core.agents.tools.memory_tools import save_meeting_transcript
+        from core.agents.transcription.audio import format_hms
+        from core.agents.transcription.service import TranscriptionError, transcribe_file
+
+        def _sse(data: dict) -> str:
+            return f"data: {_json_mod.dumps(data)}\n\n"
+
+        blocks: list[str] = []
+        succeeded = 0
+        first_error: str | None = None
+
+        def _merge_blocks() -> None:
+            if blocks:
+                last_msg = messages[-1]
+                prefix = "\n\n".join(blocks)
+                last_msg["content"] = prefix + "\n\n" + (last_msg.get("content") or "")
+
+        try:
+            for item in audio_items:
+                # Sanitize once here so every downstream use — the trusted
+                # metadata line, the salvage/failure notes, and the SSE
+                # progress fields — is free of injected newlines/control chars.
+                orig_name = _safe_oneline(item["name"])
+                result = None
+                try:
+                    async for event in transcribe_file(Path(item["path"]), orig_name):
+                        if event.get("done"):
+                            result = event
+                        else:
+                            yield _sse({
+                                "type": "transcription",
+                                "filename": orig_name,
+                                "stage": event.get("stage", ""),
+                                "message": event.get("message", ""),
+                                "percent": event.get("percent"),
+                            })
+                except TranscriptionError as e:
+                    first_error = first_error or str(e)
+                    blocks.append(f"[Note: transcription of '{orig_name}' failed and was skipped.]")
+                    continue
+                except Exception:
+                    logger.exception("Transcription failed for %s", orig_name)
+                    first_error = first_error or f"Transcription of '{orig_name}' failed unexpectedly. Please try again."
+                    blocks.append(f"[Note: transcription of '{orig_name}' failed and was skipped.]")
+                    continue
+
+                try:
+                    title = _meeting_title_from_filename(orig_name)
+                    saved = save_meeting_transcript(
+                        str(DATA_DIR / agent["slug"] / "context"), f"agents/{agent['slug']}/context/",
+                        title, result["transcript"],
+                        duration_seconds=result.get("duration_seconds", 0),
+                        source_filename=orig_name,
+                        transcribed_by=result.get("model", ""),
+                    )
+                except Exception:
+                    logger.exception("Saving transcript failed for %s", orig_name)
+                    first_error = first_error or f"Saving the transcript for '{orig_name}' failed. Please try again."
+                    blocks.append(f"[Note: saving the transcript for '{orig_name}' failed and it was skipped.]")
+                    continue
+                try:
+                    log_transcription_event(
+                        agent["slug"],
+                        conversation_id=conversation_id or "",
+                        source_filename=orig_name,
+                        provider=result.get("provider", ""),
+                        model_used=result.get("model", ""),
+                        audio_seconds=int(result.get("duration_seconds", 0) or 0),
+                        input_tokens=result.get("input_tokens", 0),
+                        output_tokens=result.get("output_tokens", 0),
+                        duration_ms=result.get("processing_ms", 0),
+                    )
+                except Exception:
+                    logger.warning("Failed to log transcription usage", exc_info=True)
+
+                transcript = result["transcript"]
+                truncated_note = ""
+                if len(transcript) > _MAX_INLINE_TRANSCRIPT:
+                    transcript = transcript[:_MAX_INLINE_TRANSCRIPT]
+                    truncated_note = (
+                        "\n(… transcript truncated here — read the full text with "
+                        f"read_meeting(\"{saved['filename']}\") — it returns pages of "
+                        "~60k chars; follow next_offset for the rest)"
+                    )
+                duration_label = format_hms(result.get("duration_seconds", 0) or 0)
+                yield _sse({
+                    "type": "transcription",
+                    "filename": orig_name,
+                    "stage": "saved",
+                    "message": f"Transcript saved ({duration_label})",
+                    "percent": 100,
+                })
+                blocks.append(
+                    f"[You just transcribed the attached meeting recording as part of handling "
+                    f"this message: {orig_name} — duration {duration_label}, "
+                    f"saved as {saved['filename']} (retrievable anytime via read_meeting)]\n"
+                    f"{wrap_result('meeting_transcript', transcript + truncated_note)}\n"
+                    "Present this as work YOU just completed in response to the user's "
+                    "message — never describe the transcription as automatic, already "
+                    "done, or separate from your own actions. If they asked for a "
+                    "transcription or summary, that request is now fulfilled: deliver "
+                    "the result directly. If they gave no specific request, briefly note "
+                    "what the recording covers, then offer the next steps you can take on "
+                    "a simple \"yes\": a structured summary, extracting action items into "
+                    "reminders, or saving key decisions to memory. Keep the offer short."
+                )
+                succeeded += 1
+
+            if succeeded == 0:
+                yield _sse({"type": "error", "error": first_error or "Transcription failed. Please try again."})
+                return
+            _merge_blocks()
+            yield _PRE_STREAM_OK
+        finally:
+            _shutil.rmtree(temp_dir, ignore_errors=True)
+
+    return pre_stream()
+
+
+@router.post("/{agent_id}/chat/upload")
+async def agent_chat_upload(
+    agent_id: str,
+    payload: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
+    user=Depends(get_current_user),
+):
+    """Chat with file attachments. Reads file contents and prepends to the user message."""
+    agent = _get_agent_or_404(agent_id)
+
+    if len(files) > _MAX_FILES:
+        raise HTTPException(status_code=400, detail=f"Too many files (max {_MAX_FILES})")
+
+    try:
+        body = _json_mod.loads(payload)
+    except _json_mod.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    messages = body.get("messages", [])
+    if not messages:
+        raise HTTPException(status_code=400, detail="No messages provided")
+
+    # Detect import mode for zip support
+    import_mode = False
+    conv_id = body.get("conversation_id")
+    if conv_id:
+        chat_svc = get_chat_service(agent["slug"])
+        conv = chat_svc.get_conversation(conv_id)
+        if conv and conv.get("mode") == "import":
+            import_mode = True
+
+    from core.agents.transcription.audio import AUDIO_EXTENSIONS
+
+    allowed_ext = _ALLOWED_EXTENSIONS | AUDIO_EXTENSIONS | ({"zip"} if import_mode else set())
+
+    # Process uploaded files. Audio/video recordings are spooled to a temp
+    # dir and transcribed inside the SSE stream (they can take minutes and
+    # need progress events); everything else is extracted inline as before.
+    file_texts = []
+    audio_uploads: list[UploadFile] = []
+    audio_items: list[dict] = []
+    audio_temp_dir: str | None = None
+    for f in files[:_MAX_FILES]:
+        ext = (f.filename or "").rsplit(".", 1)[-1].lower()
+        if ext not in allowed_ext:
+            raise HTTPException(status_code=400, detail=f"File type '.{ext}' not allowed")
+
+        if ext in AUDIO_EXTENSIONS:
+            # Fail fast (before the SSE stream starts) if no provider can
+            # transcribe — a plain 400 renders better than a mid-stream error.
+            from core.agents.transcription.service import NO_PROVIDER_MESSAGE, pick_backend
+            if not pick_backend():
+                raise HTTPException(status_code=400, detail=NO_PROVIDER_MESSAGE)
+            # Spooled to disk AFTER this loop so no temp dir exists yet if a
+            # later file fails validation.
+            audio_uploads.append(f)
+            continue
+
+        content_bytes = await f.read()
+        max_size = 25 * 1024 * 1024 if (ext == "zip" and import_mode) else _MAX_FILE_SIZE
+        if len(content_bytes) > max_size:
+            raise HTTPException(status_code=400, detail=f"File '{f.filename}' exceeds {max_size // (1024*1024)} MB limit")
+        if not content_bytes:
+            continue
+
+        # Save zip to file_cache for extract_zip tool (import mode only)
+        if ext == "zip" and import_mode:
+            file_cache_dir = DATA_DIR / agent["slug"] / "file_cache"
+            file_cache_dir.mkdir(parents=True, exist_ok=True)
+            safe_name = Path(f.filename or "upload.zip").name
+            if not safe_name.endswith(".zip") or ".." in safe_name or "/" in safe_name or "\\" in safe_name or "\0" in safe_name:
+                safe_name = "upload.zip"
+            zip_path = (file_cache_dir / safe_name).resolve()
+            if not zip_path.is_relative_to(file_cache_dir.resolve()):
+                raise HTTPException(status_code=400, detail="Invalid zip filename")
+            atomic_write_bytes(zip_path, content_bytes)
+            file_texts.append(
+                f"[Attached zip file: {safe_name}] "
+                f"Call extract_zip with filename=\"{safe_name}\" to process it."
+            )
+            continue
+
+        # Extract text from PDF / DOCX and cache raw bytes for forwarding
+        if ext in ("pdf", "docx"):
+            from core.agents.tools.file_cache import cache_file
+            from core.agents.tools.text_extraction import extract_text
+
+            _meta = {
+                "pdf": ("PDF", "upload.pdf", "application/pdf"),
+                "docx": ("DOCX", "upload.docx",
+                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            }
+            label, fallback, mime = _meta[ext]
+            safe_name = Path((f.filename or fallback).replace("\\", "/")).name
+
+            extracted, truncated = extract_text(content_bytes, ext, 50_000)
+            file_ref = cache_file(str(DATA_DIR / agent["slug"] / "file_cache"),
+                                  content_bytes, safe_name, mime)
+
+            footer = f"[End of {label}]"
+            if not extracted.strip():
+                extracted = "(No extractable text found. Use file_ref to forward the original.)"
+            elif truncated:
+                footer = f"(truncated at 50,000 characters)\n{footer}"
+
+            file_texts.append(f"[Attached {label}: {safe_name} — file_ref={file_ref}]\n{extracted}\n{footer}")
+            continue
+
+        # Convert XLSX to CSV
+        if ext == "xlsx":
+            try:
+                import csv
+                import openpyxl
+                wb = openpyxl.load_workbook(io.BytesIO(content_bytes), read_only=True)
+                csv_out = io.StringIO()
+                writer = csv.writer(csv_out)
+                ws = wb.active
+                for row in ws.iter_rows(values_only=True):
+                    writer.writerow([str(cell) if cell is not None else "" for cell in row])
+                text = csv_out.getvalue()
+                wb.close()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to parse '{f.filename}': {e}")
+        else:
+            try:
+                text = content_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                try:
+                    text = content_bytes.decode("latin-1")
+                except UnicodeDecodeError:
+                    raise HTTPException(status_code=400, detail=f"Cannot decode '{f.filename}'")
+
+        # Auto-detect QBO CSV exports when the integration is enabled
+        if ext == "csv":
+            try:
+                from integrations.registry import is_enabled as _is_enabled
+                if _is_enabled("qb_csv"):
+                    import csv as _csv_mod
+                    _reader = _csv_mod.reader(io.StringIO(text))
+                    _headers = next(_reader, None)
+                    if _headers:
+                        from integrations.qb_csv.parser import detect_entity_type
+                        _entity = detect_entity_type(
+                            [h.strip().lower() for h in _headers],
+                            filename=f.filename or "",
+                        )
+                        if _entity:
+                            file_texts.append(
+                                f"[Attached file: {f.filename}] [QuickBooks CSV detected: {_entity}]\n"
+                                f"{text}\n[End of file]"
+                            )
+                            continue
+            except Exception:
+                logger.debug("QBO CSV detection failed for %s", f.filename, exc_info=True)
+
+        file_texts.append(f"[Attached file: {f.filename}]\n{text}\n[End of file]")
+
+    # Prepend file contents to the last user message
+    if file_texts:
+        last_msg = messages[-1]
+        prefix = "\n\n".join(file_texts)
+        last_msg["content"] = prefix + "\n\n" + (last_msg.get("content") or "")
+
+    # Spool audio recordings to a temp dir (transcribed inside the SSE
+    # stream). From here on, any failure must clean the temp dir — on
+    # success the pre_stream generator owns cleanup.
+    try:
+        # Playbook invocation: expand after file prepending so attachments land
+        # inside the activation message's "User request" section. When an
+        # audio upload is present, defer expansion until _stream_chat's
+        # pre_stream has prepended the transcript — otherwise ai_service
+        # would replace the last user message with a transcript-less
+        # expansion and the model would never see the recording. Still,
+        # validate the slug itself here — cheaply, before spooling/
+        # transcribing the audio below — so an invalid/archived slug fails
+        # fast instead of only erroring after the (minutes-long, paid)
+        # transcription completes.
+        playbook_expansion = None
+        playbook_slug = None
+        if body.get("playbook_slug"):
+            if audio_uploads:
+                from core.agents.playbooks.service import is_safe_slug, read_playbook
+                slug = body["playbook_slug"]
+                if not is_safe_slug(slug):
+                    raise HTTPException(status_code=400, detail="invalid playbook_slug")
+                # read_playbook returns an archived playbook as {archived: True}
+                # (only None when missing/unsafe); reject archived too, matching
+                # build_activation_message, so a stale chip fails fast.
+                pb = read_playbook(agent["slug"], slug)
+                if pb is None or pb.get("archived"):
+                    raise HTTPException(status_code=404, detail="Playbook not found or archived")
+                playbook_slug = slug
+            else:
+                playbook_expansion = _build_playbook_expansion(
+                    agent["slug"], messages, body["playbook_slug"])
+
+        if audio_uploads:
+            import tempfile
+            audio_temp_dir = tempfile.mkdtemp(prefix="chatty-upload-")
+            for f in audio_uploads:
+                ext = (f.filename or "").rsplit(".", 1)[-1].lower()
+                safe_name = Path((f.filename or f"recording.{ext}").replace("\\", "/")).name
+                dest = Path(audio_temp_dir) / f"{len(audio_items):02d}-{safe_name}"
+                size = 0
+                with open(dest, "wb") as out:
+                    while chunk := await f.read(1 << 20):
+                        out.write(chunk)
+                        size += len(chunk)
+                        if size > _MAX_AUDIO_SIZE:
+                            dest.unlink(missing_ok=True)
+                            raise HTTPException(
+                                status_code=413,
+                                detail=f"Recording '{safe_name}' exceeds the 2 GB limit")
+                if size == 0:
+                    dest.unlink(missing_ok=True)
+                    continue
+                audio_items.append({"path": str(dest), "name": safe_name})
+
+            if audio_temp_dir and not audio_items:
+                shutil.rmtree(audio_temp_dir, ignore_errors=True)
+                audio_temp_dir = None
+
+        pre_stream = None
+        if audio_items:
+            pre_stream = _build_transcription_pre_stream(
+                agent, messages, audio_items, audio_temp_dir, body.get("conversation_id"))
+
+        return _stream_chat(
+            agent, messages, body.get("training_mode", False), body.get("conversation_id"),
+            training_type=body.get("training_type"), plan_mode=body.get("plan_mode", False),
+            tool_mode=body.get("tool_mode", "normal"), approved_tool=body.get("approved_tool"),
+            import_mode=import_mode, has_attachments=bool(files),
+            playbook_expansion=playbook_expansion, pre_stream=pre_stream,
+            playbook_slug=playbook_slug,
+        )
+    except Exception:
+        if audio_temp_dir:
+            shutil.rmtree(audio_temp_dir, ignore_errors=True)
+        raise
+
+
+# ── Per-agent: Tool execute (confirmation approval) ─────────────────────────
+
+@router.post("/{agent_id}/tool/execute")
+async def tool_execute(agent_id: str, req: ToolExecuteRequest, user=Depends(get_current_user)):
+    """Execute a write tool after user approval (confirmation flow)."""
+    agent = _get_agent_or_404(agent_id)
+    config = build_agent_config(agent)
+
+    ga = config.google_accounts
+    gmail_ids = ga.get("gmail", [])
+    calendar_ids = ga.get("calendar", [])
+    drive_ids = ga.get("drive", [])
+    google_connected = bool(gmail_ids or calendar_ids or drive_ids)
+
+    from integrations.registry import list_google_accounts as _list_ga
+    all_ga = _list_ga()
+    account_info_map = {
+        aid: {"email": a.get("email", ""), "scope_grants": a.get("scope_grants", {}), "connection_status": a.get("connection_status", "ok")}
+        for aid, a in all_ga.items()
+    }
+
+    integration_tool_defs, integration_executors = load_integration_tools()
+    reminder_handlers, sa_handlers = build_agent_handlers(agent["slug"])
+
+    registry = ToolRegistry(
+        context_dir=config.context_dir,
+        gcs_prefix=config.gcs_prefix,
+        google_connected=google_connected,
+        gmail_account_ids=gmail_ids,
+        calendar_account_ids=calendar_ids,
+        drive_account_ids=drive_ids,
+        account_info_map=account_info_map,
+        integration_executors=integration_executors,
+        agent_slug=agent["slug"],
+        reminder_handlers=reminder_handlers,
+        scheduled_action_handlers=sa_handlers,
+    )
+
+    from core.agents.tool_definitions import get_tool_definitions, build_writes_map
+    from integrations.google.policy import google_capabilities_union
+    gmail_caps = google_capabilities_union(gmail_ids)
+    cal_caps = google_capabilities_union(calendar_ids)
+    drive_caps = google_capabilities_union(drive_ids)
+    tool_defs = get_tool_definitions(
+        integration_tools=integration_tool_defs,
+        gmail_read_enabled=gmail_caps["gmail_read_enabled"],
+        gmail_send_enabled=gmail_caps["gmail_send_enabled"],
+        calendar_read_enabled=cal_caps["calendar_read_enabled"],
+        calendar_write_enabled=cal_caps["calendar_write_enabled"],
+        drive_read_enabled=drive_caps["drive_read_enabled"],
+        drive_write_enabled=drive_caps["drive_write_enabled"],
+    )
+    writes_map = build_writes_map(tool_defs)
+    if not writes_map.get(req.tool, False):
+        raise HTTPException(status_code=400, detail="Tool is not a write operation")
+
+    # Enforce integration permission ceiling — reject if integration is set to read-only
+    tool_def = next((t for t in tool_defs if t["name"] == req.tool), None)
+    integ_name = (tool_def or {}).get("integration", "")
+    if integ_name:
+        from integrations.registry import get_tool_mode as _get_tm
+        integ_ceil = _get_tm(integ_name)
+        if integ_ceil == "read-only":
+            raise HTTPException(status_code=403, detail=f"Write operations are disabled for {integ_name} (set to read-only)")
+
+    kind_map = {t["name"]: t.get("kind", "context") for t in tool_defs}
+    kind = kind_map.get(req.tool, "context")
+    result = await registry.execute_tool(req.tool, req.args, kind)
+
+    # Sync context files to GCS after write
+    ctx_manager = get_context_manager(agent["slug"])
+    from core.agents.ai_service import _sync_context_after_tool
+    _sync_context_after_tool(req.tool, result, ctx_manager)
+
+    return result
+
+
+# ── Per-agent: Reports ───────────────────────────────────────────────────────
+
+@router.get("/{agent_id}/reports")
+async def list_agent_reports(agent_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    from core.agents.tools.report_tools import list_reports
+    reports_dir = str(DATA_DIR / agent["slug"] / "reports")
+    return {"reports": list_reports(reports_dir)}
+
+
+@router.get("/{agent_id}/reports/{report_id}")
+async def get_agent_report(agent_id: str, report_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    from core.agents.tools.report_tools import get_report
+    reports_dir = str(DATA_DIR / agent["slug"] / "reports")
+    report = get_report(reports_dir, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return report
+
+
+@router.delete("/{agent_id}/reports/{report_id}")
+async def delete_agent_report(agent_id: str, report_id: str, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    from core.agents.tools.report_tools import delete_report
+    reports_dir = str(DATA_DIR / agent["slug"] / "reports")
+    if not delete_report(reports_dir, report_id):
+        raise HTTPException(status_code=404, detail="Report not found")
+    return {"deleted": True}
+
+
+# ── Per-agent: Activity (heartbeat execution history) ─────────────────────
+
+@router.get("/{agent_id}/activity")
+async def get_agent_activity(
+    agent_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    user=Depends(get_current_user),
+):
+    agent = _get_agent_or_404(agent_id)
+    from core.agents.scheduled_actions.history import get_history
+    records = get_history(agent=agent["slug"], limit=limit, event_type="scheduled_action")
+    return {"activities": records}
+
+
+# ── Per-agent: Observations ───────────────────────────────────────────────────
+
+@router.get("/{agent_id}/observations")
+async def list_observations(
+    agent_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    user=Depends(get_current_user),
+):
+    agent = _get_agent_or_404(agent_id)
+    try:
+        memory_db = ensure_memory_db(agent["slug"])
+        observations = memory_db.get_observations(agent["slug"], limit=limit)
+        return {"observations": observations}
+    except Exception as e:
+        # Degrade gracefully (the panel is non-critical) but log at error level
+        # so a real fault isn't indistinguishable from a genuinely-empty store.
+        logger.error("list_observations failed for agent %s: %s", agent_id, e)
+        return {"observations": []}
+
+
+@router.delete("/{agent_id}/observations/{obs_id}")
+async def delete_observation(agent_id: str, obs_id: int, user=Depends(get_current_user)):
+    agent = _get_agent_or_404(agent_id)
+    try:
+        memory_db = ensure_memory_db(agent["slug"])
+        if not memory_db.delete_observation(obs_id, agent_slug=agent["slug"]):
+            raise HTTPException(status_code=404, detail="Observation not found")
+        return {"deleted": True, "id": obs_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("delete_observation failed for obs %s: %s", obs_id, e)
+        raise HTTPException(status_code=500, detail="Internal error")
+
+
+# ── Per-agent: Commitments (inferred follow-ups) ──────────────────────────────
+
+@router.get("/{agent_id}/commitments")
+async def list_agent_commitments(
+    agent_id: str,
+    status: str = Query("active"),
+    limit: int = Query(100, ge=1, le=500),
+    user=Depends(get_current_user),
+):
+    agent = _get_agent_or_404(agent_id)
+    if status != "all" and status not in commitments_svc.VALID_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+    # No try/except: a DB failure should surface as a 500 (the frontend shows a
+    # retryable error), not a convincing-but-wrong empty list.
+    memory_db = ensure_memory_db(agent["slug"])
+    items = commitments_svc.list_commitments(
+        memory_db, agent["slug"],
+        status=None if status == "all" else status,
+        limit=limit,
+    )
+    return {"commitments": items}
+
+
+@router.post("/{agent_id}/commitments/{commitment_id}/complete")
+async def complete_agent_commitment(
+    agent_id: str, commitment_id: int, user=Depends(get_current_user),
+):
+    agent = _get_agent_or_404(agent_id)
+    memory_db = ensure_memory_db(agent["slug"])
+    if not commitments_svc.complete_commitment(memory_db, agent["slug"], commitment_id):
+        raise HTTPException(status_code=404, detail="Commitment not found")
+    return {"ok": True, "id": commitment_id, "status": "done"}
+
+
+@router.post("/{agent_id}/commitments/{commitment_id}/dismiss")
+async def dismiss_agent_commitment(
+    agent_id: str, commitment_id: int, user=Depends(get_current_user),
+):
+    agent = _get_agent_or_404(agent_id)
+    memory_db = ensure_memory_db(agent["slug"])
+    if not commitments_svc.dismiss_commitment(memory_db, agent["slug"], commitment_id):
+        raise HTTPException(status_code=404, detail="Commitment not found")
+    return {"ok": True, "id": commitment_id, "status": "dismissed"}

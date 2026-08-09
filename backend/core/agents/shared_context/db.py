@@ -1,0 +1,194 @@
+"""Shared context — SQLite database for agent-contributed entries.
+
+Single shared database (like reminders.db) for cross-agent knowledge.
+Thread safety: single connection, WAL mode, write-lock.
+"""
+
+import logging
+import sqlite3
+import threading
+import uuid
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from core.storage import safe_backup_sqlite, safe_init_sqlite
+
+logger = logging.getLogger(__name__)
+
+CT_TZ = ZoneInfo("America/Chicago")
+
+DATA_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "shared"
+DB_PATH = DATA_DIR / "shared_context.db"
+GCS_KEY = "shared/shared_context.db"
+
+_connection: sqlite3.Connection | None = None
+_write_lock = threading.Lock()
+_backup_mutex = threading.Lock()
+
+
+def get_db() -> sqlite3.Connection:
+    if _connection is None:
+        raise RuntimeError("Shared context DB not initialized — call init_db() first")
+    return _connection
+
+
+def write_lock() -> threading.Lock:
+    return _write_lock
+
+
+def _setup_connection() -> None:
+    """Open connection, set PRAGMAs, create schema."""
+    global _connection
+    _connection = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    _connection.row_factory = sqlite3.Row
+    _connection.execute("PRAGMA journal_mode=WAL")
+    _connection.execute("PRAGMA foreign_keys=ON")
+    _connection.execute("PRAGMA busy_timeout=5000")
+    _connection.execute("PRAGMA synchronous=FULL")
+
+    _connection.executescript("""
+        CREATE TABLE IF NOT EXISTS shared_entries (
+            id TEXT PRIMARY KEY,
+            agent_name TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT '',
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            created_by_email TEXT NOT NULL DEFAULT ''
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_shared_entries_agent
+            ON shared_entries(agent_name);
+        CREATE INDEX IF NOT EXISTS idx_shared_entries_category
+            ON shared_entries(category);
+        CREATE INDEX IF NOT EXISTS idx_shared_entries_updated
+            ON shared_entries(updated_at);
+    """)
+    logger.info("Shared context DB initialized at %s", DB_PATH)
+
+
+def init_db() -> dict:
+    """Initialize with integrity check and GCS restore."""
+    return safe_init_sqlite(DB_PATH, GCS_KEY, init_fn=_setup_connection)
+
+
+def close_db() -> None:
+    """Close the connection (for backup/restore)."""
+    global _connection
+    if _connection:
+        _connection.close()
+        _connection = None
+
+
+def backup_to_gcs() -> None:
+    """Create a consistent snapshot and upload to GCS."""
+    safe_backup_sqlite(_connection, DB_PATH, GCS_KEY, backup_mutex=_backup_mutex)
+
+
+# ------------------------------------------------------------------
+# CRUD
+# ------------------------------------------------------------------
+
+def add_entry(
+    agent_name: str,
+    title: str,
+    content: str,
+    category: str = "",
+    created_by_email: str = "",
+) -> dict:
+    """Insert a new shared entry.  Returns the entry dict."""
+    entry_id = str(uuid.uuid4())
+    now = datetime.now(CT_TZ).isoformat()
+    conn = get_db()
+    with _write_lock:
+        conn.execute(
+            """INSERT INTO shared_entries
+                   (id, agent_name, category, title, content, created_at, updated_at, created_by_email)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (entry_id, agent_name, category, title, content, now, now, created_by_email),
+        )
+        conn.commit()
+    return {
+        "id": entry_id,
+        "agent_name": agent_name,
+        "category": category,
+        "title": title,
+        "content": content,
+        "created_at": now,
+        "updated_at": now,
+        "created_by_email": created_by_email,
+    }
+
+
+def list_entries(
+    agent_name: str | None = None,
+    category: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict]:
+    """List shared entries, newest first."""
+    conn = get_db()
+    sql = "SELECT * FROM shared_entries WHERE 1=1"
+    params: list = []
+    if agent_name:
+        sql += " AND agent_name = ?"
+        params.append(agent_name)
+    if category:
+        sql += " AND category = ?"
+        params.append(category)
+    sql += " ORDER BY updated_at DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    rows = conn.execute(sql, params).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_entry(entry_id: str) -> dict | None:
+    conn = get_db()
+    row = conn.execute("SELECT * FROM shared_entries WHERE id = ?", (entry_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def update_entry(
+    entry_id: str,
+    title: str | None = None,
+    content: str | None = None,
+    category: str | None = None,
+) -> dict | None:
+    """Update fields on an existing entry.  Returns updated entry or None."""
+    conn = get_db()
+    with _write_lock:
+        row = conn.execute("SELECT * FROM shared_entries WHERE id = ?", (entry_id,)).fetchone()
+        if not row:
+            return None
+        now = datetime.now(CT_TZ).isoformat()
+        new_title = title if title is not None else row["title"]
+        new_content = content if content is not None else row["content"]
+        new_category = category if category is not None else row["category"]
+        conn.execute(
+            """UPDATE shared_entries
+               SET title=?, content=?, category=?, updated_at=?
+               WHERE id=?""",
+            (new_title, new_content, new_category, now, entry_id),
+        )
+        conn.commit()
+    updated = get_entry(entry_id)
+    return updated
+
+
+def delete_entry(entry_id: str) -> bool:
+    conn = get_db()
+    with _write_lock:
+        cursor = conn.execute("DELETE FROM shared_entries WHERE id = ?", (entry_id,))
+        conn.commit()
+    return cursor.rowcount > 0
+
+
+def delete_entries_by_agent(agent_name: str) -> int:
+    """Delete all entries for a given agent_name. Returns count deleted."""
+    conn = get_db()
+    with _write_lock:
+        cursor = conn.execute("DELETE FROM shared_entries WHERE agent_name = ?", (agent_name,))
+        conn.commit()
+    return cursor.rowcount

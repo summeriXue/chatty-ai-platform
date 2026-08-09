@@ -1,0 +1,115 @@
+"""
+Chatty — AI provider factory.
+
+Returns the active AIProvider based on credentials in data/auth-profiles.json.
+"""
+
+from core.providers.base import AIProvider
+from core.providers.credentials import CredentialStore
+
+
+def get_ai_provider(
+    agent_provider: str | None = None,
+    agent_model: str | None = None,
+    agent_model_tier: str | None = None,
+) -> AIProvider | None:
+    """
+    Return an initialized AIProvider for the active (or specified) provider.
+
+    Args:
+        agent_provider: Optional per-agent provider override ("anthropic", "openai", "google").
+        agent_model: Optional per-agent model override (takes precedence over tier).
+        agent_model_tier: Optional tier ("auto", "top", "mid", "light").
+            For "auto", resolves to "top" here (triage runs separately in _stream_chat).
+
+    Returns None if no provider is configured.
+    """
+    store = CredentialStore()
+    profile_name, profile = store.get_active_profile(provider_override=agent_provider)
+
+    if not profile:
+        return None
+
+    # Resolve model: agent_model > tier > global active_model
+    if agent_model:
+        raw_model = agent_model
+    elif agent_model_tier:
+        from core.providers.model_tiers import has_explicit_tier
+        from core.providers.tiers import resolve_tier_model
+        provider_key = agent_provider or store.data.get("active_provider", "")
+        tier = "top" if agent_model_tier == "auto" else agent_model_tier
+        active_model = store.data.get("active_model", "")
+        active_provider = store.data.get("active_provider", "")
+        if has_explicit_tier(provider_key, tier):
+            raw_model = resolve_tier_model(provider_key, tier) or ""
+        elif tier == "top" and active_model and provider_key == active_provider:
+            # Fresh deploy / no tiers materialized yet: respect the user's
+            # configured active_model instead of the hardcoded TIER_MODELS
+            # constant, so a PR that bumps the constant can't silently swap the
+            # model used by background runs. mid/light keep the hardcoded
+            # fallback (they were never the user's explicit pick).
+            raw_model = active_model
+        else:
+            raw_model = resolve_tier_model(provider_key, tier) or ""
+    else:
+        raw_model = store.data.get("active_model", "")
+    model = raw_model if raw_model and raw_model != "default" else ""
+
+    if profile_name.startswith("anthropic:"):
+        from core.providers.anthropic_provider import AnthropicProvider
+        if profile.get("type") == "setup_token":
+            return AnthropicProvider(api_key=profile.get("token", ""), model=model or "claude-opus-4-8")
+        return AnthropicProvider(api_key=profile.get("key", ""), model=model or "claude-opus-4-8")
+
+    elif profile_name.startswith("openai:"):
+        from core.providers.openai_provider import OpenAIProvider
+        if profile.get("type") == "api_key":
+            return OpenAIProvider(access_token=profile.get("key", ""), model=model or "gpt-5.4")
+        if profile.get("type") == "chatgpt_oauth":
+            access_token = profile.get("access", "")
+            # Refresh token if expired
+            if store.is_token_expired("openai"):
+                try:
+                    import asyncio
+                    from core.providers.chatgpt_refresh import refresh_chatgpt_token
+                    tokens = asyncio.get_event_loop().run_until_complete(
+                        refresh_chatgpt_token(profile.get("refresh", ""))
+                    )
+                    access_token = tokens["access_token"]
+                    store.set_chatgpt_oauth(
+                        access_token=tokens["access_token"],
+                        refresh_token=tokens["refresh_token"],
+                        expires_in=tokens["expires_in"],
+                        model=model or "gpt-5.4",
+                    )
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning("ChatGPT token refresh failed: %s", e)
+            return OpenAIProvider(access_token=access_token, model=model or "gpt-5.4", use_chatgpt_api=True)
+        access_token = profile.get("access", "")
+        return OpenAIProvider(access_token=access_token, model=model or "gpt-5.4", use_chatgpt_api=True)
+
+    elif profile_name.startswith("deepseek:"):
+        from core.providers.deepseek_provider import DeepSeekProvider
+        if profile.get("type") == "api_key":
+            return DeepSeekProvider(access_token=profile.get("key", ""), model=model or "deepseek-v4-flash")
+        access_token = profile.get("access", "")
+        return DeepSeekProvider(access_token=access_token, model=model or "deepseek-v4-flash")
+
+    elif profile_name.startswith("google:"):
+        from core.providers.google_provider import GoogleProvider
+        if profile.get("type") == "api_key":
+            return GoogleProvider(api_key=profile.get("key", ""), model=model or "gemini-2.5-flash")
+        access_token = profile.get("access", "")
+        return GoogleProvider(access_token=access_token, model=model or "gemini-2.5-flash")
+
+    elif profile_name.startswith("ollama:"):
+        from core.providers.ollama_provider import OllamaProvider
+        base_url = profile.get("base_url", "http://localhost:11434")
+        return OllamaProvider(base_url=base_url, model=model or "")
+
+    elif profile_name.startswith("together:"):
+        from core.providers.together_provider import TogetherProvider
+        return TogetherProvider(api_key=profile.get("key", ""), model=model or "Qwen/Qwen3.5-9B")
+
+    return None

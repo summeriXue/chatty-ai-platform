@@ -1,0 +1,559 @@
+"""
+Chatty — Provider management API endpoints.
+
+GET  /api/providers          — get current provider status
+POST /api/providers/anthropic/connect   — save API key
+POST /api/providers/google/connect      — start OAuth flow / exchange code
+POST /api/providers/openai/connect      — start OAuth flow / exchange code
+POST /api/providers/{provider}/disconnect — remove credentials
+PUT  /api/providers/active    — switch active provider + model
+GET  /api/providers/{provider}/models   — list models for a provider
+"""
+
+import logging
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from core.auth import get_current_user
+from core.providers.credentials import CredentialStore
+from core.providers.oauth import start_oauth_flow, refresh_google_token, consume_flow
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+
+# ── Status ────────────────────────────────────────────────────────────────────
+
+@router.get("")
+async def get_providers(user=Depends(get_current_user)):
+    """Return current provider configuration (no raw keys)."""
+    from core.config import Settings
+    store = CredentialStore()
+    result = store.to_dict()
+    result["is_railway"] = Settings().is_railway
+    return result
+
+
+@router.get("/tiers")
+async def get_tiers(user=Depends(get_current_user)):
+    """Return resolved tier configuration for all providers.
+
+    Cheap and store-only — does NOT list models live (the tier picker fetches
+    options from GET /{provider}/models, which is cached). tier_models reflect
+    override -> inferred -> hardcoded; tier_labels are always non-empty.
+    """
+    from core.providers.tiers import TIER_MODELS, supports_auto_triage, derive_tier_labels
+    from core.providers.model_tiers import get_resolved
+    store = CredentialStore()
+    providers = list(TIER_MODELS.keys())
+    tier_models = {p: get_resolved(p) for p in providers}
+    return {
+        "active_provider": store.data.get("active_provider", ""),
+        "tier_models": tier_models,
+        "tier_labels": {p: derive_tier_labels(p, tier_models[p]) for p in providers},
+        "auto_triage_providers": [p for p in providers if supports_auto_triage(p)],
+    }
+
+
+class SetTiersRequest(BaseModel):
+    provider: str
+    models: dict[str, str]  # subset of {top,mid,light} -> model id ("" clears the override)
+
+
+@router.put("/tiers")
+async def set_tiers(body: SetTiersRequest, user=Depends(get_current_user)):
+    """Persist user tier overrides for a provider.
+
+    Validates the requested model ids against the provider's current model list
+    BEFORE writing (the model_tiers store lock is held only for the JSON write,
+    never across the async list call)."""
+    from core.providers.tiers import TIER_MODELS
+    from core.providers import model_tiers, get_ai_provider
+
+    if body.provider not in TIER_MODELS:
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {body.provider}")
+    bad_keys = set(body.models) - {"top", "mid", "light"}
+    if bad_keys:
+        raise HTTPException(status_code=400, detail=f"Invalid tier keys: {sorted(bad_keys)}")
+
+    nonempty = {t: m for t, m in body.models.items() if m}
+    if nonempty:
+        provider = get_ai_provider(agent_provider=body.provider)
+        if provider is None:
+            raise HTTPException(status_code=400, detail=f"Provider not configured: {body.provider}")
+        available = await provider.list_models()  # cached; not under the store lock
+        for tier, model in nonempty.items():
+            if len(model) > 200:
+                raise HTTPException(status_code=400, detail=f"Model id too long for tier '{tier}'")
+            if model not in available:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"'{model}' is not an available {body.provider} model",
+                )
+
+    model_tiers.set_overrides(body.provider, body.models)
+    return {
+        "ok": True,
+        "provider": body.provider,
+        "tier_models": model_tiers.get_resolved(body.provider),
+    }
+
+
+# ── Inferred default model after a credential save ────────────────────────────
+
+async def _materialize_inferred_tiers(provider_name: str, requested_model: str = "") -> str:
+    """After credentials are saved: live-list models so the inferred tier defaults
+    get materialized into the tier store (list_models persists them on a live fetch),
+    giving the tier picker good defaults.
+
+    Deliberately does NOT change the user's active model — that was set by the
+    preceding store.set_*() to the requested/curated model. Overriding it with the
+    inferred 'top' would ignore an explicit choice and flip cost-sensitive defaults
+    (e.g. Google → Pro). Returns the model to echo in the response body.
+    """
+    from core.providers import get_ai_provider
+    try:
+        provider = get_ai_provider(agent_provider=provider_name)
+        if provider is not None:
+            await provider.list_models()  # live fetch -> materialize inferred tiers
+    except Exception as e:
+        logger.warning("Tier materialization for %s failed: %s", provider_name, e)
+    return requested_model or CredentialStore().data.get("active_model", "")
+
+
+# ── Connect Anthropic (API key) ───────────────────────────────────────────────
+
+class AnthropicConnectRequest(BaseModel):
+    api_key: str
+    model: str = "claude-opus-4-8"
+
+
+@router.post("/anthropic/connect")
+async def connect_anthropic(body: AnthropicConnectRequest, user=Depends(get_current_user)):
+    """Validate and store an Anthropic API key."""
+    from core.providers.anthropic_provider import AnthropicProvider
+    provider = AnthropicProvider(api_key=body.api_key, model=body.model)
+    if not await provider.validate():
+        raise HTTPException(status_code=400, detail="Invalid Anthropic API key")
+
+    store = CredentialStore()
+    store.set_api_key("anthropic", body.api_key, model=body.model)
+    model = await _materialize_inferred_tiers("anthropic", body.model)
+    return {"ok": True, "provider": "anthropic", "model": model}
+
+
+class SetupTokenRequest(BaseModel):
+    token: str
+    model: str = "claude-opus-4-8"
+
+
+@router.post("/anthropic/setup-token")
+async def connect_anthropic_token(body: SetupTokenRequest, user=Depends(get_current_user)):
+    """Validate and store a setup-token from `claude setup-token`."""
+    from core.providers.anthropic_provider import AnthropicProvider
+    token = body.token.strip()
+    provider = AnthropicProvider(api_key=token, model=body.model)
+    if not await provider.validate():
+        raise HTTPException(status_code=400, detail="Invalid setup token. Run `claude setup-token` in your terminal and paste the result.")
+
+    store = CredentialStore()
+    store.set_setup_token("anthropic", body.token, model=body.model)
+    model = await _materialize_inferred_tiers("anthropic", body.model)
+    return {"ok": True, "provider": "anthropic", "model": model}
+
+
+# ── Connect Google / OpenAI (PKCE OAuth) ─────────────────────────────────────
+
+class OAuthStartRequest(BaseModel):
+    pass
+
+
+@router.post("/google/connect")
+async def connect_google(user=Depends(get_current_user)):
+    """Start Google PKCE OAuth flow. Returns {flow_id, auth_url} for the
+    frontend to open in a popup and poll until /google/connect/complete."""
+    try:
+        return start_oauth_flow("google")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class CompleteOAuthRequest(BaseModel):
+    flow_id: str
+
+
+@router.post("/google/connect/complete")
+async def connect_google_complete(body: CompleteOAuthRequest, user=Depends(get_current_user)):
+    """Finalize Google OAuth setup after the callback stashes tokens."""
+    flow = consume_flow(body.flow_id)
+    if not flow:
+        raise HTTPException(status_code=404, detail="OAuth flow not found or expired")
+    if flow.status != "ok" or not flow.tokens:
+        raise HTTPException(status_code=400, detail=flow.error or "OAuth flow incomplete")
+
+    tokens = flow.tokens
+    store = CredentialStore()
+    store.set_oauth_tokens(
+        provider="google",
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        expires_in=tokens["expires_in"],
+        model="gemini-2.5-flash",
+    )
+    await _materialize_inferred_tiers("google", "gemini-2.5-flash")
+    return {"ok": True, "provider": "google"}
+
+
+class GoogleKeyRequest(BaseModel):
+    api_key: str
+    model: str = "gemini-2.5-flash"
+
+
+@router.post("/google/connect-key")
+async def connect_google_key(body: GoogleKeyRequest, user=Depends(get_current_user)):
+    """Validate and store a Google AI (Gemini) API key."""
+    from core.providers.google_provider import GoogleProvider
+    provider = GoogleProvider(api_key=body.api_key, model=body.model)
+    if not await provider.validate():
+        raise HTTPException(status_code=400, detail="Invalid Google AI API key")
+
+    store = CredentialStore()
+    store.set_api_key("google", body.api_key, model=body.model)
+    model = await _materialize_inferred_tiers("google", body.model)
+    return {"ok": True, "provider": "google", "model": model}
+
+
+class OpenAIKeyRequest(BaseModel):
+    api_key: str
+    model: str = "gpt-5.4"
+
+
+@router.post("/openai/connect-key")
+async def connect_openai_key(body: OpenAIKeyRequest, user=Depends(get_current_user)):
+    """Validate and store an OpenAI API key."""
+    from core.providers.openai_provider import OpenAIProvider
+    logger.info("OpenAI connect-key model=%s", body.model)
+    provider = OpenAIProvider(access_token=body.api_key, model=body.model)
+    try:
+        result = await provider.validate()
+
+        if not result:
+            raise Exception("validate returned False")
+
+    except Exception as e:
+        logger.exception("OpenAI validation failed")
+        raise HTTPException(status_code=400,detail=str(e))
+
+    store = CredentialStore()
+    store.set_api_key("openai", body.api_key, model=body.model)
+    model = await _materialize_inferred_tiers("openai", body.model)
+    return {"ok": True, "provider": "openai", "model": model}
+
+
+@router.post("/openai/connect")
+async def connect_openai(user=Depends(get_current_user)):
+    """Start OpenAI PKCE OAuth flow. Returns {flow_id, auth_url} for the
+    frontend to open in a popup and poll until /openai/connect/complete."""
+    try:
+        return start_oauth_flow("openai")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/openai/connect/complete")
+async def connect_openai_complete(body: CompleteOAuthRequest, user=Depends(get_current_user)):
+    """Finalize OpenAI OAuth setup after the callback stashes tokens."""
+    flow = consume_flow(body.flow_id)
+    if not flow:
+        raise HTTPException(status_code=404, detail="OAuth flow not found or expired")
+    if flow.status != "ok" or not flow.tokens:
+        raise HTTPException(status_code=400, detail=flow.error or "OAuth flow incomplete")
+
+    tokens = flow.tokens
+    store = CredentialStore()
+    store.set_oauth_tokens(
+        provider="openai",
+        access_token=tokens["access_token"],
+        refresh_token=tokens.get("refresh_token", ""),
+        expires_in=tokens.get("expires_in", 3600),
+        model="gpt-5.4",
+    )
+    await _materialize_inferred_tiers("openai", "gpt-5.4")
+    return {"ok": True, "provider": "openai"}
+
+# ── Connect DeepSeek (API key) ───────────────────────────────────────────────
+
+class DeepSeekKeyRequest(BaseModel):
+    api_key: str
+    model: str = "deepseek-v4-flash"
+
+
+@router.post("/deepseek/connect")
+@router.post("/deepseek/connect-key")
+async def connect_deepseek_key(
+    body: DeepSeekKeyRequest,
+    user=Depends(get_current_user)
+):
+    """Validate and store a DeepSeek API key."""
+
+    from core.providers.deepseek_provider import DeepSeekProvider
+
+    logger.info("DeepSeek connect-key model=%s", body.model)
+
+    provider = DeepSeekProvider(
+        access_token=body.api_key,
+        model=body.model
+    )
+
+    if not await provider.validate():
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid DeepSeek API key"
+        )
+
+    store = CredentialStore()
+
+    store.set_api_key(
+        "deepseek",
+        body.api_key,
+        model=body.model
+    )
+
+    model = await _materialize_inferred_tiers(
+        "deepseek",
+        body.model
+    )
+
+    return {
+        "ok": True,
+        "provider": "deepseek",
+        "model": model
+    }
+
+
+# ── Connect Ollama (local) ────────────────────────────────────────────────────
+
+class OllamaConnectRequest(BaseModel):
+    base_url: str = "http://localhost:11434"
+    model: str = ""
+
+
+@router.post("/ollama/connect")
+async def connect_ollama(body: OllamaConnectRequest, user=Depends(get_current_user)):
+    """Validate Ollama is reachable and store the connection."""
+    from core.providers.ollama_provider import OllamaProvider
+    provider = OllamaProvider(base_url=body.base_url)
+    if not await provider.validate():
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot connect to Ollama. Make sure it's running (ollama serve).",
+        )
+    models = await provider.list_models()
+    if not models:
+        raise HTTPException(
+            status_code=400,
+            detail="Ollama is running but no models are installed. Run: ollama pull qwen3.5:4b",
+        )
+    selected = body.model if body.model in models else models[0]
+    
+    logger.info(
+    "Ollama connect: body.model=%s models=%s selected=%s",
+    body.model,
+    models,
+    selected,
+    )
+
+    store = CredentialStore()
+
+    store.set_ollama(
+    base_url=body.base_url,
+    model=selected
+    )
+    
+    return {"ok": True, "provider": "ollama", "models": models, "model": selected}
+
+
+@router.get("/ollama/status")
+async def ollama_status(user=Depends(get_current_user)):
+    """Check if Ollama is running locally (auto-detect for frontend)."""
+    from core.providers.ollama_provider import OllamaProvider
+    provider = OllamaProvider()
+    try:
+        reachable = await provider.validate()
+        models = await provider.list_models() if reachable else []
+    except Exception:
+        reachable, models = False, []
+    return {"reachable": reachable, "models": models}
+
+
+# ── Connect Together AI (API key) ────────────────────────────────────────────
+
+class TogetherConnectRequest(BaseModel):
+    api_key: str
+    model: str = "Qwen/Qwen3.5-9B"
+
+
+@router.post("/together/connect")
+async def connect_together(body: TogetherConnectRequest, user=Depends(get_current_user)):
+    """Validate and store a Together AI API key."""
+    from core.providers.together_provider import TogetherProvider
+    provider = TogetherProvider(api_key=body.api_key, model=body.model)
+    if not await provider.validate():
+        detail = "Invalid Together AI API key"
+        if provider.last_error:
+            detail = f"Together AI rejected the key: {provider.last_error}"
+        raise HTTPException(status_code=400, detail=detail)
+
+    store = CredentialStore()
+    store.set_api_key("together", body.api_key, model=body.model)
+    model = await _materialize_inferred_tiers("together", body.model)
+    return {"ok": True, "provider": "together", "model": model}
+
+
+# ── Disconnect ────────────────────────────────────────────────────────────────
+
+@router.post("/{provider}/disconnect")
+async def disconnect_provider(provider: str, user=Depends(get_current_user)):
+    """Remove credentials for a provider."""
+    if provider not in ("anthropic", "openai", "google", "deepseek", "ollama", "together"):
+        raise HTTPException(status_code=404, detail="Unknown provider")
+
+    store = CredentialStore()
+    store.remove_provider(provider)
+    return {"ok": True, "provider": provider}
+
+
+# ── Set active provider / model ───────────────────────────────────────────────
+
+class SetActiveRequest(BaseModel):
+    provider: str
+    model: str
+
+
+@router.put("/active")
+async def set_active(body: SetActiveRequest, user=Depends(get_current_user)):
+    """Switch the active provider and model."""
+    store = CredentialStore()
+    _, profile = store.get_active_profile(provider_override=body.provider)
+    if not profile:
+        raise HTTPException(status_code=400, detail=f"No credentials for provider: {body.provider}")
+
+    store.set_active_provider(body.provider)
+    store.set_active_model(body.model)
+    return {"ok": True, "provider": body.provider, "model": body.model}
+
+
+# ── List models ───────────────────────────────────────────────────────────────
+
+@router.get("/{provider}/models")
+async def list_models(provider: str, user=Depends(get_current_user)):
+    """Return available models for the given provider."""
+    from core.providers import get_ai_provider
+    p = get_ai_provider(agent_provider=provider)
+    if not p:
+        raise HTTPException(status_code=400, detail=f"Provider not configured: {provider}")
+    models = await p.list_models()
+    return {"provider": provider, "models": models}
+
+
+# ── Token refresh ─────────────────────────────────────────────────────────────
+
+@router.post("/google/refresh")
+async def refresh_google(user=Depends(get_current_user)):
+    """Refresh the Google OAuth access token using the stored refresh token."""
+    store = CredentialStore()
+    profile = store.data.get("profiles", {}).get("google:default", {})
+    refresh_token = profile.get("refresh", "")
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="No Google refresh token stored")
+
+    try:
+        tokens = await refresh_google_token(refresh_token)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Token refresh failed: {e}")
+
+    store.set_oauth_tokens(
+        provider="google",
+        access_token=tokens["access_token"],
+        refresh_token=refresh_token,  # keep existing refresh token
+        expires_in=tokens.get("expires_in", 3600),
+        set_active=False,  # token refresh must not reset the active provider/model
+    )
+    return {"ok": True}
+
+
+# ── CLI credential sync ──────────────────────────────────────────────────────
+
+@router.post("/openai/sync-cli")
+async def sync_openai_cli(user=Depends(get_current_user)):
+    """Import OpenAI credentials from local CLI config (~/.codex/auth.json)."""
+    import json
+    from pathlib import Path
+
+    # Try known OpenAI CLI credential locations
+    candidates = [
+        Path.home() / ".codex" / "auth.json",
+        Path.home() / ".openai" / "auth.json",
+    ]
+
+    for cred_path in candidates:
+        if not cred_path.exists():
+            continue
+        try:
+            data = json.loads(cred_path.read_text(encoding="utf-8"))
+            auth_mode = data.get("auth_mode", "")
+
+            # Prefer an explicit API key if set
+            api_key = data.get("OPENAI_API_KEY") or data.get("api_key")
+
+            if api_key:
+                from core.providers.openai_provider import OpenAIProvider
+                provider = OpenAIProvider(access_token=api_key)
+                if await provider.validate():
+                    store = CredentialStore()
+                    store.set_api_key("openai", api_key, model="deepseek-v4-flash")
+                    await _materialize_inferred_tiers("openai", "deepseek-v4-flash")
+                    return {"ok": True, "provider": "openai", "source": str(cred_path)}
+
+            # ChatGPT mode: validate via the Node.js proxy sidecar
+            if auth_mode == "chatgpt":
+                tokens = data.get("tokens", {})
+                access_token = tokens.get("access_token")
+                refresh_token = tokens.get("refresh_token", "")
+                if access_token:
+                    # Validate through the ChatGPT proxy
+                    try:
+                        validate_resp = await httpx.AsyncClient().post(
+                            "http://127.0.0.1:9877/v1/validate",
+                            json={"token": access_token},
+                            timeout=30,
+                        )
+                        result = validate_resp.json()
+                        if result.get("valid"):
+                            store = CredentialStore()
+                            store.set_chatgpt_oauth(
+                                access_token=access_token,
+                                refresh_token=refresh_token,
+                                expires_in=864000,  # ~10 days
+                            )
+                            await _materialize_inferred_tiers("openai", "deepseek-v4-flash")
+                            return {"ok": True, "provider": "openai", "source": str(cred_path), "mode": "chatgpt"}
+                        else:
+                            raise HTTPException(status_code=400, detail=result.get("error", "Token validation failed"))
+                    except httpx.ConnectError:
+                        raise HTTPException(
+                            status_code=503,
+                            detail="ChatGPT proxy is not running. Start it with: node backend/chatgpt-proxy/server.mjs",
+                        )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning("Failed to read %s: %s", cred_path, e)
+
+    raise HTTPException(
+        status_code=404,
+        detail="No OpenAI CLI credentials found. Install the OpenAI CLI and sign in first, or use an API key instead."
+    )

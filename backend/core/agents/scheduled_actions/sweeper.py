@@ -1,0 +1,117 @@
+"""Chatty — Scheduled actions maintenance sweeper.
+
+Runs every 5 minutes via APScheduler to enforce retention, correct
+next_run drift after downtime, and release expired leases.
+"""
+
+import logging
+from datetime import datetime, timedelta, timezone
+
+from core.agents.reminders import db
+
+logger = logging.getLogger(__name__)
+
+
+def sweep() -> None:
+    """Run all maintenance tasks. Called by APScheduler every 5 minutes."""
+    try:
+        from core.agents.scheduled_actions import history as history_mod
+        from core.agents.scheduled_actions import service
+        from core.agents.alerts import service as alerts_service
+
+        cleaned_history = history_mod.cleanup_old()
+        cleaned_alerts = alerts_service.cleanup_old(retention_days=30)
+        cleaned_usage = _cleanup_context_usage(retention_days=90)
+        fixed_drift = _fix_next_run_drift()
+        released_leases = service.release_expired_leases()
+
+        service.ensure_default_actions_all()
+
+        healed_google = _try_heal_google()
+
+        if cleaned_history or cleaned_alerts or cleaned_usage or fixed_drift or released_leases or healed_google:
+            logger.info(
+                "Sweeper: cleaned %d history, %d alerts, %d usage, fixed %d drifted, released %d leases, healed %d Google",
+                cleaned_history, cleaned_alerts, cleaned_usage, fixed_drift, released_leases, healed_google,
+            )
+    except Exception as e:
+        logger.error("Sweeper failed: %s", e)
+
+
+def _try_heal_google() -> int:
+    try:
+        from integrations.google.client import try_heal_broken_accounts
+        healed = try_heal_broken_accounts()
+        if healed:
+            logger.info("Sweeper: self-healed %d Google account(s): %s", len(healed), healed)
+        return len(healed)
+    except Exception as e:
+        logger.debug("Google self-heal skipped: %s", e)
+        return 0
+
+
+def _cleanup_context_usage(retention_days: int = 90) -> int:
+    try:
+        from core.agents.dreaming.tracker import cleanup_old
+        return cleanup_old(retention_days=retention_days)
+    except Exception as e:
+        logger.debug("Context usage cleanup skipped: %s", e)
+        return 0
+
+
+def _fix_next_run_drift() -> int:
+    from core.agents.scheduled_actions import service
+
+    conn = db.get_db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+
+    with db.write_lock():
+        rows = conn.execute(
+            """SELECT id, interval_minutes FROM scheduled_actions
+               WHERE enabled = 1 AND next_run IS NOT NULL AND next_run < ?
+               AND schedule_type = 'interval'
+               AND (lease_id IS NULL OR leased_until <= ?)""",
+            (cutoff, now),
+        ).fetchall()
+
+        fixed = 0
+        for row in rows:
+            interval = row["interval_minutes"] or 30
+            new_next = (datetime.now(timezone.utc) + timedelta(minutes=interval)).strftime("%Y-%m-%dT%H:%M:%S")
+            conn.execute(
+                "UPDATE scheduled_actions SET next_run = ?, updated_at = ? WHERE id = ?",
+                (new_next, now, row["id"]),
+            )
+            fixed += 1
+            logger.info("Sweeper: reset drifted next_run for interval action %s", row["id"][:8])
+
+        if fixed:
+            conn.commit()
+
+        cron_rows = conn.execute(
+            """SELECT * FROM scheduled_actions
+               WHERE enabled = 1 AND next_run IS NOT NULL AND next_run < ?
+               AND schedule_type = 'cron'
+               AND (lease_id IS NULL OR leased_until <= ?)""",
+            (cutoff, now),
+        ).fetchall()
+
+        for row in cron_rows:
+            try:
+                action = dict(row)
+                new_next = service.compute_next_run(action)
+                if new_next:
+                    conn.execute(
+                        "UPDATE scheduled_actions SET next_run = ?, updated_at = ? WHERE id = ?",
+                        (new_next, now, row["id"]),
+                    )
+                    fixed += 1
+                    logger.info("Sweeper: reset drifted next_run for cron action %s", row["id"][:8])
+            except Exception as e:
+                logger.warning("Sweeper: failed to fix cron drift for %s: %s", row["id"][:8], e)
+
+        if fixed:
+            conn.commit()
+
+    return fixed
