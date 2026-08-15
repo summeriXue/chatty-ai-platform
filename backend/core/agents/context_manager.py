@@ -616,13 +616,114 @@ class ContextManager:
             if semantic_results:
                 return semantic_results
 
-        # Fallback: BM25-lite keyword matching
-        query_tokens = _tokenize(first_user_message)
-        if not query_tokens:
-            return []
-        query_set = set(query_tokens)
+        # Fallback: structured facts + BM25-lite keyword matching
 
         results: list[tuple[float, dict]] = []
+
+        normalized_query = first_user_message.strip().lower()
+
+        # Some short/non-English queries may produce no tokens with the
+        # BM25-lite tokenizer. Structured facts should still be recallable,
+        # so fact matching happens BEFORE the empty-token early return.
+        query_tokens = _tokenize(first_user_message)
+        query_set = set(query_tokens) if query_tokens else set()
+
+        # Facts
+        # Facts are included in the fallback so important structured memory can
+        # still be recalled before vector embeddings are ready.
+        if memory_db is not None:
+            try:
+                conn = memory_db.get_db()
+
+                fact_rows = conn.execute(
+                    """
+                    SELECT id, subject, predicate, object, memory_type, confidence
+                    FROM facts
+                    WHERE valid_to IS NULL
+                    ORDER BY confidence DESC, id DESC
+                    """
+                ).fetchall()
+
+                # Explicit semantic fallback for common identity/name
+                # questions that may not tokenize or keyword-match well.
+                name_question = any(
+                    phrase in normalized_query
+                    for phrase in (
+                        "我叫什么",
+                        "我的名字",
+                        "我是谁",
+                        "what is my name",
+                        "what's my name",
+                        "who am i",
+                    )
+                )
+
+                for row in fact_rows:
+                    subject = row["subject"] or ""
+                    predicate = row["predicate"] or ""
+                    obj = row["object"] or ""
+
+                    fact_text = f"{subject} {predicate} {obj}".strip()
+
+                    # Keyword score is available when tokenization succeeds.
+                    if query_set:
+                        score = _score_match(
+                            query_set,
+                            name=f"{subject} {predicate}",
+                            headline=f"{subject} {predicate}",
+                            body=fact_text,
+                        )
+                    else:
+                        score = 0.0
+
+                    predicate_text = predicate.lower()
+
+                    name_fact = any(
+                        marker in predicate_text
+                        for marker in (
+                            "名字",
+                            "姓名",
+                            "name",
+                            "has name",
+                            "is named",
+                        )
+                    )
+
+                    if name_question and name_fact:
+                        score = max(score, 10.0)
+
+                    if score > 0:
+                        results.append(
+                            (
+                                score,
+                                {
+                                    "kind": "fact",
+                                    "name": f"{subject} {predicate}".strip(),
+                                    "content": fact_text,
+                                    "id": f"fact:{row['id']}",
+                                },
+                            )
+                        )
+
+            except Exception as e:
+                logger.debug(
+                    "Fact fallback search failed: %s",
+                    e,
+                    exc_info=True,
+                )
+
+        # If tokenization produced nothing, topic/daily BM25 cannot work.
+        # Return any structured facts that were matched above instead of
+        # discarding them.
+        if not query_tokens:
+            results.sort(key=lambda pair: pair[0], reverse=True)
+            return [
+                {
+                    **item,
+                    "content": sanitize_memory_content(item["content"]),
+                }
+                for _, item in results
+            ]
 
         # Topic files
         for f in self._manifest_topic_files():
@@ -630,47 +731,65 @@ class ContextManager:
                 content = f.read_text(encoding="utf-8")
             except Exception:
                 continue
+
             score = _score_match(
                 query_set,
                 name=f.name,
                 headline=_first_headline(content),
                 body=content,
             )
+
             if score > 0:
-                results.append((score, {
-                    "kind": "topic",
-                    "name": f.name,
-                    "content": content,
-                    "id": f"topic:{f.name}",
-                }))
+                results.append((
+                    score,
+                    {
+                        "kind": "topic",
+                        "name": f.name,
+                        "content": content,
+                        "id": f"topic:{f.name}",
+                    },
+                ))
 
         # Recent daily notes (last ~30), skipping today (already loaded)
         today = self._today_str()
+
         for entry in self.list_daily_notes(limit=30):
             if entry["date"] == today:
                 continue
+
             content = self.read_daily_note(entry["date"])
+
             if not content:
                 continue
+
             score = _score_match(
                 query_set,
                 name=entry["name"],
                 headline=entry["headline"],
                 body=content,
             )
+
             if score > 0:
-                results.append((score, {
-                    "kind": "daily",
-                    "name": entry["date"],
-                    "content": content,
-                    "id": f"daily:{entry['date']}",
-                }))
+                results.append((
+                    score,
+                    {
+                        "kind": "daily",
+                        "name": entry["date"],
+                        "content": content,
+                        "id": f"daily:{entry['date']}",
+                    },
+                ))
 
         # Sort by score descending, sanitize content
         results.sort(key=lambda pair: pair[0], reverse=True)
 
-        return [{**item, "content": sanitize_memory_content(item["content"])}
-                for _, item in results]
+        return [
+            {
+                **item,
+                "content": sanitize_memory_content(item["content"]),
+            }
+            for _, item in results
+        ]
 
     def _semantic_prefetch(self, message: str, memory_db) -> list[dict]:
         """Use hybrid search for proactive memory surfacing.
@@ -713,7 +832,6 @@ class ContextManager:
                 return []
 
             # Hydrate full content for injection into prompt
-    
             conn = memory_db.get_db()
             results = []
             for hit in search_results:

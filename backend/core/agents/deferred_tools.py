@@ -119,10 +119,20 @@ SEARCH_ALIASES: dict[str, tuple[list[str], list[str], list[str]]] = {
 }
 
 
-def should_defer_tools(tool_count: int, max_iterations: int = 20) -> bool:
+def should_defer_tools(
+    tool_count: int,
+    max_iterations: int = 20,
+    threshold: int | None = None,
+) -> bool:
     """Shared gating: returns True if deferred loading should be used."""
+    effective_threshold = (
+        threshold
+        if threshold is not None
+        else DEFERRED_TOOL_THRESHOLD
+    )
+
     return (
-        tool_count > DEFERRED_TOOL_THRESHOLD
+        tool_count > effective_threshold
         and max_iterations >= MIN_ITERATIONS_FOR_DEFERRAL
     )
 
@@ -209,6 +219,136 @@ def build_tool_catalog(
         catalog_text = "\n".join(truncated_lines)
 
     return active, deferred, deferred_names, catalog_text
+
+
+def rank_tools_for_request(
+    user_text: str,
+    tools: list[dict],
+) -> list[dict]:
+    """Rank matched tools by relevance to the user's current request.
+
+    Uses both action intent (list/create/update/delete...)
+    and entity intent (contact/task/deal/pipeline...)
+    so small models receive a narrower, more relevant tool set.
+    """
+    text = (user_text or "").strip().lower()
+
+    # ── Action intent ────────────────────────────────────────────────
+    intent_hints = {
+        "list": (
+            "有哪些", "都有哪些", "看看", "列出", "列表", "全部",
+            "list", "show", "all",
+        ),
+        "find": (
+            "查找", "搜索", "找一下", "找到", "查询",
+            "find", "search", "lookup",
+        ),
+        "get": (
+            "详情", "详细", "具体信息",
+            "get", "detail", "details",
+        ),
+        "create": (
+            "创建", "新增", "添加", "新建",
+            "create", "add", "new",
+        ),
+        "update": (
+            "修改", "更新", "编辑", "改一下",
+            "update", "edit", "modify",
+        ),
+        "delete": (
+            "删除", "移除", "删掉",
+            "delete", "remove",
+        ),
+        "complete": (
+            "完成", "办完", "完成任务",
+            "complete", "finish",
+        ),
+    }
+
+    detected_intents: set[str] = set()
+
+    for intent, hints in intent_hints.items():
+        if any(hint in text for hint in hints):
+            detected_intents.add(intent)
+
+    # ── Entity intent ────────────────────────────────────────────────
+    entity_hints = {
+        "contact": (
+            "联系人", "客户", "客户信息",
+            "contact", "customer",
+        ),
+        "task": (
+            "任务", "待办", "跟进任务",
+            "task", "todo", "follow-up", "follow up",
+        ),
+        "deal": (
+            "交易", "商机", "销售机会",
+            "deal", "opportunity",
+        ),
+        "pipeline": (
+            "管道", "销售流程", "销售漏斗",
+            "pipeline",
+        ),
+    }
+
+    detected_entities: set[str] = set()
+
+    for entity, hints in entity_hints.items():
+        if any(hint in text for hint in hints):
+            detected_entities.add(entity)
+
+    known_entities = set(entity_hints.keys())
+
+    def _score(tool: dict) -> float:
+        name = tool.get("name", "").lower()
+        description = tool.get("description", "").lower()
+
+        score = 0.0
+
+        # ── Action score ─────────────────────────────────────────────
+        for intent in detected_intents:
+            if f"_{intent}_" in name or name.endswith(f"_{intent}"):
+                score += 10.0
+            elif intent in name:
+                score += 6.0
+            elif intent in description:
+                score += 2.0
+
+        # Read/browse requests should favor read-style tools.
+        if any(
+            word in text
+            for word in (
+                "看看", "查询", "有哪些", "列出",
+                "show", "list",
+            )
+        ):
+            if any(
+                op in name
+                for op in ("list", "find", "get", "search")
+            ):
+                score += 2.0
+
+        # ── Entity score ─────────────────────────────────────────────
+        for entity in detected_entities:
+            if entity in name:
+                score += 12.0
+            elif entity in description:
+                score += 4.0
+
+        # Penalize tools for a different entity.
+        if detected_entities:
+            for entity in known_entities:
+                if entity in name and entity not in detected_entities:
+                    score -= 8.0
+
+        return score
+
+    # Stable sort: equal scores keep execute_find_tools() original order.
+    return sorted(
+        tools,
+        key=_score,
+        reverse=True,
+    )
 
 
 def execute_find_tools(query: str, deferred_tools: list[dict]) -> dict:

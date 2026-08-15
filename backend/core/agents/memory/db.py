@@ -581,20 +581,44 @@ class MemoryDB:
             self.index_document(src_type, src_id, title, content, memory_type=mem_type, date=doc_date, embed=False)
             stats["documents_indexed"] += 1
 
-        # 3. Remove docs that no longer exist on disk
+        # 3. Remove file-backed docs that no longer exist on disk
         all_docs = conn.execute(
             "SELECT source_type, source_id FROM memory_documents WHERE source_type != 'fact'"
         ).fetchall()
+
         for row in all_docs:
             key = (row["source_type"], row["source_id"])
             if key not in expected:
                 self.remove_document(row["source_type"], row["source_id"])
                 stats["removed"] += 1
 
-        # 4. Re-index active facts
-        fact_rows = conn.execute(
-            "SELECT id, subject, predicate, object, valid_from, memory_type FROM facts WHERE valid_to IS NULL"
+        # 4. Remove stale fact documents whose fact row no longer exists
+        active_fact_ids = {
+            str(row["id"])
+            for row in conn.execute(
+                "SELECT id FROM facts WHERE valid_to IS NULL"
+            ).fetchall()
+        }
+
+        indexed_fact_docs = conn.execute(
+            "SELECT source_id FROM memory_documents WHERE source_type = 'fact'"
         ).fetchall()
+
+        for row in indexed_fact_docs:
+            source_id = str(row["source_id"])
+            if source_id not in active_fact_ids:
+                self.remove_document("fact", source_id)
+                stats["removed"] += 1
+
+        # 5. Re-index active facts
+        fact_rows = conn.execute(
+            """
+            SELECT id, subject, predicate, object, valid_from, memory_type
+            FROM facts
+            WHERE valid_to IS NULL
+            """
+        ).fetchall()
+
         for row in fact_rows:
             self.index_document(
                 "fact",

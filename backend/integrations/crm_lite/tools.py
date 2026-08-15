@@ -32,25 +32,62 @@ CRM_LITE_TOOL_DEFS = [
     {
         "name": "crm_create_contact",
         "description": (
-            "Create a new contact in the CRM. Use when the user mentions a new customer, prospect, "
-            "or person they want to track."
+            "Create a new contact in the CRM. Use when the user mentions a new customer, "
+            "prospect, or person they want to track. "
+            "IMPORTANT: Only include field values explicitly provided by the user or "
+            "already known from reliable context. Never invent or guess email addresses, "
+            "phone numbers, company names, titles, tags, notes, or other contact details."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "name": {"type": "string", "description": "Full name"},
-                "email": {"type": "string", "default": ""},
-                "phone": {"type": "string", "default": ""},
-                "company": {"type": "string", "default": ""},
-                "title": {"type": "string", "description": "Job title", "default": ""},
-                "source": {"type": "string", "description": "How they found you: referral, website, cold_call, social, event, other", "default": ""},
-                "status": {"type": "string", "description": "active, inactive, or archived", "default": "active"},
-                "tags": {"type": "string", "description": "Comma-separated tags", "default": ""},
-                "notes": {"type": "string", "default": ""},
+                "name": {
+                    "type": "string",
+                    "description": "Full name. Must come from the user or reliable existing context.",
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Email address. Only provide if explicitly known; otherwise omit this field.",
+                },
+                "phone": {
+                    "type": "string",
+                    "description": "Phone number. Only provide if explicitly known; otherwise omit this field.",
+                },
+                "company": {
+                    "type": "string",
+                    "description": "Company name. Only provide if explicitly known; otherwise omit this field.",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Job title. Only provide if explicitly known; otherwise omit this field.",
+                },
+                "source": {
+                    "type": "string",
+                    "description": (
+                        "How they found you: referral, website, cold_call, social, event, other. "
+                        "Only provide if explicitly known; otherwise omit this field."
+                    ),
+                },
+                "status": {
+                    "type": "string",
+                    "description": (
+                        "active, inactive, or archived. "
+                        "Only provide if explicitly requested or known; otherwise omit this field."
+                    ),
+                },
+                "tags": {
+                    "type": "string",
+                    "description": "Comma-separated tags. Only provide if explicitly known; otherwise omit this field.",
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Contact notes. Only provide if explicitly known; otherwise omit this field.",
+                },
             },
             "required": ["name"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_update_contact",
@@ -75,6 +112,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["contact_id"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_get_contact",
@@ -119,6 +157,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["contact_id"],
         },
         "kind": "integration",
+        "writes": True,
     },
 
     # ── Deals (5 tools) ──────────────────────────────────────────────────────
@@ -161,6 +200,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["title"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_update_deal",
@@ -183,6 +223,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["deal_id"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_update_deal_stage",
@@ -196,6 +237,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["deal_id", "stage"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_get_deal",
@@ -228,6 +270,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["activity"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_get_activity_log",
@@ -264,6 +307,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["title"],
         },
         "kind": "integration",
+        "writes": True,
     },
     {
         "name": "crm_list_tasks",
@@ -296,6 +340,7 @@ CRM_LITE_TOOL_DEFS = [
             "required": ["task_id"],
         },
         "kind": "integration",
+        "writes": True,
     },
 
     # ── Analytics (1 tool) ────────────────────────────────────────────────────

@@ -9,13 +9,8 @@ import logging
 from typing import AsyncGenerator
 
 import httpx
-import openai
 
-from core.providers.base import AIProvider
-from core.providers.openai_compat import (
-    build_openai_tool_results,
-    stream_openai_turn,
-)
+from core.providers.openai_compat import OpenAICompatibleProvider
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +32,18 @@ def _is_tool_capable(model_name: str) -> bool:
     return any(base == family or base.startswith(family + "-") for family in TOOL_CAPABLE_FAMILIES)
 
 
-class OllamaProvider(AIProvider):
+class OllamaProvider(OpenAICompatibleProvider):
     _tool_support_cache: dict[str, bool] = {}
 
     def __init__(self, base_url: str = "http://localhost:11434", model: str = ""):
-        print("OLLAMA INIT MODEL =", model)
-        super().__init__(model=model)
-        self.base_url = base_url.rstrip("/")
+
+        self.ollama_url = base_url.rstrip("/")
+
+        super().__init__(
+            api_key="ollama",
+            base_url=f"{self.ollama_url}/v1",
+            model=model,
+        )
 
     @property
     def provider_name(self) -> str:
@@ -73,10 +73,8 @@ class OllamaProvider(AIProvider):
         self,
         messages: list[dict],
         tools: list[dict],
-        system_prompt: "str | tuple[str, str]",
+        system_prompt: str | tuple[str, str],
     ) -> AsyncGenerator[dict, None]:
-        if isinstance(system_prompt, tuple):
-            system_prompt = "\n".join(system_prompt)
 
         if not self.model:
             models = await self.list_models()
@@ -95,34 +93,21 @@ class OllamaProvider(AIProvider):
                 )
             ]
 
-        if chat_models:
-            self.model = chat_models[0]
-        elif models:
-            self.model = models[0]
-        logger.info("Auto selected Ollama model: %s", self.model)
-
-        client = openai.AsyncOpenAI(
-            api_key="ollama",
-            base_url=f"{self.base_url}/v1",
-        )
+            if chat_models:
+                self.model = chat_models[0]
+            elif models:
+                self.model = models[0]
+            logger.info("Auto selected Ollama model: %s", self.model)
 
         # Skip tools for models known not to support them
         model_known_no_tools = OllamaProvider._tool_support_cache.get(self.model) is False
         effective_tools = [] if model_known_no_tools else tools
 
-        if model_known_no_tools and tools:
-            recommendation = await self._recommend_tool_models()
-            yield {"type": "error", "error": recommendation}
 
-        needs_retry = False
-
-        async for event in stream_openai_turn(
-            client=client,
-            model=self.model,
+        async for event in super().stream_turn(
             messages=messages,
             tools=effective_tools,
             system_prompt=system_prompt,
-            max_tokens=4096,
         ):
             # Detect "does not support tools" and retry without them
             if (
@@ -131,54 +116,22 @@ class OllamaProvider(AIProvider):
                 and effective_tools
             ):
                 OllamaProvider._tool_support_cache[self.model] = False
-                needs_retry = True
-                continue
-
-            if needs_retry:
-                continue
+                yield {"type": "error", "error": await self._recommend_tool_models()}
+                return
 
             if event.get("type") == "error" and event.get("error") == "connection_error":
                 yield {
                     "type": "error",
-                    "error": f"Cannot connect to Ollama at {self.base_url}. Is it running? Start with: ollama serve",
+                    "error": f"Cannot connect to Ollama at {self.ollama_url}. Is it running? Start with: ollama serve",
                 }
             else:
                 yield event
-
-        if needs_retry:
-            logger.info("Model %s does not support tools, retrying without", self.model)
-            recommendation = await self._recommend_tool_models()
-            yield {"type": "error", "error": recommendation}
-
-            async for event in stream_openai_turn(
-                client=client,
-                model=self.model,
-                messages=messages,
-                tools=[],
-                system_prompt=system_prompt,
-                max_tokens=4096,
-            ):
-                if event.get("type") == "error" and event.get("error") == "connection_error":
-                    yield {
-                        "type": "error",
-                        "error": f"Cannot connect to Ollama at {self.base_url}. Is it running? Start with: ollama serve",
-                    }
-                else:
-                    yield event
-
-    def add_tool_results(
-        self,
-        messages: list[dict],
-        tool_calls: list[dict],
-        results: list[dict],
-    ) -> list[dict]:
-        return build_openai_tool_results(messages, tool_calls, results)
 
     async def list_models(self) -> list[str]:
         """Return locally-installed Ollama model names."""
         try:
             async with httpx.AsyncClient(timeout=5) as client:
-                resp = await client.get(f"{self.base_url}/api/tags")
+                resp = await client.get(f"{self.ollama_url}/api/tags")
                 resp.raise_for_status()
                 data = resp.json()
                 return [m["name"] for m in data.get("models", [])]
@@ -190,7 +143,7 @@ class OllamaProvider(AIProvider):
         """Check if Ollama is reachable (no inference burn)."""
         try:
             async with httpx.AsyncClient(timeout=3) as client:
-                resp = await client.get(f"{self.base_url}/api/tags")
+                resp = await client.get(f"{self.ollama_url}/api/tags")
                 return resp.status_code == 200
         except Exception:
             return False

@@ -47,7 +47,7 @@ from .security.scanner import sanitize_memory_content
 from .tools.real_tools import load_all_real_tools
 from .deferred_tools import (
     should_defer_tools, build_tool_catalog, handle_deferred_tool_call,
-    load_deferred_tools, build_provider_tools, FIND_TOOLS_DEF,
+    load_deferred_tools, build_provider_tools, execute_find_tools, rank_tools_for_request, FIND_TOOLS_DEF, SEARCH_ALIASES,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,44 @@ KNOWLEDGE_CHECKPOINT_EVERY = 4
 # OrderedDict for LRU eviction — move_to_end on access, pop oldest on overflow.
 _prefetch_state: OrderedDict[tuple[str, str], dict] = OrderedDict()
 
+def _bind_ollama_deferred_args(
+    deferred_calls: list[dict],
+    successful_write_results: dict[str, dict],
+) -> list[dict]:
+    """Bind real upstream write results into dependent deferred tool args.
+
+    Small local models may guess IDs before seeing the result of an earlier
+    write. This applies deterministic bindings for known dependency pairs.
+    """
+    bound_calls: list[dict] = []
+
+    created_contact = successful_write_results.get("crm_create_contact")
+    real_contact_id = None
+
+    if isinstance(created_contact, dict):
+        real_contact_id = created_contact.get("id")
+
+    for call in deferred_calls:
+        bound_call = {
+            "tool": call.get("tool", ""),
+            "args": dict(call.get("args", {})),
+        }
+
+        if (
+            bound_call["tool"] == "crm_create_task"
+            and real_contact_id is not None
+        ):
+            bound_call["args"]["contact_id"] = real_contact_id
+
+        if (
+            bound_call["tool"] == "crm_get_contact"
+            and real_contact_id is not None
+        ):
+            bound_call["args"]["contact_id"] = real_contact_id
+
+        bound_calls.append(bound_call)
+
+    return bound_calls
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
@@ -532,7 +570,11 @@ def _build_system_prompt(
     if first_user_message:
         from core.agents.memory.db import get_instance as _get_memory_db
         _memory_db = _get_memory_db(str(ctx_manager.data_dir))
-        relevant = ctx_manager.relevance_prefetch(first_user_message, memory_db=_memory_db)
+        relevant = ctx_manager.relevance_prefetch(
+            first_user_message,
+            memory_db=_memory_db,
+        )
+
         if relevant:
             prefetch_parts: list[str] = []
             prefetch_chars = 0
@@ -629,6 +671,7 @@ def _build_system_prompt(
     ])
 
     volatile_text = "\n".join(volatile_parts)
+
     return (static_text, volatile_text)
 
 
@@ -680,7 +723,33 @@ You have a structured memory system beyond basic context files:
 - **Shared Context** — Use `list_shared_context` / `read_shared_context` / `write_shared_context` to access knowledge shared across all agents. Share team-relevant knowledge proactively — don't keep it to yourself.
 - **Conversation History** — Use `search_conversation_history` to find past discussions. When the user asks "what did we decide about X" or references something you discussed before, search conversations rather than guessing.
 
-**Memory guideline:** When asked about past events, decisions, or conversations, check your daily notes and MEMORY.md using `search_memory`, and search conversation history using `search_conversation_history`, rather than guessing. If you're not sure about a fact, say so — don't fabricate memories."""
+### Writing Memory
+
+When the user explicitly asks you to remember, save, store, or keep something for later, you MUST actually write it to memory using an appropriate memory tool. Do not merely say that you will remember it.
+
+- Use `add_fact` for durable structured facts explicitly provided by the user, such as their name, preferences, relationships, roles, or other stable facts.
+- Use `append_daily_note` for events, decisions, milestones, tasks, and information tied to the current day or conversation.
+- Use `read_memory` followed by `update_memory` when information belongs in the long-term MEMORY.md snapshot.
+- Only save information that was actually provided by the user or returned from a trusted source. NEVER invent, infer, substitute, or guess a fact in order to save it.
+- A successful memory write completes that memory action. After a memory write tool returns success, do NOT call another memory write tool for the same information unless the user explicitly provided additional information that still needs to be saved.
+- Tool results confirming a memory write are not new facts that need to be saved again.
+- After successfully saving the requested information, acknowledge what was saved and continue with a normal response.
+- If the user explicitly asks you to remember something, perform the memory write before confirming that it has been remembered.
+
+Example:
+User: "Remember that my name is Xue Hao."
+Action: call `add_fact` once to store the fact that the user's name is Xue Hao.
+After the tool succeeds: reply that the name has been remembered. Do not call `add_fact` again and do not invent another name.
+
+### Reading Memory
+
+When asked about past events, decisions, facts, or conversations, check your memory instead of guessing.
+
+- Use `search_memory` to search daily notes, MEMORY.md, topic files, and facts.
+- Use `query_facts` when looking for structured facts about a person, organization, relationship, or preference.
+- Use `search_conversation_history` when the user refers to something discussed in a previous conversation.
+- If you're not sure about a fact after checking memory, say so — don't fabricate memories.
+"""
 
 
 # ── Background GCS sync ────────────────────────────────────────────────────────
@@ -935,9 +1004,134 @@ async def chat(
     deferred_tools: list[dict] = []
     deferred_names: set[str] = set()
     catalog_text = ""
-    if should_defer_tools(len(tool_defs)):
+
+    # Smaller local models are more sensitive to large tool schemas.
+    # Use a lower deferred-loading threshold for Ollama while keeping
+    # the existing global threshold for stronger/cloud providers.
+    deferred_threshold = 20 if provider_name == "ollama" else None
+
+    if should_defer_tools(
+        len(tool_defs),
+        threshold=deferred_threshold,
+    ):
         active_tools, deferred_tools, deferred_names, catalog_text = build_tool_catalog(tool_defs)
+
+        # Ollama / smaller local models need a much smaller always-loaded
+        # tool surface.
+        if provider_name == "ollama":
+            ollama_core_tools = {
+                "get_current_datetime",
+                "read_context_file",
+                "read_memory",
+                "search_memory",
+                "query_facts",
+                "add_fact",
+                "invalidate_fact",
+                "update_memory",
+                "append_daily_note",
+                "search_conversation_history",
+            }
+
+            ollama_active: list[dict] = []
+            ollama_redeferred: list[dict] = []
+
+            for t in active_tools:
+                if t["name"] in ollama_core_tools:
+                    ollama_active.append(t)
+                else:
+                    ollama_redeferred.append(t)
+
+            # Tools removed from Ollama's active set are not deleted.
+            # They remain discoverable through the deferred pool.
+            deferred_tools.extend(ollama_redeferred)
+            deferred_names.update(t["name"] for t in ollama_redeferred)
+
+            active_tools = ollama_active
+
+            # Rebuild the deferred catalog after Ollama rebalancing so tools moved
+            # out of the always-loaded set remain visible and discoverable to the model.
+            _, _, _, catalog_text = build_tool_catalog(
+                active_tools + deferred_tools,
+            )
+
+            # Rebuild the map after Ollama rebalancing.
+            # The original kind_map still contains every pre-deferred tool,
+            # which would make load_deferred_tools() think deferred tools
+            # are already loaded.
+            kind_map = _build_kind_map(active_tools)
+
+            # ── Ollama request-time deferred prefetch ────────────────
+            latest_user = next(
+                (m for m in reversed(messages) if m.get("role") == "user"),
+                None,
+            )
+
+            if latest_user:
+                user_content = latest_user.get("content", "")
+
+                if isinstance(user_content, str):
+                    user_text = user_content.lower()
+
+                    # Reuse Chatty's existing SEARCH_ALIASES keys.
+                    prefetch_queries = [
+                        alias
+                        for alias in SEARCH_ALIASES
+                        if alias in user_text
+                    ]
+
+                    prefetched_names: set[str] = set()
+                    prefetched_tools: list[dict] = []
+
+                    for query in prefetch_queries:
+                        find_result = execute_find_tools(
+                            query,
+                            deferred_tools,
+                        )
+
+                        matched_tools = find_result.get(
+                            "matched_tools",
+                            [],
+                        )
+
+                        # Small-model prefetch should favor tools that match the user's
+                        # actual operation intent, rather than blindly taking catalog order.
+                        matched_tools = rank_tools_for_request(
+                            user_text,
+                            matched_tools,
+                        )
+
+                        for t in matched_tools:
+                            if t["name"] in prefetched_names:
+                                continue
+
+                            prefetched_names.add(t["name"])
+                            prefetched_tools.append(t)
+
+                            if len(prefetched_tools) >= 3:
+                                break
+
+                        if len(prefetched_tools) >= 3:
+                            break
+
+                    if prefetched_tools:
+                        load_deferred_tools(
+                            prefetched_tools,
+                            active_tools,
+                            kind_map,
+                            deferred_tools,
+                            deferred_names,
+                            writes_map=writes_map,
+                            cm_map=cm_map,
+                            integration_map=integration_map,
+                        )
+
+                        logger.debug(
+                            "Ollama prefetched tools: %s",
+                            [t["name"] for t in prefetched_tools],
+                        )
+
         tool_defs = active_tools + [FIND_TOOLS_DEF]
+        kind_map = _build_kind_map(tool_defs)
         kind_map["find_tools"] = "meta"
 
     # ── Chat history persistence ──────────────────────────────────────
@@ -1266,6 +1460,24 @@ async def chat(
     all_tool_calls: list[dict] = []  # Accumulate across iterations for the activity log
     _max_ctx_tokens = 0  # Max main-turn context fullness, persisted for compaction
 
+    # Track successful non-memory write actions within this user turn.
+    # Key = tool name + normalized arguments.
+    # Prevents the exact same side effect from being executed repeatedly.
+    successful_write_keys: set[str] = set()
+
+    # Memory tools that WRITE persistent information.
+    # Once a memory write succeeds in one model iteration, these tools will be
+    # hidden from the NEXT model iteration so the model can acknowledge success
+    # instead of repeatedly writing the same memory.
+    memory_write_tools = {
+        "append_daily_note",
+        "update_memory",
+        "add_fact",
+        "invalidate_fact",
+        "consolidate_memory",
+        "complete_commitment",
+    }
+
     while iteration < max_iterations:
         iteration += 1
         tool_calls_this_turn: list[dict] = []
@@ -1411,6 +1623,27 @@ async def chat(
         results = []
         has_pending_confirmation = False
 
+        # Track whether THIS model iteration successfully wrote memory.
+        # Multiple memory writes returned together in the same iteration are still
+        # allowed; we only remove write tools before the NEXT model iteration.
+        memory_write_succeeded_this_iteration = False
+
+        # Track non-memory write tools that successfully executed in THIS iteration.
+        # They remain callable for all tool calls returned in the current model
+        # iteration, but will be hidden before the NEXT model iteration.
+        successful_write_tools_this_iteration: set[str] = set()
+
+        # Keep successful write results so dependent deferred tools can use
+        # real IDs returned by earlier writes instead of model-guessed IDs.
+        successful_write_results_this_iteration: dict[str, dict] = {}
+
+        # Small local models may emit dependent tool calls in one model iteration
+        # before seeing the real result of an earlier write. For Ollama, once the
+        # first non-memory write executes, defer all later tool calls so the model
+        # can re-plan from the real write result on the next iteration.
+        ollama_write_attempted_this_iteration = False
+        deferred_tool_calls_this_iteration: list[dict] = []
+
         for tc in tool_calls_this_turn:
             tool_name = tc.get("name", "")
             tool_use_id = tc.get("id", "")
@@ -1515,6 +1748,124 @@ async def chat(
             is_cm = cm_map.get(tool_name, False)
             eff_mode = _effective_mode(tool_name)
 
+            # ── Duplicate write guard ────────────────────────────────────────
+            write_key: str | None = None
+
+            if is_write and not is_cm:
+                # Build a semantic write key for tools where optional fields should not
+                # make the same side effect look like a different action.
+                if tool_name == "crm_create_contact":
+                    key_args = {
+                        "name": tool_args.get("name"),
+                    }
+                else:
+                    key_args = tool_args
+
+                normalized_args = json.dumps(
+                    key_args,
+                    sort_keys=True,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+
+                write_key = f"{tool_name}:{normalized_args}"
+
+                if write_key in successful_write_keys:
+                    result = {
+                        "status": "duplicate_write_blocked",
+                        "ok": True,
+                        "message": (
+                            f"The exact write action '{tool_name}' already succeeded earlier "
+                            "in this turn. It was NOT executed again. "
+                            "Do not retry the same write. Continue with the user's remaining "
+                            "request, or give the final answer if the task is complete."
+                        ),
+                    }
+
+                    result_str = json.dumps(result, ensure_ascii=False)
+
+                    results.append({
+                        "tool_use_id": tool_use_id,
+                        "tool_name": tool_name,
+                        "content": result_str,
+                    })
+
+                    all_tool_calls.append({
+                        "tool": tool_name,
+                        "tool_use_id": tool_use_id,
+                        "args": tool_args,
+                        "result": result_str,
+                        "elapsed_ms": 0,
+                    })
+
+                    yield _sse({
+                        "type": "tool_end",
+                        "tool": tool_name,
+                        "tool_use_id": tool_use_id,
+                        "result": result,
+                        "elapsed_ms": 0,
+                    })
+
+                    continue
+
+            # ── Ollama post-write serialization guard ───────────────────────
+            # Qwen-sized local models may emit dependent tool calls in the same
+            # model iteration before seeing the real result of an earlier write.
+            # Once a non-memory write has actually executed, defer ALL later
+            # tool calls in this iteration so the model must re-plan from the
+            # real write result on the next iteration.
+            if (
+                provider_name == "ollama"
+                and ollama_write_attempted_this_iteration
+            ):
+                deferred_tool_calls_this_iteration.append({
+                    "tool": tool_name,
+                    "args": dict(tool_args),
+                })
+
+                result = {
+                    "status": "tool_deferred_after_write",
+                    "ok": True,
+                    "message": (
+                        f"The tool '{tool_name}' was NOT executed because a write action "
+                        "already executed earlier in this model iteration. "
+                        "This tool call was planned before the real write result was known. "
+                        "Do NOT explain this internal deferral to the user. "
+                        "On your next turn, inspect the actual previous tool result and "
+                        "re-plan using the exact IDs and values returned there. "
+                        "Never reuse guessed IDs or example values."
+                    ),
+                }
+
+                result_str = json.dumps(
+                    result,
+                    ensure_ascii=False,
+                )
+
+                results.append({
+                    "tool_use_id": tool_use_id,
+                    "tool_name": tool_name,
+                    "content": result_str,
+                })
+
+                all_tool_calls.append({
+                    "tool": tool_name,
+                    "tool_use_id": tool_use_id,
+                    "args": tool_args,
+                    "result": result_str,
+                    "elapsed_ms": 0,
+                })
+
+                yield _sse({
+                    "type": "tool_end",
+                    "tool": tool_name,
+                    "tool_use_id": tool_use_id,
+                    "result": result,
+                    "elapsed_ms": 0,
+                })
+
+                continue
+
             # ── Write budget + rate limit check ──
             if is_write and not is_cm:
                 _budget_action = _write_budget.check_write(tool_name)
@@ -1561,6 +1912,14 @@ async def chat(
                     (t.get("description", tool_name) for t in tool_defs if t["name"] == tool_name),
                     tool_name,
                 )
+
+                logger.warning(
+                    "CONFIRM DEBUG: emitting confirm tool=%s tool_use_id=%s msg_id=%s",
+                    tool_name,
+                    tool_use_id,
+                    iter_msg_id,
+                )
+
                 yield _sse({
                     "type": "confirm",
                     "tool": tool_name,
@@ -1584,16 +1943,51 @@ async def chat(
                 has_pending_confirmation = True
                 continue
 
+            # Once an Ollama non-memory write reaches actual execution, serialize any
+            # later tool calls returned in this same model iteration. Those calls were
+            # planned before the model saw the real result of this write.
+            if provider_name == "ollama" and is_write and not is_cm:
+                ollama_write_attempted_this_iteration = True
+
             t_start = time.time()
             result = await registry.execute_tool(tool_name, tool_args, kind)
             elapsed_ms = int((time.time() - t_start) * 1000)
+
+            # Record successful non-memory writes.
+            # 1. successful_write_keys blocks exact/semantic duplicates.
+            # 2. successful_write_tools_this_iteration hides the successfully
+            #    executed write tool before the NEXT model iteration.
+            if write_key is not None:
+                write_succeeded = True
+
+                if isinstance(result, dict):
+                    if result.get("ok") is False or result.get("error"):
+                        write_succeeded = False
+
+                if write_succeeded:
+                    successful_write_keys.add(write_key)
+                    successful_write_tools_this_iteration.add(tool_name)
+
+                    if isinstance(result, dict):
+                        successful_write_results_this_iteration[tool_name] = result
+
+            # A successful memory write means this iteration has completed
+            # at least one persistent memory action.
+            if tool_name in memory_write_tools:
+                if isinstance(result, dict):
+                    if result.get("ok") is True:
+                        memory_write_succeeded_this_iteration = True
+                else:
+                    memory_write_succeeded_this_iteration = True
 
             # Sync context files to GCS
             _sync_context_after_tool(tool_name, result, ctx_manager)
 
             result_str = json.dumps(result)
+
             if should_wrap(tool_name, kind):
                 result_str = wrap_result(tool_name, result_str)
+
             results.append({
                 "tool_use_id": tool_use_id,
                 "tool_name": tool_name,
@@ -1619,7 +2013,85 @@ async def chat(
             })
 
         # Append tool results to messages for next turn
-        current_messages = provider.add_tool_results(current_messages, tool_calls_this_turn, results)
+        current_messages = provider.add_tool_results(
+            current_messages,
+            tool_calls_this_turn,
+            results,
+        )
+
+        # ── Ollama deferred-tool continuation hint ───────────────────────
+        # After an Ollama write executes, later tool calls from the same
+        # model iteration are deferred because they were planned before the
+        # model saw the real write result. Feed one compact continuation hint
+        # into the next model iteration, with known dependency arguments bound
+        # to real upstream results.
+        if (
+            provider_name == "ollama"
+            and deferred_tool_calls_this_iteration
+            and not has_pending_confirmation
+        ):
+            bound_deferred_calls = _bind_ollama_deferred_args(
+                deferred_tool_calls_this_iteration,
+                successful_write_results_this_iteration,
+            )
+
+            continuation_payload = json.dumps(
+                bound_deferred_calls,
+                ensure_ascii=False,
+            )
+
+            successful_results_payload = json.dumps(
+                successful_write_results_this_iteration,
+                ensure_ascii=False,
+            )
+
+            current_messages.append({
+                "role": "user",
+                "content": (
+                    "[INTERNAL EXECUTION CONTINUATION]\n"
+                    "Continue the user's original request using the actual successful "
+                    "write results and corrected deferred tool arguments below.\n\n"
+                    "Successful write results:\n"
+                    f"{successful_results_payload}\n\n"
+                    "Corrected deferred tool calls:\n"
+                    f"{continuation_payload}\n\n"
+                    "Use IDs and values from the successful tool results exactly. "
+                    "Do not invent, guess, replace, or revalidate them against guessed "
+                    "values. Do not repeat work that already succeeded. "
+                    "Do not explain this internal continuation mechanism to the user. "
+                    "Complete only the remaining work."
+                ),
+            })
+
+        # ── Write convergence guards ─────────────────────────────────────
+
+        # After a successful persistent memory write, hide memory write tools
+        # for the remainder of this user turn. Read-only memory tools remain
+        # available, and provider_tools is rebuilt on the next user turn.
+        if memory_write_succeeded_this_iteration:
+            provider_tools = [
+                t
+                for t in provider_tools
+                if (
+                    t.get("name")
+                    or t.get("function", {}).get("name")
+                ) not in memory_write_tools
+            ]
+
+        # After a successful non-memory write, hide that exact write tool
+        # before the NEXT model iteration. This prevents smaller models from
+        # repeatedly executing the same side-effecting operation with slightly
+        # changed arguments, while still allowing other write tools for valid
+        # multi-step workflows.
+        if successful_write_tools_this_iteration:
+            provider_tools = [
+                t
+                for t in provider_tools
+                if (
+                    t.get("name")
+                    or t.get("function", {}).get("name")
+                ) not in successful_write_tools_this_iteration
+            ]
 
         # Attach this iteration's FULL tool results to its saved assistant row
         # (true UPDATE — keeps seq/created_at/FTS intact). We persist even when a

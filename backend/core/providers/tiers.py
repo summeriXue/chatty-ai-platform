@@ -24,6 +24,11 @@ TIER_MODELS: dict[str, dict[str, str]] = {
         "mid":   "gpt-5.4-mini",
         "light": "gpt-5.4-nano",
     },
+    "deepseek": {
+        "top": "deepseek-v4-pro",
+        "mid": "deepseek-v4-flash",
+        "light": "deepseek-v4-flash",
+    },
     "google": {
         "top":   "gemini-2.5-pro",
         "mid":   "gemini-2.5-flash",
@@ -41,6 +46,7 @@ TIER_MODELS: dict[str, dict[str, str]] = {
 TIER_LABELS: dict[str, dict[str, str]] = {
     "anthropic": {"top": "Opus", "mid": "Sonnet", "light": "Haiku"},
     "openai":    {"top": "GPT-5.5", "mid": "Mini", "light": "Nano"},
+    "deepseek":  {"top": "Pro","mid": "Flash","light": "Flash",},
     "google":    {"top": "Pro", "mid": "Flash", "light": "Flash-Lite"},
     "together":  {"top": "70B", "mid": "31B", "light": "9B"},
 }
@@ -50,6 +56,7 @@ TIER_LABELS: dict[str, dict[str, str]] = {
 TRIAGE_CLASSIFIERS: dict[str, str] = {
     "anthropic": "claude-haiku-4-5",
     "openai":    "gpt-5.4-nano",
+    "deepseek":  "deepseek-v4-flash",
     "google":    "gemini-2.5-flash-lite",
 }
 
@@ -104,6 +111,10 @@ def infer_tier_models(provider: str, available: list[str]) -> dict[str, str]:
             if "-mini" not in m.lower() and "-nano" not in m.lower()
             and (m.lower().startswith("gpt-") or m.lower().startswith("o"))
         ])
+    elif provider == "deepseek":
+        top = _best([m for m in av if "pro" in m.lower()])
+        mid = _best([m for m in av if "flash" in m.lower()])
+        light = mid
     elif provider == "together":
         def _params(m: str) -> int:
             nums = re.findall(r"(\d+)\s*b", m.lower())
