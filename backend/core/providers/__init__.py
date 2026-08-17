@@ -96,6 +96,21 @@ def get_ai_provider(
         access_token = profile.get("access", "")
         return DeepSeekProvider(access_token=access_token, model=model or "deepseek-v4-flash")
 
+    elif profile_name.startswith("kimi:"):
+        from core.providers.kimi_provider import KimiProvider
+
+        if profile.get("type") == "api_key":
+            return KimiProvider(
+                access_token=profile.get("key", ""),
+                model=model or "kimi-k3"
+            )
+
+        access_token = profile.get("access", "")
+        return KimiProvider(
+            access_token=access_token,
+            model=model or "kimi-k3"
+        )
+
     elif profile_name.startswith("google:"):
         from core.providers.google_provider import GoogleProvider
         if profile.get("type") == "api_key":

@@ -283,7 +283,7 @@ async def connect_openai_complete(body: CompleteOAuthRequest, user=Depends(get_c
     await _materialize_inferred_tiers("openai", "gpt-5.4")
     return {"ok": True, "provider": "openai"}
 
-# ── Connect DeepSeek (API key) ───────────────────────────────────────────────
+# -- Connect DeepSeek (API key) -----------------------------------------------
 
 class DeepSeekKeyRequest(BaseModel):
     api_key: str
@@ -333,7 +333,57 @@ async def connect_deepseek_key(
     }
 
 
-# ── Connect Ollama (local) ────────────────────────────────────────────────────
+# -- Connect Kimi (API key) ---------------------------------------------------
+
+class KimiKeyRequest(BaseModel):
+    api_key: str
+    model: str = "kimi-k3"
+
+
+@router.post("/kimi/connect")
+@router.post("/kimi/connect-key")
+async def connect_kimi_key(
+    body: KimiKeyRequest,
+    user=Depends(get_current_user)
+):
+    """Validate and store a Kimi API key."""
+
+    from core.providers.kimi_provider import KimiProvider
+
+    logger.info("Kimi connect-key model=%s", body.model)
+
+    provider = KimiProvider(
+        access_token=body.api_key,
+        model=body.model
+    )
+
+    if not await provider.validate():
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid Kimi API key"
+        )
+
+    store = CredentialStore()
+
+    store.set_api_key(
+        "kimi",
+        body.api_key,
+        model=body.model
+    )
+
+    model = await _materialize_inferred_tiers(
+        "kimi",
+        body.model
+    )
+
+    return {
+        "ok": True,
+        "provider": "kimi",
+        "model": model
+    }
+
+
+# -- Connect Ollama (local) ---------------------------------------------------
 
 class OllamaConnectRequest(BaseModel):
     base_url: str = "http://localhost:11434"

@@ -7,9 +7,26 @@ interface Props {
 }
 
 const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
-  anthropic: { url: 'https://console.anthropic.com/settings/keys', label: 'Get your API key at console.anthropic.com' },
-  openai: { url: 'https://platform.openai.com/api-keys', label: 'Get your API key at platform.openai.com' },
-  google: { url: 'https://aistudio.google.com/apikey', label: 'Get your API key at aistudio.google.com' },
+  anthropic: {
+    url: 'https://console.anthropic.com/settings/keys',
+    label: 'Get your API key at console.anthropic.com',
+  },
+  openai: {
+    url: 'https://platform.openai.com/api-keys',
+    label: 'Get your API key at platform.openai.com',
+  },
+  google: {
+    url: 'https://aistudio.google.com/apikey',
+    label: 'Get your API key at aistudio.google.com',
+  },
+  deepseek: {
+    url: 'https://platform.deepseek.com/api_keys',
+    label: 'Get your API key at platform.deepseek.com',
+  },
+  kimi: {
+    url: 'https://platform.moonshot.ai/console/api-keys',
+    label: 'Get your API key at Kimi API Platform',
+  },
 };
 
 const inputStyle: React.CSSProperties = {
@@ -48,7 +65,13 @@ export function ApiKeyEntry({ provider, onConnected }: Props) {
         type="password"
         value={key}
         onChange={e => setKey(e.target.value)}
-        placeholder="sk-ant-..."
+        placeholder={
+          provider === 'anthropic'
+            ? 'sk-ant-...'
+            : provider === 'google'
+              ? 'AIza...'
+              : 'sk-...'
+        }
         onKeyDown={e => e.key === 'Enter' && connect()}
         style={inputStyle}
       />

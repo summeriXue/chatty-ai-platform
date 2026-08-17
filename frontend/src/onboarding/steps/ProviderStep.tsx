@@ -3,12 +3,17 @@ import { api } from '../../core/api/client';
 import type { ProviderStatus } from '../../core/types';
 import { IconCheck, IconCircle, IconArrowRight } from '../../shared/icons';
 import { useIsMobile } from '../../shared/useIsMobile';
+import { OllamaSetup } from '../../setup/OllamaSetup';
 
 interface Props {
   onComplete: () => void;
 }
 
-type AuthMethod = 'setup-token' | 'api-key' | 'cli-sync';
+type AuthMethod =
+  | 'setup-token'
+  | 'api-key'
+  | 'cli-sync'
+  | 'ollama-setup';
 
 interface ProviderDef {
   id: string;
@@ -43,6 +48,42 @@ const PROVIDERS: ProviderDef[] = [
       { id: 'api-key', label: 'API Key', description: 'Paste an API key from aistudio.google.com' },
     ],
   },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    subtitle: 'DeepSeek chat and reasoning models',
+    methods: [
+      {
+        id: 'api-key',
+        label: 'API Key',
+        description: 'Paste your DeepSeek API key',
+      },
+    ],
+  },
+  {
+    id: 'kimi',
+    name: 'Kimi',
+    subtitle: 'Moonshot AI chat and reasoning models',
+    methods: [
+      {
+        id: 'api-key',
+        label: 'API Key',
+        description: 'Paste your Kimi API key',
+      },
+    ],
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama',
+    subtitle: 'Run models locally - no API key',
+    methods: [
+      {
+        id: 'ollama-setup',
+        label: 'Local',
+        description: 'Automatically detect models running with Ollama',
+      },
+    ],
+  },
 ];
 
 const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
@@ -68,6 +109,10 @@ export function ProviderStep({ onComplete }: Props) {
 
   const isMobile = useIsMobile();
   const anyConnected = status ? Object.values(status.profiles).some(p => p.configured) : false;
+
+  const visibleProviders = PROVIDERS.filter(
+    provider => provider.id !== 'ollama' || !status?.is_railway
+  );
 
   function getMethod(providerId: string): AuthMethod {
     return activeMethod[providerId] || PROVIDERS.find(p => p.id === providerId)!.methods[0].id;
@@ -117,6 +162,17 @@ export function ProviderStep({ onComplete }: Props) {
   function renderAuthForm(provider: ProviderDef) {
     const method = getMethod(provider.id);
 
+    if (method === 'ollama-setup') {
+      return (
+        <OllamaSetup
+          onConnected={() => {
+            reload();
+            setExpanded(null);
+          }}
+        />
+      );
+    }
+
     if (method === 'setup-token') {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -149,9 +205,31 @@ export function ProviderStep({ onComplete }: Props) {
 
     if (method === 'api-key') {
       const config: Record<string, { placeholder: string; link: string; linkLabel: string }> = {
-        anthropic: { placeholder: 'sk-ant-...', link: 'https://console.anthropic.com/settings/keys', linkLabel: 'Open Anthropic Console' },
-        openai: { placeholder: 'sk-...', link: 'https://platform.openai.com/api-keys', linkLabel: 'Open OpenAI Platform' },
-        google: { placeholder: 'AIza...', link: 'https://aistudio.google.com/apikey', linkLabel: 'Open Google AI Studio' },
+        anthropic: {
+          placeholder: 'sk-ant-...',
+          link: 'https://console.anthropic.com/settings/keys',
+          linkLabel: 'Open Anthropic Console',
+        },
+        openai: {
+          placeholder: 'sk-...',
+          link: 'https://platform.openai.com/api-keys',
+          linkLabel: 'Open OpenAI Platform',
+        },
+        google: {
+          placeholder: 'AIza...',
+          link: 'https://aistudio.google.com/apikey',
+          linkLabel: 'Open Google AI Studio',
+        },
+        deepseek: {
+          placeholder: 'sk-...',
+          link: 'https://platform.deepseek.com/api_keys',
+          linkLabel: 'Open DeepSeek Platform',
+        },
+        kimi: {
+          placeholder: 'sk-...',
+          link: 'https://platform.moonshot.ai/console/api-keys',
+          linkLabel: 'Open Kimi Platform',
+        },
       };
       const c = config[provider.id];
       return (
@@ -223,7 +301,7 @@ export function ProviderStep({ onComplete }: Props) {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 8, marginBottom: 28 }}>
-        {PROVIDERS.map(p => {
+        {visibleProviders.map(p => {
           const profile = status?.profiles?.[p.id];
           const isConnected = profile?.configured ?? false;
           const isExpanded = expanded === p.id;

@@ -13,6 +13,9 @@ const PROVIDER_NAMES: Record<string, string> = {
   anthropic: 'Anthropic (Claude)',
   openai: 'OpenAI (GPT)',
   google: 'Google (Gemini)',
+  deepseek: 'DeepSeek',
+  kimi: 'Kimi',
+  ollama: 'Ollama (Local)',
 };
 
 const INTEGRATION_NAMES: Record<string, string> = {
