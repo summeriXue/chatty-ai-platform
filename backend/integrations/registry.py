@@ -31,6 +31,18 @@ AVAILABLE_INTEGRATIONS = {
         "icon": "🏢",
         "auth_type": "credentials",
     },
+    "feishu": {
+        "name": "Feishu",
+        "description": "Feishu — connect Chatty agents to Feishu",
+        "icon": "🪽",
+        "auth_type": "credentials",
+    },
+    "wecom": {
+        "name": "WeCom",
+        "description": "WeCom — connect a Chatty agent to an Enterprise WeChat application",
+        "icon": "💼",
+        "auth_type": "credentials",
+    },
     "google": {
         "name": "Google (Gmail + Calendar + Drive)",
         "description": "Connect Google — email, calendar, and Drive access, with per-scope permissions",
@@ -361,6 +373,27 @@ def list_integrations() -> list[dict]:
             "connection_status": creds.get("connection_status", "ok") if creds else "ok",
             "tool_mode": creds.get("tool_mode", "normal"),
         }
+
+        if key == "feishu" and creds:
+            entry["app_id"] = creds.get("app_id", "")
+            entry["agent_id"] = creds.get("agent_id", "")
+            entry["has_app_secret"] = bool(creds.get("app_secret"))
+
+        if key == "wecom" and creds:
+            entry["corp_id"] = creds.get("corp_id", "")
+            entry["app_agent_id"] = creds.get("app_agent_id", "")
+            entry["agent_id"] = creds.get("agent_id", "")
+
+            entry["has_corp_secret"] = bool(
+                creds.get("corp_secret")
+            )
+            entry["has_callback_token"] = bool(
+                creds.get("callback_token")
+            )
+            entry["has_encoding_aes_key"] = bool(
+                creds.get("encoding_aes_key")
+            )
+
         if key == "google" and creds:
             accounts = creds.get("accounts", {})
             entry["google_accounts"] = [

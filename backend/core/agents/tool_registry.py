@@ -768,20 +768,56 @@ class ToolRegistry:
         return {"integrations": results}
 
     def _mark_onboarding_complete(self) -> dict:
+        """Mark this agent's onboarding as complete and retire bootstrap instructions."""
         from agents.db import get_agent_by_slug, update_agent
         from agents.engine import invalidate_cache
+
         agent = get_agent_by_slug(self.agent_slug)
         if not agent:
             return {"error": "Agent not found"}
+
+        # _bootstrap.md is only for the agent's first-run onboarding.
+        # Once onboarding is complete it must not remain in the normal
+        # context, otherwise future chats may continue following the
+        # onboarding instructions.
+        bootstrap_path = Path(self.context_dir) / "_bootstrap.md"
+
+        if bootstrap_path.exists():
+            try:
+                bootstrap_path.unlink()
+                logger.info(
+                    "Removed bootstrap instructions for agent %s",
+                    self.agent_slug,
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to remove bootstrap instructions for %s: %s",
+                    self.agent_slug,
+                    e,
+                )
+
+        # Already completed — bootstrap cleanup above still acts as
+        # a repair path for older agents that retained the file.
         if agent.get("onboarding_complete"):
+            invalidate_cache(self.agent_slug)
             return {"ok": True}
-        update_agent(agent["id"], onboarding_complete=1)
+
+        update_agent(
+            agent["id"],
+            onboarding_complete=1,
+        )
         invalidate_cache(self.agent_slug)
+
         try:
             from core.agents.scheduled_actions.service import ensure_default_actions
             ensure_default_actions(agent["slug"])
         except Exception as e:
-            logger.warning("Failed to create default actions for %s: %s", agent["slug"], e)
+            logger.warning(
+                "Failed to create default actions for %s: %s",
+                agent["slug"],
+                e,
+            )
+
         return {"ok": True}
 
     _CACHE_AWARE_TOOLS = {

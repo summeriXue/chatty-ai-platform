@@ -37,6 +37,7 @@ from core.agents.scheduled_actions.router import router as scheduled_actions_rou
 from setup.router import router as setup_router
 from backup.router import router as backup_router
 from integrations.telegram.router import router as telegram_router
+from integrations.wecom.router import router as wecom_router
 from core.agents.alerts.router import router as alerts_router
 from core.agents.notifications.router import router as notifications_router
 from core.agents.live.router import router as live_router
@@ -47,6 +48,11 @@ from core.events.router import router as events_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+# Prevent outbound HTTP request URLs from exposing sensitive query
+# parameters such as WeCom corpsecret in application logs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 # APScheduler instance (started in lifespan)
 _scheduler = None
@@ -90,7 +96,7 @@ async def lifespan(app: FastAPI):
 
     # Ensure data directories exist
     data_root = Path(__file__).resolve().parent / "data"
-    for subdir in ("agents", "branding", "integrations", "reminders", "telegram", "whatsapp"):
+    for subdir in ("agents", "branding", "integrations", "reminders", "telegram", "feishu", "wecom", "whatsapp"):
         (data_root / subdir).mkdir(parents=True, exist_ok=True)
 
     # ── Database initialization (per-DB error isolation) ───────────────────
@@ -115,8 +121,14 @@ async def lifespan(app: FastAPI):
     from integrations.telegram.state import init_db as init_telegram_db
     _safe_init("telegram", init_telegram_db)
 
+    from integrations.wecom.state import init_db as init_wecom_db
+    _safe_init("wecom", init_wecom_db)
+
     from integrations.telegram.lifecycle import register_all_webhooks
     register_all_webhooks()
+
+    from integrations.feishu.state import init_db as init_feishu_db
+    _safe_init("feishu", init_feishu_db)
 
     if settings.whatsapp.is_configured:
         from integrations.whatsapp.state import init_db as init_whatsapp_db
@@ -204,6 +216,19 @@ async def lifespan(app: FastAPI):
             reconnect_all_sessions()
         except Exception as e:
             logger.warning("WhatsApp session reconnect check failed: %s", e)
+
+    # ── Feishu long connection ──────────────────────────────────────────
+    if integration_enabled("feishu"):
+        try:
+            from integrations.feishu.lifecycle import start_long_connection
+
+            started = start_long_connection()
+            if started:
+                logger.info("Feishu long connection started")
+            else:
+                logger.info("Feishu long connection was not started")
+        except Exception:
+            logger.exception("Failed to start Feishu long connection")
 
     # ── Railway environment logging ─────────────────────────────────────────
     if settings.is_railway:
@@ -310,6 +335,7 @@ app.include_router(reminders_router, prefix="/api/reminders", tags=["reminders"]
 app.include_router(setup_router, prefix="/api/setup", tags=["setup"])
 app.include_router(backup_router, prefix="/api/backup", tags=["backup"])
 app.include_router(telegram_router, prefix="/api/telegram", tags=["telegram"])
+app.include_router(wecom_router, prefix="/api/wecom", tags=["wecom"])
 app.include_router(shared_context_router, tags=["shared-context"])
 app.include_router(usage_router, prefix="/api/usage", tags=["usage"])
 app.include_router(events_router)

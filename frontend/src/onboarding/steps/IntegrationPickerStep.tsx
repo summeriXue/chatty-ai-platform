@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../core/api/client';
 import type { Integration } from '../../core/types';
 
-const MESSAGING_IDS = ['telegram', 'whatsapp'];
+const MESSAGING_IDS = ['telegram', 'whatsapp', 'feishu'];
 
 interface Props {
   onComplete: (selectedIds: string[]) => void;

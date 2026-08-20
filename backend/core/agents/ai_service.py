@@ -107,13 +107,16 @@ def _information_priority_instructions() -> str:
 
 When answering questions, prefer information sources in this order:
 
-1. **Already-loaded knowledge** — Your context files (soul.md, MEMORY.md, topic files) and the "Likely Relevant Context" section are loaded into this prompt. Prefer these first when they cover the topic.
-2. **Memory search** — If your loaded knowledge is insufficient or you're uncertain, use `search_memory` or `query_facts` to check your broader memory.
-3. **Conversation history** — If the user references a past conversation or you suspect you've discussed something before, use `search_conversation_history` to find it. Search before asking the user to repeat themselves.
-4. **Integration tools** — Reach for Gmail, Calendar, Drive, QuickBooks, or other external tools when your memory doesn't have the answer.
-5. **Ask the user** — If none of the above sources have the answer, ask.
+1. **Current conversation** — First use information explicitly stated in the messages of the current conversation. If the user just told you something earlier in this conversation, answer from that context directly. Do not search memory, CRM, facts, or conversation history for information that is already present in the current conversation.
+2. **Already-loaded knowledge** — Your context files (soul.md, MEMORY.md, topic files) and the "Likely Relevant Context" section are loaded into this prompt. Prefer these when the current conversation does not already contain the answer.
+3. **Memory search** — If the current conversation and loaded knowledge are insufficient or you're uncertain, use `search_memory` or `query_facts` to check your broader memory.
+4. **Past conversation search** — Use `search_conversation_history` only when the user refers to an earlier conversation or something not available in the current conversation. Do not use it for information already visible in the current message history.
+5. **Integration tools** — Reach for Gmail, Calendar, Drive, QuickBooks, CRM, or other external tools when the answer genuinely depends on those systems.
+6. **Ask the user** — If none of the above sources have the answer, ask.
 
 When your loaded knowledge clearly covers the topic, prefer it over re-searching. When injected context contradicts your assumptions, the context wins.
+
+**Important:** Being able to answer from the current conversation is different from having stored something in long-term memory. You may use facts from the current conversation normally even if they have not been persisted to memory.
 
 **Override:** If the user explicitly asks you to search, look up, check, or use a specific tool, follow their instruction regardless of this hierarchy."""
 
@@ -532,7 +535,7 @@ def _build_system_prompt(
         parts.append(_playbook_instructions())
         parts.append(get_report_instructions())
         parts.append(get_scheduling_instructions())
-        if Path(config.context_dir, "_pending-setup.md").exists() or Path(config.context_dir, "_integration-setup.md").exists():
+        if Path(config.context_dir, "_pending-setup.md").exists():
             parts.append(_setup_instructions())
 
         # QB CSV Analysis instructions (if enabled)
@@ -743,12 +746,15 @@ After the tool succeeds: reply that the name has been remembered. Do not call `a
 
 ### Reading Memory
 
-When asked about past events, decisions, facts, or conversations, check your memory instead of guessing.
+Use the current conversation first. If the answer is explicitly present in the current conversation history, answer from it directly.
+
+Only search long-term memory when the answer is not available in the current conversation, or when the user is referring to an earlier conversation/session.
 
 - Use `search_memory` to search daily notes, MEMORY.md, topic files, and facts.
-- Use `query_facts` when looking for structured facts about a person, organization, relationship, or preference.
-- Use `search_conversation_history` when the user refers to something discussed in a previous conversation.
-- If you're not sure about a fact after checking memory, say so — don't fabricate memories.
+- Use `query_facts` when looking for structured facts about a person, organization, relationship, or preference that are not already stated in the current conversation.
+- Use `search_conversation_history` when the user refers to something discussed in a previous conversation/session, not merely an earlier turn in the current conversation.
+- If you're not sure about a fact after checking the relevant source, say so — don't fabricate memories.
+- When you already know the answer from the current conversation or memory, answer naturally and directly. Do not mention internal memory files, fact records, context sources, tool names, retrieval mechanisms, or implementation details unless the user explicitly asks where the information came from.
 """
 
 
@@ -2236,9 +2242,140 @@ async def run_sync(
     deferred_tools: list[dict] = []
     deferred_names: set[str] = set()
     catalog_text = ""
-    if should_defer_tools(len(tool_defs)):
-        active_tools, deferred_tools, deferred_names, catalog_text = build_tool_catalog(tool_defs)
+
+    # Smaller local models are more sensitive to large tool schemas.
+    # Match the streaming chat() path: use a lower deferred-loading
+    # threshold for Ollama while keeping the normal threshold for
+    # stronger/cloud providers.
+    deferred_threshold = 20 if provider_name == "ollama" else None
+
+    if should_defer_tools(
+        len(tool_defs),
+        threshold=deferred_threshold,
+    ):
+        active_tools, deferred_tools, deferred_names, catalog_text = (
+            build_tool_catalog(tool_defs)
+        )
+
+        # Keep run_sync consistent with chat():
+        # Ollama / smaller local models get a much smaller always-loaded
+        # tool surface. Everything else remains discoverable via find_tools.
+        if provider_name == "ollama":
+            ollama_core_tools = {
+                "get_current_datetime",
+                "read_context_file",
+                "read_memory",
+                "search_memory",
+                "query_facts",
+                "add_fact",
+                "invalidate_fact",
+                "update_memory",
+                "append_daily_note",
+                "search_conversation_history",
+            }
+
+            ollama_active: list[dict] = []
+            ollama_redeferred: list[dict] = []
+
+            for t in active_tools:
+                if t["name"] in ollama_core_tools:
+                    ollama_active.append(t)
+                else:
+                    ollama_redeferred.append(t)
+
+            # Tools removed from Ollama's active set are not deleted.
+            # They remain discoverable through the deferred pool.
+            deferred_tools.extend(ollama_redeferred)
+            deferred_names.update(
+                t["name"]
+                for t in ollama_redeferred
+            )
+
+            active_tools = ollama_active
+
+            # Rebuild the deferred catalog after Ollama rebalancing.
+            _, _, _, catalog_text = build_tool_catalog(
+                active_tools + deferred_tools,
+            )
+
+            # Rebuild kind_map so deferred tools are not incorrectly
+            # treated as already loaded.
+            kind_map = _build_kind_map(active_tools)
+
+            # ── Ollama request-time deferred prefetch ────────────────
+            latest_user = next(
+                (
+                    m
+                    for m in reversed(messages)
+                    if m.get("role") == "user"
+                ),
+                None,
+            )
+
+            if latest_user:
+                user_content = latest_user.get("content", "")
+
+                if isinstance(user_content, str):
+                    user_text = user_content.lower()
+
+                    prefetch_queries = [
+                        alias
+                        for alias in SEARCH_ALIASES
+                        if alias in user_text
+                    ]
+
+                    prefetched_names: set[str] = set()
+                    prefetched_tools: list[dict] = []
+
+                    for query in prefetch_queries:
+                        find_result = execute_find_tools(
+                            query,
+                            deferred_tools,
+                        )
+
+                        matched_tools = find_result.get(
+                            "matched_tools",
+                            [],
+                        )
+
+                        matched_tools = rank_tools_for_request(
+                            user_text,
+                            matched_tools,
+                        )
+
+                        for t in matched_tools:
+                            if t["name"] in prefetched_names:
+                                continue
+
+                            prefetched_names.add(t["name"])
+                            prefetched_tools.append(t)
+
+                            if len(prefetched_tools) >= 3:
+                                break
+
+                        if len(prefetched_tools) >= 3:
+                            break
+
+                    if prefetched_tools:
+                        load_deferred_tools(
+                            prefetched_tools,
+                            active_tools,
+                            kind_map,
+                            deferred_tools,
+                            deferred_names,
+                            writes_map=writes_map,
+                            cm_map=cm_map,
+                            integration_map=integration_map,
+                        )
+
+                        logger.debug(
+                            "run_sync Ollama prefetched tools: %s",
+                            [t["name"] for t in prefetched_tools],
+                        )
+
         tool_defs = active_tools + [FIND_TOOLS_DEF]
+
+        kind_map = _build_kind_map(tool_defs)
         kind_map["find_tools"] = "meta"
 
     provider_tools = build_provider_tools(tool_defs)
@@ -2336,6 +2473,7 @@ async def run_sync(
                 current_messages = _coalesce_consecutive(current_messages + [dict(last_user)])
     else:
         current_messages = list(messages)
+
     accumulated_text = ""
     all_tool_calls: list[dict] = []
     total_input_tokens = 0

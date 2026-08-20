@@ -46,6 +46,20 @@ class TodoistSetupRequest(BaseModel):
     api_token: str = Field(..., min_length=1, max_length=256)
 
 
+class FeishuSetupRequest(BaseModel):
+    app_id: str
+    app_secret: str
+    agent_id: str
+
+class WeComSetupRequest(BaseModel):
+    corp_id: str
+    app_agent_id: str
+    corp_secret: str
+    callback_token: str
+    encoding_aes_key: str
+    agent_id: str
+
+
 class ToolModeRequest(BaseModel):
     tool_mode: str
 
@@ -138,6 +152,53 @@ async def setup_todoist(body: TodoistSetupRequest, user=Depends(get_current_user
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
+
+@router.post("/feishu/setup")
+async def setup_feishu(
+    body: FeishuSetupRequest,
+    user=Depends(get_current_user),
+):
+    """Configure and validate Feishu app credentials."""
+    from .feishu.onboarding import setup
+
+    result = setup(
+        app_id=body.app_id,
+        app_secret=body.app_secret,
+        agent_id=body.agent_id,
+    )
+
+    if not result["ok"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["error"],
+        )
+
+    return result
+
+@router.post("/wecom/setup")
+async def setup_wecom(
+    body: WeComSetupRequest,
+    user=Depends(get_current_user),
+):
+    """Configure and validate WeCom application credentials."""
+    from .wecom.onboarding import setup
+
+    result = setup(
+        corp_id=body.corp_id,
+        app_agent_id=body.app_agent_id,
+        corp_secret=body.corp_secret,
+        callback_token=body.callback_token,
+        encoding_aes_key=body.encoding_aes_key,
+        agent_id=body.agent_id,
+    )
+
+    if not result["ok"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["error"],
+        )
+
+    return result
 
 @router.post("/todoist/disconnect")
 async def disconnect_todoist(user=Depends(get_current_user)):

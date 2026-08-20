@@ -18,6 +18,8 @@ const INTEGRATION_ICONS: Record<string, React.ComponentType<{ size?: number; cla
   salesforce: IconGlobe,
   whatsapp: IconPhone,
   telegram: IconMail,
+  feishu: IconUsers,
+  wecom: IconUsers,
   gmail: IconMail,
   calendar: IconBook,
   paperclip: IconZap,
@@ -47,6 +49,15 @@ export function IntegrationsTab() {
   const [bambooSubdomain, setBambooSubdomain] = useState('');
   const [bambooKey, setBambooKey] = useState('');
   const [todoistToken, setTodoistToken] = useState('');
+  const [feishuAppId, setFeishuAppId] = useState('');
+  const [feishuAppSecret, setFeishuAppSecret] = useState('');
+  const [feishuAgentId, setFeishuAgentId] = useState('');
+  const [wecomCorpId, setWecomCorpId] = useState('');
+  const [wecomAppAgentId, setWecomAppAgentId] = useState('');
+  const [wecomCorpSecret, setWecomCorpSecret] = useState('');
+  const [wecomAgentId, setWecomAgentId] = useState('');
+  const [wecomCallbackToken, setWecomCallbackToken] = useState('');
+  const [wecomEncodingAesKey, setWecomEncodingAesKey] = useState('');
   const [pcUrl, setPcUrl] = useState('');
   const [pcEmail, setPcEmail] = useState('');
   const [pcPassword, setPcPassword] = useState('');
@@ -235,6 +246,71 @@ export function IntegrationsTab() {
       setIntegrations(data.integrations);
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Setup failed'); }
     finally { setSaving(false); }
+  }
+
+  async function setupFeishu() {
+    setSaving(true);
+    setError('');
+
+    try {
+      await api('/api/integrations/feishu/setup', {
+        method: 'POST',
+        body: JSON.stringify({
+          app_id: feishuAppId,
+          app_secret: feishuAppSecret,
+          agent_id: feishuAgentId,
+        }),
+      });
+
+      setSetupFor(null);
+
+      const data = await api<{ integrations: Integration[] }>(
+        '/api/integrations'
+      );
+      setIntegrations(data.integrations);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Setup failed'
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function setupWeCom() {
+    setSaving(true);
+    setError('');
+
+    try {
+      await api('/api/integrations/wecom/setup', {
+        method: 'POST',
+        body: JSON.stringify({
+          corp_id: wecomCorpId,
+          app_agent_id: wecomAppAgentId,
+          corp_secret: wecomCorpSecret,
+          callback_token: wecomCallbackToken,
+          encoding_aes_key: wecomEncodingAesKey,
+          agent_id: wecomAgentId,
+        }),
+      });
+
+      setSetupFor(null);
+
+      const data = await api<{ integrations: Integration[] }>(
+        '/api/integrations'
+      );
+      setIntegrations(data.integrations);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Setup failed'
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function setupPaperclip() {
@@ -432,7 +508,15 @@ export function IntegrationsTab() {
                             else openQbCredForm();
                           }
                           else if (integration.id === 'qb_csv') setupQbCsv();
-                          else { setSetupFor(integration.id); setError(''); }
+                          else {
+                            setSetupFor(integration.id);
+                            setError('');
+
+                            // Credential-based integrations may bind to a Chatty agent.
+                            api<{ agents: Agent[] }>('/api/agents')
+                              .then(d => setAgents(d.agents))
+                              .catch(() => {});
+                          }
                         }} disabled={saving || (integration.id === 'quickbooks' && qbConnecting)} style={{
                           fontSize: 11, padding: '4px 12px', borderRadius: 4,
                           background: 'transparent', color: 'rgba(237,240,244,0.62)',
@@ -441,6 +525,52 @@ export function IntegrationsTab() {
                         }}>
                           {integration.id === 'quickbooks' && qbConnecting ? 'Connecting...'
                             : integration.id === 'quickbooks' && hasAppCreds ? 'Connect' : 'Setup'}
+                        </button>
+                      )}
+
+                      {/* Manage button — configured credential-based integrations */}
+                      {isConfigured &&
+                      integration.auth_type !== 'oauth2' &&
+                      integration.id !== 'qb_csv' && (
+                        <button
+                          onClick={() => {
+                            if (integration.id === 'feishu') {
+                              setFeishuAppId(integration.app_id || '');
+                              setFeishuAppSecret('');
+                              setFeishuAgentId(integration.agent_id || '');
+                            }
+
+                            if (integration.id === 'wecom') {
+                              setWecomCorpId(integration.corp_id || '');
+                              setWecomAppAgentId(integration.app_agent_id || '');
+
+                              // Sensitive fields are never returned by the backend.
+                              // Blank means "keep existing value" in Manage mode.
+                              setWecomCorpSecret('');
+                              setWecomCallbackToken('');
+                              setWecomEncodingAesKey('');
+
+                              setWecomAgentId(integration.agent_id || '');
+                            }
+
+                            setSetupFor(integration.id);
+                            setError('');
+
+                            api<{ agents: Agent[] }>('/api/agents')
+                              .then(d => setAgents(d.agents))
+                              .catch(() => {});
+                          }}
+                          style={{
+                            fontSize: 11,
+                            padding: '4px 12px',
+                            borderRadius: 4,
+                            background: 'transparent',
+                            color: 'rgba(237,240,244,0.62)',
+                            border: '1px solid rgba(230,235,242,0.14)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Manage
                         </button>
                       )}
 
@@ -863,6 +993,230 @@ export function IntegrationsTab() {
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>Cancel</button>
                       <button onClick={setupTodoist} disabled={saving || !todoistToken.trim()} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving || !todoistToken.trim() ? 0.5 : 1 }}>{saving ? 'Connecting...' : 'Connect'}</button>
+                    </div>
+                  </>
+                )}
+                {integration.id === 'feishu' && (
+                  <>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: 'rgba(237,240,244,0.50)',
+                        lineHeight: 1.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Connect a Feishu custom app using its App ID and App Secret.
+                    </p>
+
+                    <input
+                      placeholder="Feishu App ID"
+                      value={feishuAppId}
+                      onChange={e => setFeishuAppId(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      placeholder="Feishu App Secret"
+                      type="password"
+                      value={feishuAppSecret}
+                      onChange={e => setFeishuAppSecret(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <select
+                      value={feishuAgentId}
+                      onChange={e => setFeishuAgentId(e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">Select a Chatty agent...</option>
+
+                      {agents.map(agent => (
+                        <option key={agent.id} value={agent.id}>
+                          {agent.agent_name}
+                        </option>
+                      ))}
+                    </select>
+
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        marginTop: 4,
+                      }}
+                    >
+                      <button
+                        onClick={() => setSetupFor(null)}
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          fontSize: 13,
+                          borderRadius: 4,
+                          border: '1px solid rgba(230,235,242,0.14)',
+                          background: 'transparent',
+                          color: 'rgba(237,240,244,0.62)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        onClick={setupFeishu}
+                        disabled={
+                          saving ||
+                          !feishuAppId.trim() ||
+                          !feishuAgentId ||
+                          (!integration.has_app_secret && !feishuAppSecret.trim())
+                        }
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          fontSize: 13,
+                          borderRadius: 4,
+                          background: 'var(--color-ch-accent, #C8D1D9)',
+                          color: '#0E1013',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          opacity:
+                            saving ||
+                            !feishuAppId.trim() ||
+                            !feishuAgentId ||
+                            (!integration.has_app_secret && !feishuAppSecret.trim())
+                              ? 0.5
+                              : 1,
+                        }}
+                      >
+                        {saving ? 'Connecting...' : 'Connect'}
+                      </button>
+                    </div>
+                  </>
+                )}
+                {integration.id === 'wecom' && (
+                  <>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: 'rgba(237,240,244,0.50)',
+                        lineHeight: 1.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Connect a WeCom custom application using its Corp ID,
+                      application Agent ID, and Secret.
+                    </p>
+
+                    <input
+                      placeholder="WeCom Corp ID"
+                      value={wecomCorpId}
+                      onChange={e => setWecomCorpId(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      placeholder="WeCom Application Agent ID"
+                      value={wecomAppAgentId}
+                      onChange={e => setWecomAppAgentId(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      placeholder="WeCom Application Secret"
+                      type="password"
+                      value={wecomCorpSecret}
+                      onChange={e => setWecomCorpSecret(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      placeholder="WeCom Callback Token"
+                      value={wecomCallbackToken}
+                      onChange={e => setWecomCallbackToken(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <input
+                      placeholder="WeCom EncodingAESKey"
+                      type="password"
+                      value={wecomEncodingAesKey}
+                      onChange={e => setWecomEncodingAesKey(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <select
+                      value={wecomAgentId}
+                      onChange={e => setWecomAgentId(e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">Select a Chatty agent...</option>
+
+                      {agents.map(agent => (
+                        <option key={agent.id} value={agent.id}>
+                          {agent.agent_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        marginTop: 4,
+                      }}
+                    >
+                      <button
+                        onClick={() => setSetupFor(null)}
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          fontSize: 13,
+                          borderRadius: 4,
+                          border: '1px solid rgba(230,235,242,0.14)',
+                          background: 'transparent',
+                          color: 'rgba(237,240,244,0.62)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        onClick={setupWeCom}
+                        disabled={
+                          saving ||
+                          !wecomCorpId.trim() ||
+                          !wecomAppAgentId.trim() ||
+                          !wecomAgentId ||
+                          (!integration.has_corp_secret && !wecomCorpSecret.trim()) ||
+                          (!integration.has_callback_token && !wecomCallbackToken.trim()) ||
+                          (!integration.has_encoding_aes_key && !wecomEncodingAesKey.trim())
+                        }
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          fontSize: 13,
+                          borderRadius: 4,
+                          background: 'var(--color-ch-accent, #C8D1D9)',
+                          color: '#0E1013',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          opacity:
+                            saving ||
+                            !wecomCorpId.trim() ||
+                            !wecomAppAgentId.trim() ||
+                            !wecomAgentId ||
+                            (!integration.has_corp_secret && !wecomCorpSecret.trim()) ||
+                            (!integration.has_callback_token && !wecomCallbackToken.trim()) ||
+                            (!integration.has_encoding_aes_key && !wecomEncodingAesKey.trim())
+                              ? 0.5
+                              : 1,
+                        }}
+                      >
+                        {saving ? 'Connecting...' : 'Connect'}
+                      </button>
                     </div>
                   </>
                 )}

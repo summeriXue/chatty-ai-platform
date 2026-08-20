@@ -39,13 +39,23 @@ CONTEXT_TOOLS = [
     },
     {
         "name": "read_context_file",
-        "description": "Read the full contents of a specific context/knowledge file.",
+        "description": (
+            "Read the full contents of one of the agent's persistent context or knowledge files. "
+            "Use this only when the needed information is not already explicitly available in the "
+            "current conversation. Do NOT call this tool to answer questions using facts the user "
+            "stated earlier in the same conversation. "
+            "Files such as identity.md and soul.md describe the AGENT itself, not the user. "
+            "Never use the agent's identity files to determine the user's name, identity, or profile."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "filename": {
                     "type": "string",
-                    "description": "The .md filename to read (e.g. 'profile.md')",
+                    "description": (
+                        "The .md context filename to read. "
+                        "For example: 'vendor-relationships.md' or 'scheduling-rules.md'."
+                    ),
                 },
             },
             "required": ["filename"],
@@ -213,7 +223,12 @@ MEMORY_TOOLS = [
     },
     {
         "name": "read_memory",
-        "description": "Read the current MEMORY.md — your living snapshot of key facts.",
+        "description": (
+            "Read the agent's long-term MEMORY.md snapshot. "
+            "Use this only when the needed information is not already explicitly available "
+            "in the current conversation. Do NOT call this tool to answer a question using "
+            "facts the user stated earlier in the same conversation."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {},
