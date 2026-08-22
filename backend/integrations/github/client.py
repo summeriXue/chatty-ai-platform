@@ -44,6 +44,30 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
 
+    async def get_text(
+        self,
+        path: str,
+        params: dict | None = None,
+        accept: str | None = None,
+    ) -> str:
+        headers = self._headers()
+
+        if accept:
+            headers = {
+                **headers,
+                "Accept": accept,
+            }
+
+        async with httpx.AsyncClient(
+            base_url=GITHUB_API_BASE,
+            headers=headers,
+            timeout=20.0,
+        ) as client:
+            response = await client.get(path, params=params)
+
+        response.raise_for_status()
+        return response.text
+
 
 def get_client() -> GitHubClient | None:
     from integrations.registry import get_credentials, is_enabled
