@@ -166,3 +166,5 @@ To report a security vulnerability, see [SECURITY.md](SECURITY.md).
 ## License
 
 [MIT](LICENSE)
+
+GitHub PR integration test.
