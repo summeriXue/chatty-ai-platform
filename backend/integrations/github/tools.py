@@ -292,20 +292,34 @@ async def _github_get_pull_request_diff(
         return {"error": "GitHub not configured"}
 
     try:
-        diff = await client.get_text(
-            f"/repos/{owner}/{repo}/pulls/{pull_number}",
-            accept="application/vnd.github.v3.diff",
+        data = await client.get(
+            f"/repos/{owner}/{repo}/pulls/{pull_number}/files",
+            params={"per_page": 100},
         )
+
+        files = [
+            {
+                "filename": item.get("filename"),
+                "status": item.get("status"),
+                "additions": item.get("additions"),
+                "deletions": item.get("deletions"),
+                "changes": item.get("changes"),
+                "patch": item.get("patch"),
+            }
+            for item in data
+        ]
 
         return {
             "pull_number": pull_number,
-            "diff": diff,
-            "has_changes": bool(diff.strip()),
+            "files": files,
+            "count": len(files),
         }
 
     except httpx.HTTPStatusError as e:
         logger.error("github_get_pull_request_diff error: %s", e)
-        return {"error": f"GitHub API returned {e.response.status_code}"}
+        return {
+            "error": f"GitHub API returned {e.response.status_code}",
+        }
 
     except Exception as e:
         logger.error("github_get_pull_request_diff error: %s", e)
