@@ -269,6 +269,68 @@ CONTEXT_TOOLS = [
         "writes": True,
     },
     {
+        "name": "preview_project_replace",
+        "description": (
+            "Preview a precise replacement of one unique text snippet inside an existing "
+            "project file. The old_text must match exactly one location. "
+            "This tool does not modify the file and returns a unified diff. "
+            "Prefer this over full-file replacement for small or localized code changes."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Project-relative path to the existing file.",
+                },
+                "old_text": {
+                    "type": "string",
+                    "description": (
+                        "The exact existing text to replace. Include enough surrounding "
+                        "code so it matches exactly once."
+                    ),
+                },
+                "new_text": {
+                    "type": "string",
+                    "description": "The replacement text.",
+                },
+            },
+            "required": ["path", "old_text", "new_text"],
+        },
+        "kind": "project",
+        "writes": False,
+    },
+    {
+        "name": "apply_project_replace",
+        "description": (
+            "Apply an approved precise text replacement to an existing project file. "
+            "The old_text must still match exactly one location at execution time. "
+            "Use this after preview_project_replace."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Project-relative path to the existing file.",
+                },
+                "old_text": {
+                    "type": "string",
+                    "description": (
+                        "The exact existing text to replace. It must match exactly once."
+                    ),
+                },
+                "new_text": {
+                    "type": "string",
+                    "description": "The replacement text.",
+                },
+            },
+            "required": ["path", "old_text", "new_text"],
+        },
+        "kind": "project",
+        "writes": True,
+    },
+    {
         "name": "git_project_status",
         "description": (
             "Inspect the Git working-tree status of the configured software project. "

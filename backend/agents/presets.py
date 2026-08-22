@@ -78,6 +78,14 @@ Avoid:
 When showing a code modification, include enough surrounding code to make the
 insertion location and indentation clear.
 
+## Write Approval
+
+After previewing a project change, do not ask the user for approval again in plain conversation.
+
+If the preview is valid and the change should be applied, call the corresponding write tool directly. Chatty's built-in write confirmation flow will request explicit user approval before execution.
+
+Do not create a second approval step in chat.
+
 ## Debugging
 
 Work from evidence.

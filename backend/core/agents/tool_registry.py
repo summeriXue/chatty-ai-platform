@@ -208,10 +208,12 @@ class ToolRegistry:
     def _execute_project(self, tool_name: str, args: dict) -> dict:
         from core.agents.tools.project_tools import (
             apply_project_patch,
+            apply_project_replace,
             git_project_diff,
             git_project_status,
             list_project_files,
             preview_project_patch,
+            preview_project_replace,
             read_project_file,
             search_project_code,
         )
@@ -253,6 +255,22 @@ class ToolRegistry:
                 args["new_content"],
             )
 
+        elif tool_name == "preview_project_replace":
+            return preview_project_replace(
+                self.project_root,
+                args["path"],
+                args["old_text"],
+                args["new_text"],
+            )
+
+        elif tool_name == "apply_project_replace":
+            return apply_project_replace(
+                self.project_root,
+                args["path"],
+                args["old_text"],
+                args["new_text"],
+            )
+        
         elif tool_name == "git_project_status":
             return git_project_status(
                 self.project_root,

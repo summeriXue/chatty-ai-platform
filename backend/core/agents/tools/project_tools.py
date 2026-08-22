@@ -287,6 +287,130 @@ def apply_project_patch(
     }
 
 
+def _find_unique_text(content: str, old_text: str) -> tuple[int | None, str | None]:
+    """Find old_text exactly once inside content."""
+
+    if not old_text:
+        return None, "old_text must not be empty"
+
+    count = content.count(old_text)
+
+    if count == 0:
+        return None, "old_text was not found in the file"
+
+    if count > 1:
+        return None, (
+            f"old_text matched {count} locations. "
+            "Provide a larger, more specific snippet so exactly one location matches."
+        )
+
+    return content.find(old_text), None
+
+
+def preview_project_replace(
+    project_root: str,
+    relative_path: str,
+    old_text: str,
+    new_text: str,
+) -> dict:
+    """Preview a unique text replacement without writing the file."""
+
+    path = _resolve_project_path(project_root, relative_path)
+
+    if path is None:
+        return {"error": "Path is outside the project root"}
+
+    if not path.exists():
+        return {"error": f"File '{relative_path}' not found"}
+
+    if not path.is_file():
+        return {"error": f"'{relative_path}' is not a file"}
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return {"error": f"File '{relative_path}' is not a UTF-8 text file"}
+
+    index, error = _find_unique_text(content, old_text)
+
+    if error:
+        return {"error": error}
+
+    updated = (
+        content[:index]
+        + new_text
+        + content[index + len(old_text):]
+    )
+
+    diff = "".join(
+        difflib.unified_diff(
+            content.splitlines(keepends=True),
+            updated.splitlines(keepends=True),
+            fromfile=f"a/{relative_path}",
+            tofile=f"b/{relative_path}",
+        )
+    )
+
+    return {
+        "path": relative_path,
+        "changed": content != updated,
+        "match_count": 1,
+        "diff": diff,
+    }
+
+
+def apply_project_replace(
+    project_root: str,
+    relative_path: str,
+    old_text: str,
+    new_text: str,
+) -> dict:
+    """Apply a unique text replacement to an existing project file."""
+
+    path = _resolve_project_path(project_root, relative_path)
+
+    if path is None:
+        return {"error": "Path is outside the project root"}
+
+    if not path.exists():
+        return {"error": f"File '{relative_path}' not found"}
+
+    if not path.is_file():
+        return {"error": f"'{relative_path}' is not a file"}
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return {"error": f"File '{relative_path}' is not a UTF-8 text file"}
+
+    index, error = _find_unique_text(content, old_text)
+
+    if error:
+        return {"error": error}
+
+    updated = (
+        content[:index]
+        + new_text
+        + content[index + len(old_text):]
+    )
+
+    if updated == content:
+        return {
+            "path": relative_path,
+            "changed": False,
+            "message": "Replacement produced no change",
+        }
+
+    path.write_text(updated, encoding="utf-8")
+
+    return {
+        "path": relative_path,
+        "changed": True,
+        "message": "Replacement applied successfully",
+    }
+
+
+
 def git_project_status(project_root: str) -> dict:
     """Return the Git working-tree status for the configured project."""
 
