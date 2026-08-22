@@ -49,6 +49,7 @@ export function IntegrationsTab() {
   const [bambooSubdomain, setBambooSubdomain] = useState('');
   const [bambooKey, setBambooKey] = useState('');
   const [todoistToken, setTodoistToken] = useState('');
+  const [githubToken, setGithubToken] = useState('');
   const [feishuAppId, setFeishuAppId] = useState('');
   const [feishuAppSecret, setFeishuAppSecret] = useState('');
   const [feishuAgentId, setFeishuAgentId] = useState('');
@@ -246,6 +247,36 @@ export function IntegrationsTab() {
       setIntegrations(data.integrations);
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Setup failed'); }
     finally { setSaving(false); }
+  }
+
+  async function setupGitHub() {
+    setSaving(true);
+    setError('');
+
+    try {
+      await api('/api/integrations/github/setup', {
+        method: 'POST',
+        body: JSON.stringify({
+          api_token: githubToken,
+        }),
+      });
+
+      setSetupFor(null);
+
+      const data = await api<{ integrations: Integration[] }>(
+        '/api/integrations',
+      );
+
+      setIntegrations(data.integrations);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Setup failed',
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function setupFeishu() {
@@ -993,6 +1024,65 @@ export function IntegrationsTab() {
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>Cancel</button>
                       <button onClick={setupTodoist} disabled={saving || !todoistToken.trim()} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving || !todoistToken.trim() ? 0.5 : 1 }}>{saving ? 'Connecting...' : 'Connect'}</button>
+                    </div>
+                  </>
+                )}
+                {/* GitHub */}
+                {integration.id === 'github' && (
+                  <>
+                    <p style={{
+                      fontSize: 12,
+                      color: 'rgba(237,240,244,0.50)',
+                      lineHeight: 1.5,
+                      marginBottom: 4,
+                    }}>
+                      Paste your GitHub Personal Access Token. The token determines which
+                      repositories Chatty can access.
+                    </p>
+
+                    <input
+                      placeholder="GitHub Personal Access Token"
+                      type="password"
+                      value={githubToken}
+                      onChange={e => setGithubToken(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button
+                        onClick={() => setSetupFor(null)}
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          fontSize: 13,
+                          borderRadius: 4,
+                          border: '1px solid rgba(230,235,242,0.14)',
+                          background: 'transparent',
+                          color: 'rgba(237,240,244,0.62)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        onClick={setupGitHub}
+                        disabled={saving || !githubToken.trim()}
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          fontSize: 13,
+                          borderRadius: 4,
+                          background: 'var(--color-ch-accent, #C8D1D9)',
+                          color: '#0E1013',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          opacity: saving || !githubToken.trim() ? 0.5 : 1,
+                        }}
+                      >
+                        {saving ? 'Connecting...' : 'Connect'}
+                      </button>
                     </div>
                   </>
                 )}

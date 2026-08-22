@@ -174,6 +174,8 @@ class ChatRequest(BaseModel):
 class ToolExecuteRequest(BaseModel):
     tool: str
     args: dict
+    tool_use_id: str = ""
+    msg_id: str = ""
 
 
 class ContextWriteRequest(BaseModel):

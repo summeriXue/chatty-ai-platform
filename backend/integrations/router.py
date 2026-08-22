@@ -46,6 +46,10 @@ class TodoistSetupRequest(BaseModel):
     api_token: str = Field(..., min_length=1, max_length=256)
 
 
+class GitHubSetupRequest(BaseModel):
+    api_token: str
+
+
 class FeishuSetupRequest(BaseModel):
     app_id: str
     app_secret: str
@@ -150,6 +154,26 @@ async def setup_todoist(body: TodoistSetupRequest, user=Depends(get_current_user
     result = setup(api_token=body.api_token)
     if not result["ok"]:
         raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+@router.post("/github/setup")
+async def setup_github(
+    body: GitHubSetupRequest,
+    user=Depends(get_current_user),
+):
+    """Configure and validate GitHub API token."""
+
+    from .github.onboarding import setup
+
+    result = setup(api_token=body.api_token)
+
+    if not result["ok"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["error"],
+        )
+
     return result
 
 

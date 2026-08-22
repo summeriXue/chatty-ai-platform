@@ -96,17 +96,69 @@ def _coalesce_consecutive(messages):
     """Merge consecutive same-role user/assistant messages so providers that
     require strict turn alternation (Anthropic, Gemini) never see two in a row.
 
-    This happens legitimately: Telegram busy-skipped messages save several user
-    rows with no assistant between them, and a compaction gist folds onto a tail
-    that may follow a HEAD ending in a tool_result (also user-role for Anthropic).
-    Role 'tool' (OpenAI) is left untouched — those must stay one-per-tool_call."""
+    Preserve tool-call metadata when coalescing assistant messages. Dropping
+    tool_calls would leave a later role='tool' message orphaned, which
+    OpenAI-compatible providers reject.
+
+    Role 'tool' (OpenAI) is left untouched — those must stay one-per-tool_call.
+    """
     out: list[dict] = []
+
     for m in messages:
         role = m.get("role")
-        if out and role in ("user", "assistant") and out[-1].get("role") == role:
-            out[-1] = {**out[-1], "content": _merge_content(out[-1].get("content"), m.get("content"))}
+
+        if (
+            out
+            and role in ("user", "assistant")
+            and out[-1].get("role") == role
+        ):
+            previous = out[-1]
+
+            if role == "assistant":
+                previous_has_tools = bool(previous.get("tool_calls"))
+                current_has_tools = bool(m.get("tool_calls"))
+
+                # If the newer assistant message owns the tool_calls, preserve
+                # that message as the structural base and merge the older text
+                # into it.
+                if current_has_tools and not previous_has_tools:
+                    merged = dict(m)
+                    merged["content"] = _merge_content(
+                        previous.get("content"),
+                        m.get("content"),
+                    )
+                    out[-1] = merged
+                    continue
+
+                # If the previous message owns the tool_calls, retain them and
+                # merge the newer assistant text into the same message.
+                if previous_has_tools and not current_has_tools:
+                    merged = dict(previous)
+                    merged["content"] = _merge_content(
+                        previous.get("content"),
+                        m.get("content"),
+                    )
+                    out[-1] = merged
+                    continue
+
+                # Two separate assistant tool-call messages should not be
+                # collapsed into one because their tool/result boundaries matter.
+                if previous_has_tools and current_has_tools:
+                    out.append(dict(m))
+                    continue
+
+            # Ordinary consecutive user/assistant text messages.
+            out[-1] = {
+                **previous,
+                "content": _merge_content(
+                    previous.get("content"),
+                    m.get("content"),
+                ),
+            }
             continue
+
         out.append(dict(m))
+
     return out
 
 

@@ -99,6 +99,12 @@ AVAILABLE_INTEGRATIONS = {
         "icon": "✅",
         "auth_type": "api_key",
     },
+    "github": {
+        "name": "GitHub",
+        "description": "GitHub — repositories, issues, pull requests, reviews, and code collaboration",
+        "icon": "🐙",
+        "auth_type": "api_key",
+    },
 }
 
 

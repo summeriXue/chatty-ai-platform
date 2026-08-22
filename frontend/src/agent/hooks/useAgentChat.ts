@@ -462,7 +462,12 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ tool, args }),
+        body: JSON.stringify({
+          tool,
+          args,
+          tool_use_id: toolUseId,
+          msg_id: pendingRowId,
+        }),
       });
 
       if (!res.ok) throw new Error(`Execute failed: ${res.status}`);
