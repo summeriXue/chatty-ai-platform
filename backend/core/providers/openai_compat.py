@@ -185,18 +185,25 @@ class OpenAICompatibleProvider(AIProvider):
 
             # Parse accumulated tool args
             for tc in tool_calls:
-                if tc.get("input_json"):
+                input_json = tc.get("input_json", "")
+
+                if input_json:
                     try:
-                        args = json.loads(tc["input_json"])
-                        tc["args"] = args
-                        yield {
-                            "type": "tool_args",
-                            "tool": tc["name"],
-                            "tool_use_id": tc["id"],
-                            "args": args,
-                        }
+                        args = json.loads(input_json)
                     except Exception:
-                        tc["args"] = {}
+                        args = {}
+                else:
+                    # Valid no-argument tool call, e.g. git_project_status()
+                    args = {}
+
+                tc["args"] = args
+
+                yield {
+                    "type": "tool_args",
+                    "tool": tc["name"],
+                    "tool_use_id": tc["id"],
+                    "args": args,
+                }
 
             stop_reason = "tool_use" if tool_calls else "stop"
             yield {

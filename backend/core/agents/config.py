@@ -40,6 +40,9 @@ class AgentConfig:
     # Context directory (absolute path)
     context_dir: str = ""
 
+    # Project root directory available to project tools
+    project_root: str = ""
+
     # GCS prefix for this agent's data
     gcs_prefix: str = ""
 

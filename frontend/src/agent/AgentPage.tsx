@@ -21,12 +21,14 @@ import { useIsMobile } from '../shared/useIsMobile';
 import { MobileMenuDrawer } from '../shared/MobileMenuDrawer';
 import { confirmDialog } from '../shared/confirm';
 import { toast } from '../shared/toast';
+import { ProjectPanel } from './components/ProjectPanel';
 
 interface AgentRow {
   id: string;
   slug: string;
   agent_name: string;
   avatar_url?: string;
+  project_root?: string;
   onboarding_complete: boolean;
   gmail_enabled: boolean;
   gmail_send_enabled?: boolean;
@@ -42,7 +44,7 @@ interface AgentRow {
   provider_override?: string;
 }
 
-type Tab = 'chat' | 'knowledge' | 'playbooks' | 'reports' | 'reminders' | 'heartbeat';
+type Tab = 'chat' | 'knowledge'| 'project' | 'playbooks' | 'reports' | 'reminders' | 'heartbeat';
 
 function parseTab(raw: string | null): Tab | null {
   if (!raw) return null;
@@ -54,6 +56,7 @@ function parseTab(raw: string | null): Tab | null {
 const TABS: { key: Tab; label: string }[] = [
   { key: 'chat', label: 'Chat' },
   { key: 'knowledge', label: 'Knowledge' },
+  { key: 'project', label: 'Project' },
   { key: 'playbooks', label: 'Playbooks' },
   { key: 'reports', label: 'Reports' },
   { key: 'reminders', label: 'Reminders' },
@@ -879,6 +882,11 @@ export function AgentPage() {
           </>
         ) : activeTab === 'knowledge' ? (
           <AgentContextEditor agentId={agentId!} />
+        ) : activeTab === 'project' ? (
+          <ProjectPanel
+            agentId={agentId!}
+            projectRoot={agent.project_root || ''}
+          />
         ) : activeTab === 'playbooks' ? (
           <div style={{ flex: 1, overflow: 'auto' }}>
             <PlaybooksPanel

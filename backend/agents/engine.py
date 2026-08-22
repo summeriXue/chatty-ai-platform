@@ -79,6 +79,7 @@ def build_agent_config(agent_row: dict) -> AgentConfig:
         drive_write_enabled=bool(agent_row.get("drive_write_enabled", 0)),
         google_accounts=google_accounts,
         context_dir=str(_context_dir(slug)),
+        project_root=agent_row.get("project_root", ""),
         gcs_prefix=_gcs_prefix(slug) + "context/",
         chat_db_path=str(_agent_dir(slug) / "chat.db"),
         onboarding_complete=bool(agent_row.get("onboarding_complete", 0)),

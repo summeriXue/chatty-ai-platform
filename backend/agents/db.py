@@ -51,6 +51,7 @@ def _setup_connection() -> None:
             agent_name             TEXT NOT NULL DEFAULT 'My Agent',
             avatar_url             TEXT NOT NULL DEFAULT '',
             personality            TEXT NOT NULL DEFAULT '',
+            project_root           TEXT NOT NULL DEFAULT '',
             onboarding_complete    INTEGER NOT NULL DEFAULT 0,
             provider_override      TEXT NOT NULL DEFAULT '',
             model_override         TEXT NOT NULL DEFAULT '',
@@ -81,6 +82,7 @@ def _setup_connection() -> None:
         ("drive_write_enabled", "INTEGER NOT NULL DEFAULT 0"),
         ("google_accounts", "TEXT NOT NULL DEFAULT '{}'"),
         ("model_tier", "TEXT NOT NULL DEFAULT 'auto'"),
+        ("project_root", "TEXT NOT NULL DEFAULT ''"),
     ]:
         try:
             _connection.execute(f"ALTER TABLE agents ADD COLUMN {col} {typedef}")
@@ -185,7 +187,7 @@ def list_agents() -> list[dict]:
 
 
 UPDATABLE_FIELDS = {
-    "agent_name", "avatar_url", "personality",
+    "agent_name", "avatar_url", "personality", "project_root",
     "onboarding_complete", "provider_override", "model_override",
     "gmail_enabled", "gmail_send_enabled",
     "calendar_enabled", "calendar_write_enabled",

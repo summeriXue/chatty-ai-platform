@@ -99,6 +99,7 @@ class ToolRegistry:
         agent_name: str = "",
         reminder_handlers: dict | None = None,
         scheduled_action_handlers: dict | None = None,
+        project_root: str = "",
     ):
         self.context_dir = context_dir
         self.gcs_prefix = gcs_prefix
@@ -110,6 +111,7 @@ class ToolRegistry:
         self.integration_executors: dict = integration_executors or {}
         self.agent_slug = agent_slug
         self.agent_name = agent_name
+        self.project_root = project_root
         self._notify_user_called = False
         self._current_conversation_id: str | None = None
 
@@ -153,6 +155,8 @@ class ToolRegistry:
                 return self._execute_calendar(tool_name, tool_args)
             elif kind == "drive":
                 return self._execute_drive(tool_name, tool_args)
+            elif kind == "project":
+                return self._execute_project(tool_name, tool_args)
             elif kind == "web":
                 return self._execute_web(tool_name, tool_args)
             elif kind == "real_tool":
@@ -200,6 +204,66 @@ class ToolRegistry:
         elif tool_name == "delete_context_file":
             return delete_context_file(self.context_dir, args["filename"])
         return {"error": f"Unknown context tool: {tool_name}"}
+
+    def _execute_project(self, tool_name: str, args: dict) -> dict:
+        from core.agents.tools.project_tools import (
+            apply_project_patch,
+            git_project_diff,
+            git_project_status,
+            list_project_files,
+            preview_project_patch,
+            read_project_file,
+            search_project_code,
+        )
+
+        if not self.project_root:
+            return {"error": "No project root is configured for this agent"}
+
+        if tool_name == "read_project_file":
+            return read_project_file(
+                self.project_root,
+                args["path"],
+            )
+
+        elif tool_name == "search_project_code":
+            return search_project_code(
+                self.project_root,
+                args["query"],
+                args.get("max_results", 50),
+            )
+
+        elif tool_name == "list_project_files":
+            return list_project_files(
+                self.project_root,
+                args.get("directory", ""),
+                args.get("max_entries", 200),
+            )
+
+        elif tool_name == "preview_project_patch":
+            return preview_project_patch(
+                self.project_root,
+                args["path"],
+                args["new_content"],
+            )
+
+        elif tool_name == "apply_project_patch":
+            return apply_project_patch(
+                self.project_root,
+                args["path"],
+                args["new_content"],
+            )
+
+        elif tool_name == "git_project_status":
+            return git_project_status(
+                self.project_root,
+            )
+
+        elif tool_name == "git_project_diff":
+            return git_project_diff(
+                self.project_root,
+                args.get("path", ""),
+            )
+        return {"error": f"Unknown project tool: {tool_name}"}
 
     async def _execute_memory(self, tool_name: str, args: dict) -> dict:
         from core.agents.tools.memory_tools import (

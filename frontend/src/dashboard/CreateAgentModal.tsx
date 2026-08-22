@@ -29,6 +29,7 @@ const inputStyle: React.CSSProperties = {
 export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) {
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
+  const [preset, setPreset] = useState<'general' | 'technical_engineer'>('general');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
     try {
       const agent = await api<Agent>('/api/agents', {
         method: 'POST',
-        body: JSON.stringify({ agent_name: name.trim() }),
+        body: JSON.stringify({ agent_name: name.trim(), preset}),
       });
       onCreated(agent);
       const roleParam = (title.trim() || suggestedTitle) ? `?role=${encodeURIComponent(title.trim() || suggestedTitle || '')}` : '';
@@ -77,6 +78,79 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+
+            <div>
+              <label style={labelStyle}>Agent type</label>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setPreset('general')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    borderRadius: 4,
+                    border: preset === 'general'
+                      ? '1px solid #D4A85A'
+                      : '1px solid rgba(230,235,242,0.14)',
+                    background: preset === 'general'
+                      ? 'rgba(212,168,90,0.10)'
+                      : 'transparent',
+                    color: preset === 'general'
+                      ? '#EDF0F4'
+                      : 'rgba(237,240,244,0.62)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>
+                    General
+                  </div>
+
+                  <div style={{
+                    fontSize: 11,
+                    marginTop: 3,
+                    color: 'rgba(237,240,244,0.38)',
+                  }}>
+                    General-purpose assistant
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreset('technical_engineer')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    borderRadius: 4,
+                    border: preset === 'technical_engineer'
+                      ? '1px solid #D4A85A'
+                      : '1px solid rgba(230,235,242,0.14)',
+                    background: preset === 'technical_engineer'
+                      ? 'rgba(212,168,90,0.10)'
+                      : 'transparent',
+                    color: preset === 'technical_engineer'
+                      ? '#EDF0F4'
+                      : 'rgba(237,240,244,0.62)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>
+                    Technical Engineer
+                  </div>
+
+                  <div style={{
+                    fontSize: 11,
+                    marginTop: 3,
+                    color: 'rgba(237,240,244,0.38)',
+                  }}>
+                    Code, architecture and debugging
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div>
               <label style={labelStyle}>Agent name *</label>
               <input
@@ -101,9 +175,14 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                 style={{ ...inputStyle, color: title ? '#EDF0F4' : undefined }}
               />
               <p style={{
-                fontSize: 11, color: 'rgba(237,240,244,0.28)', marginTop: 4,
-              }}>This helps your agent understand its role during onboarding.</p>
+                fontSize: 11,
+                color: 'rgba(237,240,244,0.28)',
+                marginTop: 4,
+              }}>
+                This helps your agent understand its role during onboarding.
+              </p>
             </div>
+
           </div>
 
           {error && <p style={{ color: '#D97757', fontSize: 13, marginBottom: 16 }}>{error}</p>}

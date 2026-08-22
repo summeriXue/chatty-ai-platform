@@ -123,6 +123,191 @@ CONTEXT_TOOLS = [
         "writes": True,
         "context_memory": True,
     },
+    {
+        "name": "read_project_file",
+        "description": (
+            "Read the full contents of a text file inside the configured software project. "
+            "Use this when you need to inspect actual project source code or configuration "
+            "before answering a technical question. "
+            "The path must be relative to the project root."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Project-relative file path, for example "
+                        "'backend/core/providers/openai_compat.py'."
+                    ),
+                },
+            },
+            "required": ["path"],
+        },
+        "kind": "project",
+        "writes": False,
+    },
+    {
+        "name": "search_project_code",
+        "description": (
+            "Search source code and text files inside the configured software project. "
+            "Use this when you need to locate where a function, class, route, configuration, "
+            "symbol, error message, or implementation appears before reading the relevant files. "
+            "Returns matching project-relative file paths, line numbers, and matching lines."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Text or code symbol to search for, for example "
+                        "'ToolRegistry(', 'def build_agent_config', or 'provider_override'."
+                    ),
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": (
+                        "Maximum number of matching lines to return. "
+                        "Defaults to 50."
+                    ),
+                },
+            },
+            "required": ["query"],
+        },
+        "kind": "project",
+        "writes": False,
+    },
+    {
+        "name": "list_project_files",
+        "description": (
+            "List files and directories directly inside a directory of the configured "
+            "software project. Use this to explore the project structure when you do "
+            "not yet know the exact filename or location. "
+            "This lists one directory level at a time and does not recursively scan "
+            "the entire project."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "directory": {
+                    "type": "string",
+                    "description": (
+                        "Project-relative directory to inspect. "
+                        "Use an empty string for the project root, or for example "
+                        "'backend/core/providers'."
+                    ),
+                },
+                "max_entries": {
+                    "type": "integer",
+                    "description": (
+                        "Maximum number of entries to return. Defaults to 200."
+                    ),
+                },
+            },
+            "required": [],
+        },
+        "kind": "project",
+        "writes": False,
+    },
+    {
+        "name": "preview_project_patch",
+        "description": (
+            "Preview a proposed modification to an existing project text file. "
+            "This does not write anything. It compares the file's current contents "
+            "with the proposed full replacement and returns a unified diff. "
+            "Use this before applying code changes."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Project-relative path to the existing file, for example "
+                        "'backend/core/agents/tool_registry.py'."
+                    ),
+                },
+                "new_content": {
+                    "type": "string",
+                    "description": (
+                        "The complete proposed new contents of the file."
+                    ),
+                },
+            },
+            "required": ["path", "new_content"],
+        },
+        "kind": "project",
+        "writes": False,
+    },
+    {
+        "name": "apply_project_patch",
+        "description": (
+            "Apply an approved modification to an existing project text file by "
+            "replacing its contents with the provided full file content. "
+            "Use only after the change has been inspected or approved."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Project-relative path to the existing file."
+                    ),
+                },
+                "new_content": {
+                    "type": "string",
+                    "description": (
+                        "The complete replacement contents for the file."
+                    ),
+                },
+            },
+            "required": ["path", "new_content"],
+        },
+        "kind": "project",
+        "writes": True,
+    },
+    {
+        "name": "git_project_status",
+        "description": (
+            "Inspect the Git working-tree status of the configured software project. "
+            "Use this after making code changes to see which files are modified, "
+            "added, deleted, or untracked. This tool does not modify the repository."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+        "kind": "project",
+        "writes": False,
+    },
+    {
+        "name": "git_project_diff",
+        "description": (
+            "Inspect the unstaged Git diff of the configured software project. "
+            "Use this to review code changes after editing files. "
+            "Optionally provide a project-relative file path to inspect only that file. "
+            "This tool does not modify the repository."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Optional project-relative file path, for example "
+                        "'backend/core/agents/tools/project_tools.py'. "
+                        "Leave empty to inspect all unstaged changes."
+                    ),
+                },
+            },
+            "required": [],
+        },
+        "kind": "project",
+        "writes": False,
+    },
 ]
 
 # ── Memory tools (daily notes, MEMORY.md, FTS5 search, facts) ────────────────

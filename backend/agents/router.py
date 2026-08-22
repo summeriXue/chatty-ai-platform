@@ -137,11 +137,13 @@ def _build_playbook_expansion(agent_slug: str, messages: list, playbook_slug: st
 class CreateAgentRequest(BaseModel):
     agent_name: str
     personality: str = ""
+    preset: str = "general"
 
 
 class UpdateAgentRequest(BaseModel):
     agent_name: str | None = None
     personality: str | None = None
+    project_root: str | None = None
     avatar_url: str | None = None
     onboarding_complete: bool | None = None
     provider_override: str | None = None
@@ -208,12 +210,31 @@ async def create_agent(body: CreateAgentRequest, user=Depends(get_current_user))
     if not body.agent_name.strip():
         raise HTTPException(status_code=400, detail="agent_name is required")
 
+    personality = body.personality
+
+    if body.preset == "technical_engineer" and not personality.strip():
+        from agents.presets import TECHNICAL_ENGINEER_PERSONALITY
+
+        personality = TECHNICAL_ENGINEER_PERSONALITY
+
     existing_count = len(agent_db.list_agents())
-    agent = agent_db.create_agent(body.agent_name.strip(), personality=body.personality)
+    agent = agent_db.create_agent(
+        body.agent_name.strip(),
+        personality=personality,
+    )
 
     # Seed default context files (soul.md, identity.md, user.md, bootstrap, guide, integration-setup)
     context_dir = DATA_DIR / agent["slug"] / "context"
     seed_context_files(context_dir, agent["agent_name"])
+
+    # Seed role-specific context for the selected agent preset
+    if body.preset != "general":
+        from agents.presets import apply_agent_preset
+
+        apply_agent_preset(
+            body.preset,
+            context_dir,
+        )
 
     # Inject pending integration setup selections from onboarding (first agent only)
     from integrations.pending_setup import load_pending, clear_pending
@@ -256,6 +277,28 @@ async def update_agent(agent_id: str, body: UpdateAgentRequest, user=Depends(get
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
+
+    if "project_root" in updates:
+        project_root = updates["project_root"].strip()
+
+        if project_root:
+            path = Path(project_root)
+
+            if not path.exists():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Project root does not exist",
+                )
+
+            if not path.is_dir():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Project root must be a directory",
+                )
+
+            updates["project_root"] = str(path.resolve())
+        else:
+            updates["project_root"] = ""
 
     if "model_tier" in updates:
         if updates["model_tier"] not in ("auto", "top", "mid", "light"):
@@ -554,6 +597,7 @@ def _stream_chat(agent: dict, messages: list, training_mode: bool, conversation_
         agent_name=config.agent_name,
         reminder_handlers=reminder_handlers,
         scheduled_action_handlers=sa_handlers,
+        project_root=config.project_root,
     )
 
     if import_mode and conversation_id:
@@ -1349,6 +1393,7 @@ async def tool_execute(agent_id: str, req: ToolExecuteRequest, user=Depends(get_
         agent_slug=agent["slug"],
         reminder_handlers=reminder_handlers,
         scheduled_action_handlers=sa_handlers,
+        project_root=config.project_root,
     )
 
     from core.agents.tool_definitions import get_tool_definitions, build_writes_map

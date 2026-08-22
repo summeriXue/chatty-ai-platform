@@ -6,6 +6,7 @@ export interface Agent {
   agent_name: string;
   avatar_url: string;
   personality: string;
+  project_root: string;
   onboarding_complete: boolean;
   provider_override: string;
   model_override: string;
