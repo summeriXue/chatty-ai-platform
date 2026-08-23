@@ -369,6 +369,189 @@ async def _github_get_issue_comments(
         logger.error("github_get_issue_comments error: %s", e)
         return {"error": str(e)}
 
+async def _github_add_issue_comment(
+    owner: str,
+    repo: str,
+    issue_number: int,
+    body: str,
+) -> dict:
+    client = get_client()
+
+    if not client:
+        return {"error": "GitHub not configured"}
+
+    if not body.strip():
+        return {"error": "Comment body must not be empty"}
+
+    try:
+        data = await client.post(
+            f"/repos/{owner}/{repo}/issues/{issue_number}/comments",
+            json={
+                "body": body,
+            },
+        )
+
+        return {
+            "ok": True,
+            "comment": {
+                "id": data.get("id"),
+                "user": (data.get("user") or {}).get("login"),
+                "body": data.get("body"),
+                "created_at": data.get("created_at"),
+                "updated_at": data.get("updated_at"),
+                "html_url": data.get("html_url"),
+            },
+        }
+
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text[:1000]
+
+        logger.error(
+            "github_add_issue_comment error: status=%s body=%s",
+            e.response.status_code,
+            detail,
+        )
+
+        return {
+            "error": (
+                f"GitHub API returned {e.response.status_code}: "
+                f"{detail}"
+            ),
+        }
+
+    except Exception as e:
+        logger.error("github_add_issue_comment error: %s", e)
+        return {"error": str(e)}
+
+
+async def _github_create_pull_request_review(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    body: str,
+    event: str = "COMMENT",
+) -> dict:
+    client = get_client()
+
+    if not client:
+        return {"error": "GitHub not configured"}
+
+    event = event.upper()
+
+    if event not in {"COMMENT", "APPROVE", "REQUEST_CHANGES"}:
+        return {
+            "error": (
+                "event must be one of: "
+                "COMMENT, APPROVE, REQUEST_CHANGES"
+            )
+        }
+
+    if not body.strip():
+        return {"error": "Review body must not be empty"}
+
+    try:
+        data = await client.post(
+            f"/repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+            json={
+                "body": body,
+                "event": event,
+            },
+        )
+
+        return {
+            "ok": True,
+            "review": {
+                "id": data.get("id"),
+                "user": (data.get("user") or {}).get("login"),
+                "body": data.get("body"),
+                "state": data.get("state"),
+                "submitted_at": data.get("submitted_at"),
+                "html_url": data.get("html_url"),
+            },
+        }
+
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text[:1000]
+
+        logger.error(
+            "github_create_pull_request_review error: status=%s body=%s",
+            e.response.status_code,
+            detail,
+        )
+
+        return {
+            "error": (
+                f"GitHub API returned {e.response.status_code}: "
+                f"{detail}"
+            ),
+        }
+
+    except Exception as e:
+        logger.error(
+            "github_create_pull_request_review error: %s",
+            e,
+        )
+        return {"error": str(e)}
+
+async def _github_list_pull_request_reviews(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    limit: int = 50,
+) -> dict:
+    client = get_client()
+
+    if not client:
+        return {"error": "GitHub not configured"}
+
+    limit = max(1, min(limit, 100))
+
+    try:
+        data = await client.get(
+            f"/repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+            params={"per_page": limit},
+        )
+
+        reviews = [
+            {
+                "id": item.get("id"),
+                "user": (item.get("user") or {}).get("login"),
+                "body": item.get("body"),
+                "state": item.get("state"),
+                "submitted_at": item.get("submitted_at"),
+                "html_url": item.get("html_url"),
+            }
+            for item in data
+        ]
+
+        return {
+            "reviews": reviews,
+            "count": len(reviews),
+        }
+
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text[:1000]
+
+        logger.error(
+            "github_list_pull_request_reviews error: status=%s body=%s",
+            e.response.status_code,
+            detail,
+        )
+
+        return {
+            "error": (
+                f"GitHub API returned {e.response.status_code}: "
+                f"{detail}"
+            ),
+        }
+
+    except Exception as e:
+        logger.error(
+            "github_list_pull_request_reviews error: %s",
+            e,
+        )
+        return {"error": str(e)}
+
 
 # ── Tool definitions ──────────────────────────────────────────────────────
 
@@ -519,7 +702,6 @@ GITHUB_TOOL_DEFS = [
         },
         "kind": "integration",
     },
-
     {
         "name": "github_get_pull_request",
         "description": (
@@ -547,7 +729,6 @@ GITHUB_TOOL_DEFS = [
         },
         "kind": "integration",
     },
-
     {
         "name": "github_get_pull_request_diff",
         "description": (
@@ -574,7 +755,6 @@ GITHUB_TOOL_DEFS = [
         },
         "kind": "integration",
     },
-
     {
         "name": "github_get_issue_comments",
         "description": (
@@ -610,6 +790,135 @@ GITHUB_TOOL_DEFS = [
         },
         "kind": "integration",
     },
+    {
+        "name": "github_add_issue_comment",
+        "description": (
+            "Add a conversation comment to a GitHub issue or pull request. "
+            "GitHub pull requests use the issue comments API for general discussion comments. "
+            "This modifies the remote repository and requires user approval."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "GitHub repository owner or organization.",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "GitHub repository name.",
+                },
+                "issue_number": {
+                    "type": "integer",
+                    "description": (
+                        "Issue or pull request number to comment on."
+                    ),
+                },
+                "body": {
+                    "type": "string",
+                    "description": (
+                        "Comment body in GitHub-flavored Markdown."
+                    ),
+                },
+            },
+            "required": [
+                "owner",
+                "repo",
+                "issue_number",
+                "body",
+            ],
+        },
+        "kind": "integration",
+        "writes": True,
+    },
+    {
+        "name": "github_create_pull_request_review",
+        "description": (
+            "Submit a formal GitHub pull request review. "
+            "Use COMMENT for a non-blocking review, APPROVE to approve the pull request, "
+            "or REQUEST_CHANGES when changes are required before merge. "
+            "This modifies the remote repository and requires user approval."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "GitHub repository owner or organization.",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "GitHub repository name.",
+                },
+                "pull_number": {
+                    "type": "integer",
+                    "description": "GitHub pull request number.",
+                },
+                "body": {
+                    "type": "string",
+                    "description": "Review summary in GitHub-flavored Markdown.",
+                },
+                "event": {
+                    "type": "string",
+                    "enum": [
+                        "COMMENT",
+                        "APPROVE",
+                        "REQUEST_CHANGES",
+                    ],
+                    "description": (
+                        "Review action. COMMENT posts a review without approving or "
+                        "blocking; APPROVE approves; REQUEST_CHANGES blocks pending changes."
+                    ),
+                },
+            },
+            "required": [
+                "owner",
+                "repo",
+                "pull_number",
+                "body",
+                "event",
+            ],
+        },
+        "kind": "integration",
+        "writes": True,
+    },
+    {
+        "name": "github_list_pull_request_reviews",
+        "description": (
+            "List formal reviews submitted on a GitHub pull request. "
+            "Use this to inspect COMMENTED, APPROVED, or CHANGES_REQUESTED reviews "
+            "and verify previously submitted pull request reviews."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "GitHub repository owner or organization.",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "GitHub repository name.",
+                },
+                "pull_number": {
+                    "type": "integer",
+                    "description": "GitHub pull request number.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": (
+                        "Maximum reviews to return. Defaults to 50, max 100."
+                    ),
+                },
+            },
+            "required": [
+                "owner",
+                "repo",
+                "pull_number",
+            ],
+        },
+        "kind": "integration",
+    },
 ]
 
 
@@ -622,4 +931,7 @@ TOOL_EXECUTORS = {
     "github_get_pull_request": _github_get_pull_request,
     "github_get_pull_request_diff": _github_get_pull_request_diff,
     "github_get_issue_comments": _github_get_issue_comments,
+    "github_add_issue_comment": _github_add_issue_comment,
+    "github_create_pull_request_review": _github_create_pull_request_review,
+    "github_list_pull_request_reviews": _github_list_pull_request_reviews,
 }
