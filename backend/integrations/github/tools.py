@@ -262,6 +262,7 @@ async def _github_get_pull_request(
                 "mergeable": data.get("mergeable"),
                 "user": (data.get("user") or {}).get("login"),
                 "head": (data.get("head") or {}).get("ref"),
+                "head_sha": (data.get("head") or {}).get("sha"),
                 "base": (data.get("base") or {}).get("ref"),
                 "commits": data.get("commits"),
                 "changed_files": data.get("changed_files"),
@@ -552,6 +553,151 @@ async def _github_list_pull_request_reviews(
         )
         return {"error": str(e)}
 
+async def _github_add_pull_request_review_comment(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    commit_id: str,
+    path: str,
+    line: int,
+    side: str,
+    body: str,
+) -> dict:
+    client = get_client()
+
+    if not client:
+        return {"error": "GitHub not configured"}
+
+    side = side.upper()
+
+    if side not in {"LEFT", "RIGHT"}:
+        return {"error": "side must be LEFT or RIGHT"}
+
+    if line < 1:
+        return {"error": "line must be a positive integer"}
+
+    if not commit_id.strip():
+        return {"error": "commit_id must not be empty"}
+
+    if not path.strip():
+        return {"error": "path must not be empty"}
+
+    if not body.strip():
+        return {"error": "Comment body must not be empty"}
+
+    try:
+        data = await client.post(
+            f"/repos/{owner}/{repo}/pulls/{pull_number}/comments",
+            json={
+                "body": body,
+                "commit_id": commit_id,
+                "path": path,
+                "line": line,
+                "side": side,
+            },
+        )
+
+        return {
+            "ok": True,
+            "comment": {
+                "id": data.get("id"),
+                "user": (data.get("user") or {}).get("login"),
+                "body": data.get("body"),
+                "path": data.get("path"),
+                "line": data.get("line"),
+                "side": data.get("side"),
+                "commit_id": data.get("commit_id"),
+                "created_at": data.get("created_at"),
+                "updated_at": data.get("updated_at"),
+                "html_url": data.get("html_url"),
+            },
+        }
+
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text[:1000]
+
+        logger.error(
+            "github_add_pull_request_review_comment error: status=%s body=%s",
+            e.response.status_code,
+            detail,
+        )
+
+        return {
+            "error": (
+                f"GitHub API returned {e.response.status_code}: "
+                f"{detail}"
+            ),
+        }
+
+    except Exception as e:
+        logger.error(
+            "github_add_pull_request_review_comment error: %s",
+            e,
+        )
+        return {"error": str(e)}
+
+async def _github_list_pull_request_review_comments(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    limit: int = 50,
+) -> dict:
+    client = get_client()
+
+    if not client:
+        return {"error": "GitHub not configured"}
+
+    limit = max(1, min(limit, 100))
+
+    try:
+        data = await client.get(
+            f"/repos/{owner}/{repo}/pulls/{pull_number}/comments",
+            params={"per_page": limit},
+        )
+
+        comments = [
+            {
+                "id": item.get("id"),
+                "user": (item.get("user") or {}).get("login"),
+                "body": item.get("body"),
+                "path": item.get("path"),
+                "line": item.get("line"),
+                "side": item.get("side"),
+                "commit_id": item.get("commit_id"),
+                "created_at": item.get("created_at"),
+                "updated_at": item.get("updated_at"),
+                "html_url": item.get("html_url"),
+            }
+            for item in data
+        ]
+
+        return {
+            "comments": comments,
+            "count": len(comments),
+        }
+
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text[:1000]
+
+        logger.error(
+            "github_list_pull_request_review_comments error: status=%s body=%s",
+            e.response.status_code,
+            detail,
+        )
+
+        return {
+            "error": (
+                f"GitHub API returned {e.response.status_code}: "
+                f"{detail}"
+            ),
+        }
+
+    except Exception as e:
+        logger.error(
+            "github_list_pull_request_review_comments error: %s",
+            e,
+        )
+        return {"error": str(e)}
 
 # ── Tool definitions ──────────────────────────────────────────────────────
 
@@ -919,6 +1065,113 @@ GITHUB_TOOL_DEFS = [
         },
         "kind": "integration",
     },
+    {
+        "name": "github_add_pull_request_review_comment",
+        "description": (
+            "Add an inline review comment to a specific line in a GitHub pull "
+            "request diff. Use RIGHT for added or context lines and LEFT for "
+            "deleted lines. Requires the pull request head commit SHA. "
+            "This modifies the remote repository and requires user approval."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "GitHub repository owner or organization.",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "GitHub repository name.",
+                },
+                "pull_number": {
+                    "type": "integer",
+                    "description": "GitHub pull request number.",
+                },
+                "commit_id": {
+                    "type": "string",
+                    "description": (
+                        "Head commit SHA of the pull request. "
+                        "Use the latest PR head commit."
+                    ),
+                },
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Repository-relative path of the file being commented on."
+                    ),
+                },
+                "line": {
+                    "type": "integer",
+                    "description": (
+                        "Line number in the file on the selected side of the diff."
+                    ),
+                },
+                "side": {
+                    "type": "string",
+                    "enum": ["LEFT", "RIGHT"],
+                    "description": (
+                        "RIGHT for added or unchanged context lines; "
+                        "LEFT for deleted lines."
+                    ),
+                },
+                "body": {
+                    "type": "string",
+                    "description": "Inline review comment in GitHub-flavored Markdown.",
+                },
+            },
+            "required": [
+                "owner",
+                "repo",
+                "pull_number",
+                "commit_id",
+                "path",
+                "line",
+                "side",
+                "body",
+            ],
+        },
+        "kind": "integration",
+        "writes": True,
+    },
+    {
+        "name": "github_list_pull_request_review_comments",
+        "description": (
+            "List inline review comments on a GitHub pull request. "
+            "Use this to inspect comments attached to specific files and diff lines, "
+            "and to verify previously submitted inline review comments."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "GitHub repository owner or organization.",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "GitHub repository name.",
+                },
+                "pull_number": {
+                    "type": "integer",
+                    "description": "GitHub pull request number.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": (
+                        "Maximum inline review comments to return. "
+                        "Defaults to 50, max 100."
+                    ),
+                },
+            },
+            "required": [
+                "owner",
+                "repo",
+                "pull_number",
+            ],
+        },
+        "kind": "integration",
+    },
 ]
 
 
@@ -934,4 +1187,6 @@ TOOL_EXECUTORS = {
     "github_add_issue_comment": _github_add_issue_comment,
     "github_create_pull_request_review": _github_create_pull_request_review,
     "github_list_pull_request_reviews": _github_list_pull_request_reviews,
+    "github_add_pull_request_review_comment": _github_add_pull_request_review_comment,
+    "github_list_pull_request_review_comments": _github_list_pull_request_review_comments,
 }
