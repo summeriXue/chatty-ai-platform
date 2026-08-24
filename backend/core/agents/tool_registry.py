@@ -156,7 +156,7 @@ class ToolRegistry:
             elif kind == "drive":
                 return self._execute_drive(tool_name, tool_args)
             elif kind == "project":
-                return self._execute_project(tool_name, tool_args)
+                return await self._execute_project(tool_name, tool_args)
             elif kind == "web":
                 return self._execute_web(tool_name, tool_args)
             elif kind == "real_tool":
@@ -186,8 +186,18 @@ class ToolRegistry:
             else:
                 return {"error": f"Unknown tool kind: {kind}"}
         except Exception as e:
-            logger.error("Tool execution error [%s/%s]: %s", kind, tool_name, e)
-            return {"error": f"Tool error: {str(e)}"}
+            logger.exception(
+                "Tool execution error [%s/%s]: %s: %r",
+                kind,
+                tool_name,
+                type(e).__name__,
+                e,
+            )
+            return {
+                "error": (
+                    f"Tool error: {type(e).__name__}: {str(e) or repr(e)}"
+                )
+            }
 
     def _execute_context(self, tool_name: str, args: dict) -> dict:
         if tool_name == "list_context_files":
@@ -205,7 +215,7 @@ class ToolRegistry:
             return delete_context_file(self.context_dir, args["filename"])
         return {"error": f"Unknown context tool: {tool_name}"}
 
-    def _execute_project(self, tool_name: str, args: dict) -> dict:
+    async def _execute_project(self, tool_name: str, args: dict) -> dict:
         from core.agents.tools.project_tools import (
             apply_project_patch,
             apply_project_replace,
@@ -215,6 +225,10 @@ class ToolRegistry:
             preview_project_patch,
             preview_project_replace,
             read_project_file,
+            run_backend_tests,
+            run_frontend_build,
+            run_frontend_lint,
+            run_frontend_tests,
             search_project_code,
         )
 
@@ -270,7 +284,7 @@ class ToolRegistry:
                 args["old_text"],
                 args["new_text"],
             )
-        
+
         elif tool_name == "git_project_status":
             return git_project_status(
                 self.project_root,
@@ -281,6 +295,28 @@ class ToolRegistry:
                 self.project_root,
                 args.get("path", ""),
             )
+
+        elif tool_name == "run_backend_tests":
+            return await run_backend_tests(
+                self.project_root,
+                args.get("target", ""),
+            )
+
+        elif tool_name == "run_frontend_tests":
+            return await run_frontend_tests(
+                self.project_root,
+            )
+
+        elif tool_name == "run_frontend_build":
+            return await run_frontend_build(
+                self.project_root,
+            )
+
+        elif tool_name == "run_frontend_lint":
+            return await run_frontend_lint(
+                self.project_root,
+            )
+
         return {"error": f"Unknown project tool: {tool_name}"}
 
     async def _execute_memory(self, tool_name: str, args: dict) -> dict:

@@ -110,6 +110,8 @@ SWEEP_ALLOWLIST = {
     ("GET", "/api/branding/logo"),              # served in <img>/CSS tags
     ("POST", "/api/messaging/whatsapp/webhook"),  # Baileys sidecar, X-Api-Key auth
     ("POST", "/api/integrations/paperclip/heartbeat"),  # X-Webhook-Secret auth
+    ("GET", "/api/wecom/callback"),   # WeCom signature query-param auth, not Chatty JWT
+    ("POST", "/api/wecom/callback"),  # WeCom signature query-param auth, not Chatty JWT
 }
 
 

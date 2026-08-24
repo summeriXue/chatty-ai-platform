@@ -370,6 +370,77 @@ CONTEXT_TOOLS = [
         "kind": "project",
         "writes": False,
     },
+    {
+        "name": "run_backend_tests",
+        "description": (
+            "Run backend Python tests with pytest inside the configured project's "
+            "backend directory. By default runs the full backend test suite. "
+            "Optionally provide a pytest test path or node id to run only a specific "
+            "file, class, or test while debugging. A non-zero exit code means the "
+            "tests failed; inspect stdout/stderr and continue debugging instead of "
+            "treating it as a tool error."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "description": (
+                        "Optional pytest test path or node id relative to the backend "
+                        "directory, for example "
+                        "'tests/test_agent_engine.py' or "
+                        "'tests/test_agent_engine.py::TestBuildAgentConfig::"
+                        "test_context_dir_is_absolute_path'. "
+                        "Do not pass pytest command-line options."
+                    ),
+                },
+            },
+            "required": [],
+        },
+        "kind": "project",
+    },
+    {
+        "name": "run_frontend_tests",
+        "description": (
+            "Run the frontend test suite with npm test inside the configured "
+            "project's frontend directory. Use this after frontend logic or component "
+            "changes to verify behavior."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+        "kind": "project",
+    },
+    {
+        "name": "run_frontend_build",
+        "description": (
+            "Run the frontend production build with npm run build inside the configured "
+            "project's frontend directory. Use this to verify TypeScript compilation "
+            "and Vite production build compatibility after frontend changes."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+        "kind": "project",
+    },
+    {
+        "name": "run_frontend_lint",
+        "description": (
+            "Run the frontend lint command with npm run lint inside the configured "
+            "project's frontend directory. Use this to detect linting and static "
+            "code-quality issues after frontend changes."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+        "kind": "project",
+    },
 ]
 
 # ── Memory tools (daily notes, MEMORY.md, FTS5 search, facts) ────────────────

@@ -3,6 +3,9 @@ from pathlib import Path
 import difflib
 
 import subprocess
+import asyncio
+import shutil
+import sys
 
 
 def _resolve_project_path(project_root: str, relative_path: str) -> Path | None:
@@ -513,3 +516,165 @@ def git_project_diff(
         "diff": result.stdout,
         "has_changes": bool(result.stdout.strip()),
     }
+
+async def _run_project_process(
+    project_root: str,
+    command: list[str],
+    working_dir: str = "",
+    timeout: int = 120,
+) -> dict:
+    root = Path(project_root).resolve()
+
+    if not root.exists() or not root.is_dir():
+        return {
+            "ok": False,
+            "error": "Configured project root does not exist",
+        }
+
+    cwd = root / working_dir if working_dir else root
+    cwd = cwd.resolve()
+
+    try:
+        cwd.relative_to(root)
+    except ValueError:
+        return {
+            "ok": False,
+            "error": "Working directory must stay inside project root",
+        }
+
+    if not cwd.exists() or not cwd.is_dir():
+        return {
+            "ok": False,
+            "error": f"Working directory does not exist: {working_dir}",
+        }
+
+    executable = command[0]
+
+    # Use the same Python interpreter that is running Chatty.
+    if executable == "python":
+        executable = sys.executable
+
+    # Resolve npm/npm.cmd and other executables on Windows.
+    else:
+        resolved = shutil.which(executable)
+
+        if not resolved:
+            return {
+                "ok": False,
+                "error": f"Command not found: {command[0]}",
+            }
+
+        executable = resolved
+
+    resolved_command = [
+        executable,
+        *command[1:],
+    ]
+
+    def _run() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            resolved_command,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            check=False,
+        )
+
+    try:
+        result = await asyncio.to_thread(_run)
+
+    except subprocess.TimeoutExpired as e:
+        stdout = e.stdout or ""
+        stderr = e.stderr or ""
+
+        return {
+            "ok": False,
+            "timed_out": True,
+            "exit_code": None,
+            "stdout": str(stdout)[-12000:],
+            "stderr": str(stderr)[-12000:],
+            "error": f"Command timed out after {timeout} seconds",
+        }
+
+    except OSError as e:
+        return {
+            "ok": False,
+            "error": f"Failed to run command: {e}",
+        }
+
+    stdout = result.stdout or ""
+    stderr = result.stderr or ""
+
+    return {
+        "ok": result.returncode == 0,
+        "exit_code": result.returncode,
+        "stdout": stdout[-12000:],
+        "stderr": stderr[-12000:],
+    }
+
+async def run_backend_tests(
+    project_root: str,
+    target: str = "",
+) -> dict:
+    command = [
+        "python",
+        "-m",
+        "pytest",
+    ]
+
+    target = target.strip()
+
+    if target:
+        # Pytest node ids / test paths only.
+        # Reject obvious shell-style or option-style input so this tool
+        # remains a focused test runner rather than arbitrary command execution.
+        if target.startswith("-"):
+            return {
+                "ok": False,
+                "error": "Pytest target must be a test path or node id, not an option",
+            }
+
+        if "\n" in target or "\r" in target:
+            return {
+                "ok": False,
+                "error": "Pytest target must be a single-line test path or node id",
+            }
+
+        command.append(target)
+
+    return await _run_project_process(
+        project_root=project_root,
+        command=command,
+        working_dir="backend",
+        timeout=180,
+    )
+
+
+async def run_frontend_tests(project_root: str) -> dict:
+    return await _run_project_process(
+        project_root=project_root,
+        command=["npm", "test"],
+        working_dir="frontend",
+        timeout=180,
+    )
+
+
+async def run_frontend_build(project_root: str) -> dict:
+    return await _run_project_process(
+        project_root=project_root,
+        command=["npm", "run", "build"],
+        working_dir="frontend",
+        timeout=240,
+    )
+
+
+async def run_frontend_lint(project_root: str) -> dict:
+    return await _run_project_process(
+        project_root=project_root,
+        command=["npm", "run", "lint"],
+        working_dir="frontend",
+        timeout=120,
+    )

@@ -67,8 +67,8 @@ class TestBuildAgentConfig:
 
         cfg = build_agent_config(row)
 
-        assert cfg.context_dir.endswith("my-agent/context")
         from pathlib import Path
+        assert Path(cfg.context_dir).parts[-2:] == ("my-agent", "context")
         assert Path(cfg.context_dir).is_absolute()
 
     def test_personality_falls_back_to_onboarding_default(self, monkeypatch, tmp_path):
