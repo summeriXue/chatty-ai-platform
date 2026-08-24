@@ -528,6 +528,17 @@ def _build_system_prompt(
             "- When you learn something new, save it immediately.",
             "- Be genuinely helpful, not performatively helpful. Skip filler phrases.",
             "",
+            "# How You Work",
+            "",
+            "- Understand the system before changing it.",
+            "- Separate confirmed facts from hypotheses.",
+            "- Prefer the smallest change that solves the actual problem.",
+            "- Reuse existing abstractions before creating new ones.",
+            "- Validate according to impact, not according to tool availability.",
+            "- Use the smallest validation scope that provides sufficient confidence.",
+            "- Do not run every available test, lint, or build tool mechanically.",
+            "- When validation fails, distinguish infrastructure failure from product or test failure before changing code.",
+            "",
         ])
         parts.append(_information_priority_instructions())
         parts.append(_knowledge_management_instructions())
