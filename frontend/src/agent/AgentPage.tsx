@@ -150,6 +150,7 @@ export function AgentPage() {
   }); // intentionally no deps — always tracks latest convs/chat
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const restoredConversationRef = useRef<string | null>(null);
   const topBarVisible = useScrollDirection(scrollRef);
 
   useEffect(() => {
@@ -276,8 +277,48 @@ export function AgentPage() {
   }, [agentId, agent, showAvatarPicker, chat.messages.length, chat.isStreaming, chat.trainingMode, convs.loaded, convs.loadError, convs.conversations.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!chat.conversationId) return;
+    if (convs.activeId === chat.conversationId) return;
+
+    convs.setActiveId(chat.conversationId);
+  }, [chat.conversationId, convs.activeId, convs.setActiveId]);
+
+  useEffect(() => {
     convs.loadConversations();
   }, [agentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!convs.loaded || convs.loadError) return;
+    if (convs.activeId || chat.conversationId) return;
+
+    const storedId = convs.getStoredActiveConversation();
+    if (!storedId) return;
+
+    // The stored conversation may have been deleted in another tab/session.
+    if (!convs.conversations.some(c => c.id === storedId)) {
+      return;
+    }
+
+    if (restoredConversationRef.current === storedId) return;
+    restoredConversationRef.current = storedId;
+
+    (async () => {
+      const msgs = await convs.selectConversation(storedId);
+      if (!msgs) return;
+
+      chat.loadMessages(msgs, storedId);
+
+      if (convs.needsContinuation(storedId)) {
+        chat.resumeContinuation(storedId);
+      }
+    })();
+  }, [
+    convs.loaded,
+    convs.loadError,
+    convs.activeId,
+    convs.conversations,
+    chat.conversationId,
+  ]);
 
   // Auto-redirect to active import conversation if user navigates away.
   // If the import conversation is older than 35 minutes (session TTL is 30min),
@@ -329,11 +370,17 @@ export function AgentPage() {
   async function handleSelectConversation(id: string) {
     const msgs = await convs.selectConversation(id);
     if (!msgs) return;
+
     // Mode resets only after a successful load — a failed click shouldn't
     // silently toggle training/plan mode off.
     if (chat.trainingMode) chat.setTrainingMode(false);
     if (chat.planMode) chat.setPlanMode(false);
+
     chat.loadMessages(msgs, id);
+
+    if (convs.needsContinuation(id)) {
+      chat.resumeContinuation(id);
+    }
   }
 
   async function handleDeleteConversation(id: string) {

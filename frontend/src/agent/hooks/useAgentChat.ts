@@ -173,11 +173,19 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
     toolUseId: string;
     msgId?: string;
     result: unknown;
-  }, overrides?: { tool_mode?: string; plan_mode?: boolean; hidden?: boolean; playbook?: { slug: string; name: string } }) => {
+  }, overrides?: {
+      tool_mode?: string;
+      plan_mode?: boolean;
+      hidden?: boolean;
+      playbook?: { slug: string; name: string };
+      continuation_resume?: boolean;
+      conversation_id?: string;
+    }) => {
     const playbook = overrides?.playbook;
     // The [playbook:slug] marker rides in the persisted content (like the
     // "[via Telegram from X]" prefix) so the reference survives history
     // reloads; the payload field below triggers this turn's expansion.
+    const continuationResume = overrides?.continuation_resume === true;
     const content = playbook ? `[playbook:${playbook.slug}] ${text}`.trimEnd() : text;
     const userMsg: ChatMessage = {
       id: uuid(),
@@ -197,7 +205,11 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
       isStreaming: true,
     };
 
-    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    setMessages(prev =>
+      continuationResume
+        ? [...prev, assistantMsg]
+        : [...prev, userMsg, assistantMsg]
+    );
     setIsStreaming(true);
 
     // Server-side assembly: the backend rebuilds the full conversation from the
@@ -205,7 +217,9 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
     // message — not the whole transcript. For an approved write tool the new
     // message is the "[Approved] <tool>" marker, which the backend reconciles
     // onto the pending row rather than persisting as a user turn.
-    const history = [{ role: userMsg.role, content: userMsg.content }];
+    const history = continuationResume
+      ? []
+      : [{ role: userMsg.role, content: userMsg.content }];
 
     // Effective tool mode: training forces power
     const effectiveMode = overrides?.tool_mode ?? (trainingMode ? 'power' : toolMode);
@@ -220,9 +234,10 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
         messages: history,
         training_mode: trainingMode,
         training_type: trainingType,
-        conversation_id: conversationId,
+        conversation_id: overrides?.conversation_id ?? conversationId,
         tool_mode: effectiveMode,
         plan_mode: overrides?.plan_mode ?? planMode,
+        continuation_resume: continuationResume,
       };
       if (approvedTool) payload.approved_tool = approvedTool;
       if (playbook) payload.playbook_slug = playbook.slug;
@@ -467,6 +482,7 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
           args,
           tool_use_id: toolUseId,
           msg_id: pendingRowId,
+          conversation_id: conversationId,
         }),
       });
 
@@ -480,7 +496,7 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
         tool, args, toolUseId, msgId: pendingRowId, result: { error: errMsg },
       });
     }
-  }, [apiPrefix, sendMessage]);
+  }, [apiPrefix, conversationId, sendMessage]);
 
   // ── Deny a pending confirmation ──
   const denyAction = useCallback((msgId: string) => {
@@ -567,6 +583,20 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
     // Plan mode stays active -- user types feedback
   }, []);
 
+  const resumeContinuation = useCallback((id: string) => {
+    if (isStreaming) return;
+
+    sendMessage(
+      '',
+      undefined,
+      undefined,
+      {
+        continuation_resume: true,
+        conversation_id: id,
+      },
+    );
+  }, [isStreaming, sendMessage]);
+
   const stop = useCallback(() => { abortRef.current?.abort(); }, []);
 
   const clear = useCallback(() => {
@@ -647,6 +677,7 @@ export function useAgentChat(apiPrefix: string, options?: Options) {
     approvePlan,
     iteratePlan,
     sendMessage,
+    resumeContinuation,
     approveAction,
     denyAction,
     stop,

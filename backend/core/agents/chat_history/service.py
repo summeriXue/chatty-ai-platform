@@ -293,6 +293,20 @@ class ChatHistoryService:
             )
             db.commit()
 
+    def set_continuation_pending(self, conversation_id: str, pending: bool) -> None:
+        """Persist whether an approved tool execution still needs model continuation."""
+        db = self._db.get_db()
+        with self._db.write_lock():
+            db.execute(
+                """
+                UPDATE conversations
+                SET continuation_pending = ?, updated_at = datetime('now')
+                WHERE id = ?
+                """,
+                (1 if pending else 0, conversation_id),
+            )
+            db.commit()
+
     def get_turn_usage(self, conversation_id: str) -> tuple[int | None, int | None, str | None]:
         db = self._db.get_db()
         row = db.execute(

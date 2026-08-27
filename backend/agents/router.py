@@ -168,6 +168,7 @@ class ChatRequest(BaseModel):
     plan_mode: bool = False
     tool_mode: str = "normal"
     approved_tool: dict | None = None
+    continuation_resume: bool = False
     playbook_slug: str | None = None
 
 
@@ -176,6 +177,7 @@ class ToolExecuteRequest(BaseModel):
     args: dict
     tool_use_id: str = ""
     msg_id: str = ""
+    conversation_id: str | None = None
 
 
 class ContextWriteRequest(BaseModel):
@@ -527,11 +529,12 @@ async def get_avatar(agent_id: str, user=Depends(get_current_user)):
 # ── Per-agent: Chat (shared helper) ──────────────────────────────────────────
 
 def _stream_chat(agent: dict, messages: list, training_mode: bool, conversation_id: str | None,
-                  training_type: str | None = None, plan_mode: bool = False,
-                  tool_mode: str = "normal", approved_tool: dict | None = None,
-                  import_mode: bool = False, has_attachments: bool = False,
-                  playbook_expansion: str | None = None, pre_stream=None,
-                  playbook_slug: str | None = None):
+                 training_type: str | None = None, plan_mode: bool = False,
+                 tool_mode: str = "normal", approved_tool: dict | None = None,
+                 continuation_resume: bool = False,
+                 import_mode: bool = False, has_attachments: bool = False,
+                 playbook_expansion: str | None = None, pre_stream=None,
+                 playbook_slug: str | None = None):
     """Build provider, registry, and return a StreamingResponse for agent chat."""
     config = build_agent_config(agent)
     ctx_manager = get_context_manager(agent["slug"])
@@ -691,6 +694,7 @@ def _stream_chat(agent: dict, messages: list, training_mode: bool, conversation_
             integration_tool_defs=integration_tool_defs or None,
             tool_mode=tool_mode,
             approved_tool=approved_tool,
+            continuation_resume=continuation_resume,
             integration_tool_modes=integration_tool_modes,
             triage_info=triage_info,
             playbook_expansion=effective_expansion,
@@ -749,9 +753,10 @@ async def agent_chat(agent_id: str, req: ChatRequest, user=Depends(get_current_u
             agent["slug"], req.messages, req.playbook_slug)
 
     return _stream_chat(agent, req.messages, req.training_mode, req.conversation_id,
-                        training_type=req.training_type, plan_mode=req.plan_mode,
-                        tool_mode=tool_mode, approved_tool=req.approved_tool,
-                        import_mode=import_mode, playbook_expansion=playbook_expansion)
+                    training_type=req.training_type, plan_mode=req.plan_mode,
+                    tool_mode=tool_mode, approved_tool=req.approved_tool,
+                    continuation_resume=req.continuation_resume,
+                    import_mode=import_mode, playbook_expansion=playbook_expansion)
 
 
 # ── Per-agent: Plan mode approve/iterate ──────────────────────────────────────
@@ -1428,6 +1433,40 @@ async def tool_execute(agent_id: str, req: ToolExecuteRequest, user=Depends(get_
     kind_map = {t["name"]: t.get("kind", "context") for t in tool_defs}
     kind = kind_map.get(req.tool, "context")
     result = await registry.execute_tool(req.tool, req.args, kind)
+
+    # Persist the approved result immediately.
+    # The frontend may reload after a project-file write (for example Vite HMR),
+    # so the conversation DB must record the successful side effect before the
+    # follow-up /chat continuation request.
+    if req.conversation_id and req.tool_use_id:
+        try:
+            chat_service = get_chat_service(agent["slug"])
+
+            pending_id = chat_service.find_pending_tool_message(
+                req.conversation_id,
+                req.tool_use_id,
+                prefer_msg_id=req.msg_id or None,
+                prefer_tool=req.tool or None,
+            )
+
+            if pending_id:
+                chat_service.merge_tool_result(
+                    pending_id,
+                    req.tool_use_id,
+                    req.tool,
+                    _json_mod.dumps(result),
+                )
+
+                chat_service.set_continuation_pending(
+                    req.conversation_id,
+                    True,
+                )
+
+        except Exception as e:
+            logger.warning(
+                "Approved-tool result persistence failed: %s",
+                e,
+            )
 
     # Sync context files to GCS after write
     ctx_manager = get_context_manager(agent["slug"])

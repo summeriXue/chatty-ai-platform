@@ -25,6 +25,8 @@ export interface Conversation {
 
 export function useConversations(apiPrefix: string) {
   const { t } = useTranslation();
+  const activeConversationStorageKey = `chatty_active_conversation:${apiPrefix}`;
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,9 +39,20 @@ export function useConversations(apiPrefix: string) {
   // the effect run compute wasActive from the stale id.
   const activeIdRef = useRef<string | null>(null);
   const setActiveId = useCallback((value: SetStateAction<string | null>) => {
-    activeIdRef.current = typeof value === 'function' ? (value as (p: string | null) => string | null)(activeIdRef.current) : value;
-    setActiveIdState(value);
-  }, []);
+    const next = typeof value === 'function'
+      ? (value as (p: string | null) => string | null)(activeIdRef.current)
+      : value;
+
+    activeIdRef.current = next;
+
+    if (next) {
+      sessionStorage.setItem(activeConversationStorageKey, next);
+    } else {
+      sessionStorage.removeItem(activeConversationStorageKey);
+    }
+
+    setActiveIdState(next);
+  }, [activeConversationStorageKey]);
   // Guards against out-of-order selectConversation responses: only the most
   // recent call may commit state or surface errors. Also bumped by New Chat
   // and agent switches, so a slow in-flight select can't land afterwards and
@@ -47,12 +60,18 @@ export function useConversations(apiPrefix: string) {
   const selectSeqRef = useRef(0);
   // Same pattern for loadConversations: a stale failure must not set
   // loadError over a newer success, nor a stale success overwrite a newer list.
+  const continuationPendingRef = useRef<Record<string, boolean>>({});
   const loadSeqRef = useRef(0);
   useEffect(() => {
     selectSeqRef.current++;
     loadSeqRef.current++;
-    setLoaded(false); setConversations([]); setActiveId(null); setLoadError(false);
-  }, [apiPrefix, setActiveId]);
+
+    activeIdRef.current = null;
+    setLoaded(false);
+    setConversations([]);
+    setActiveIdState(null);
+    setLoadError(false);
+  }, [apiPrefix]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ id: string; title: string; snippet: string; updated_at?: string }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -73,12 +92,25 @@ export function useConversations(apiPrefix: string) {
     setLoading(true);
     try {
       const data = await api<{
-        id: string; title: string;
-        messages: { id: string; role: string; content: string; seq: number; tool_calls?: string; model?: string; created_at?: string }[];
+        id: string;
+        title: string;
+        continuation_pending?: number;
+        messages: {
+          id: string;
+          role: string;
+          content: string;
+          seq: number;
+          tool_calls?: string;
+          model?: string;
+          created_at?: string;
+        }[];
       }>(`${apiPrefix}/conversations/${id}`);
       // A newer selection started while this one was in flight — discard it
       // (null is the callers' existing do-nothing path).
       if (seq !== selectSeqRef.current) return null;
+
+      continuationPendingRef.current[id] = data.continuation_pending === 1;
+
       setActiveId(id);
       return data.messages.map(m => {
         const parsedTimestamp = parseServerTimestamp(m.created_at);
@@ -122,14 +154,22 @@ export function useConversations(apiPrefix: string) {
     }
   }, [apiPrefix, setActiveId, t]);
 
+  const needsContinuation = useCallback((id: string): boolean => {
+    return continuationPendingRef.current[id] === true;
+  }, []);
+
+  const getStoredActiveConversation = useCallback((): string | null => {
+    return sessionStorage.getItem(activeConversationStorageKey);
+  }, [activeConversationStorageKey]);
+
   const startNewChat = useCallback(() => {
-    // Invalidate any in-flight select so a slow response can't land after
-    // New Chat and resurrect the conversation the user just left.
     selectSeqRef.current++;
+
     setActiveId(null);
+
     setSearchQuery('');
     setSearchResults([]);
-  }, [setActiveId]);
+  }, [activeConversationStorageKey, setActiveId]);
 
   const deleteConversation = useCallback(async (id: string): Promise<{ ok: boolean; wasActive: boolean }> => {
     try {
@@ -192,6 +232,8 @@ export function useConversations(apiPrefix: string) {
     isSearching,
     loadConversations,
     selectConversation,
+    needsContinuation,
+    getStoredActiveConversation,
     startNewChat,
     deleteConversation,
     renameConversation,

@@ -906,6 +906,7 @@ async def chat(
     integration_tool_defs: list[dict] | None = None,
     tool_mode: str = "normal",
     approved_tool: dict | None = None,
+    continuation_resume: bool = False,
     integration_tool_modes: dict[str, str] | None = None,
     triage_info: dict | None = None,
     playbook_expansion: str | None = None,
@@ -1154,6 +1155,26 @@ async def chat(
     # ── Chat history persistence ──────────────────────────────────────
     _approved_reconciled = False
     _user_row_saved = False
+
+    def _clear_continuation_pending() -> None:
+        if (
+            not (approved_tool or continuation_resume)
+            or not persist
+            or not conversation_id
+        ):
+            return
+
+        try:
+            chat_service.set_continuation_pending(
+                conversation_id,
+                False,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to clear continuation_pending: %s",
+                e,
+            )
+
     if persist:
         try:
             if not conversation_id:
@@ -1196,7 +1217,7 @@ async def chat(
                         _approved_reconciled = True
                 except Exception as e:
                     logger.warning("Approved-tool reconcile failed: %s", e)
-            else:
+            elif not continuation_resume:
                 last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
                 if last_user:
                     chat_service.save_message(
@@ -1233,7 +1254,7 @@ async def chat(
         # include this turn's message — empty for a fresh conversation (an empty
         # stream_turn errors) or, worse, silently answering the PREVIOUS message.
         # Splice the client's user message back in so the turn still runs on it.
-        if not approved_tool and not _user_row_saved:
+        if not approved_tool and not continuation_resume and not _user_row_saved:
             last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
             if last_user:
                 # Coalesce so a prior-turn-orphaned trailing user row can't make
@@ -1470,6 +1491,21 @@ async def chat(
                 "role": "user",
                 "content": f"[Approved — {at_tool} executed; its result is shown above.]",
             }]
+    if continuation_resume:
+        if (
+            current_messages
+            and current_messages[-1].get("role") == "assistant"
+        ):
+            current_messages = current_messages + [{
+                "role": "user",
+                "content": (
+                    "[INTERNAL CONTINUATION RESUME] "
+                    "The previously approved action completed successfully. "
+                    "Continue the user's original task from the persisted tool results. "
+                    "Do not repeat work that already succeeded and do not explain "
+                    "this recovery mechanism to the user."
+                ),
+            }]
 
     # ── Tool execution loop ───────────────────────────────────────────
     max_iterations = 20
@@ -1607,6 +1643,7 @@ async def chat(
                                         if persist and conversation_id else messages)
                         maybe_schedule_review(config, conversation_id, _review_msgs,
                                               accumulated_text, all_tool_calls, iteration)
+                    _clear_continuation_pending()
                     done_event = {"type": "done", "model": model_used}
                     if triage_info:
                         done_event["tier"] = triage_info.get("tier")
@@ -1631,6 +1668,7 @@ async def chat(
                                 if persist and conversation_id else messages)
                 maybe_schedule_review(config, conversation_id, _review_msgs,
                                       accumulated_text, all_tool_calls, iteration)
+            _clear_continuation_pending()
             done_event = {"type": "done", "model": model_used}
             if triage_info:
                 done_event["tier"] = triage_info.get("tier")
