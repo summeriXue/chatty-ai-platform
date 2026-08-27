@@ -106,7 +106,7 @@ class OpenAICompatibleProvider(AIProvider):
         messages: list[dict],
         tools: list[dict],
         system_prompt: str | tuple[str, str],
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
     ) -> AsyncGenerator[dict, None]:
         """
         Stream one LLM turn using the OpenAI-compatible chat completions API.
@@ -139,6 +139,13 @@ class OpenAICompatibleProvider(AIProvider):
                 kwargs["tools"] = openai_tools
                 kwargs["tool_choice"] = "auto"
 
+            if self.provider_name == "deepseek":
+                kwargs["extra_body"] = {
+                    "thinking": {
+                        "type": "disabled",
+                    },
+                }
+
             if self.provider_name == "ollama":
                 kwargs["extra_body"] = {"think": False}
 
@@ -149,10 +156,16 @@ class OpenAICompatibleProvider(AIProvider):
                 logger.error("OpenAI compatible request failed: %s", e)
                 raise
 
+            finish_reason = None
+
             async for chunk in stream:
                 if chunk.choices:
                     choice = chunk.choices[0]
                     delta = choice.delta
+
+                    if choice.finish_reason:
+                        finish_reason = choice.finish_reason
+
                 else:
                     delta = None
 
@@ -205,7 +218,13 @@ class OpenAICompatibleProvider(AIProvider):
                     "args": args,
                 }
 
-            stop_reason = "tool_use" if tool_calls else "stop"
+            if tool_calls:
+                stop_reason = "tool_use"
+            elif finish_reason == "length":
+                stop_reason = "length"
+            else:
+                stop_reason = "stop"
+
             yield {
                 "type": "_turn_complete",
                 "tool_calls": tool_calls,

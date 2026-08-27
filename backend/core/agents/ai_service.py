@@ -1632,6 +1632,30 @@ async def chat(
                     if title_sse:
                         yield title_sse
 
+                # Model exhausted its output budget before completing the turn.
+                if stop_reason == "length" and not tool_calls_this_turn:
+                    _log_chat_completion(
+                        config.slug,
+                        conversation_id,
+                        "chat",
+                        "error",
+                        "Model reached output length limit before completing the response",
+                        all_tool_calls,
+                        model_used,
+                        total_input_tokens,
+                        total_output_tokens,
+                        chat_start_time,
+                        provider_name,
+                    )
+                    yield _sse({
+                        "type": "error",
+                        "error": (
+                            "The model reached its output limit before completing the response. "
+                            "Please retry."
+                        ),
+                    })
+                    return
+
                 # If no tool calls, we're done
                 if stop_reason != "tool_use" or not tool_calls_this_turn:
                     _log_chat_completion(config.slug, conversation_id, "chat", "ok",
@@ -2594,6 +2618,30 @@ async def run_sync(
             except Exception as e:
                 logger.warning("run_sync: chat history save (assistant iteration) failed: %s", e)
                 iter_msg_id = None
+
+        # Model exhausted its output budget before completing the turn.
+        if stop_reason == "length" and not tool_calls_this_turn:
+            _log_chat_completion(
+                config.slug,
+                conversation_id,
+                source,
+                "error",
+                "Model reached output length limit before completing the response",
+                all_tool_calls,
+                model_used,
+                total_input_tokens,
+                total_output_tokens,
+                chat_start_time,
+                provider_name,
+            )
+
+            if not accumulated_text:
+                accumulated_text = (
+                    "The model reached its output limit before completing the response. "
+                    "Please retry."
+                )
+
+            break
 
         # If no tool calls, we're done
         if stop_reason != "tool_use" or not tool_calls_this_turn:
