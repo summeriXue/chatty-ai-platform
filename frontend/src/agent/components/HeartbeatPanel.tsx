@@ -1,4 +1,5 @@
 import { useHeartbeat } from '../hooks/useHeartbeat';
+import { useTranslation } from 'react-i18next';
 import { HeartbeatStatusBar } from './heartbeat/HeartbeatStatusBar';
 import { HeartbeatChecklist } from './heartbeat/HeartbeatChecklist';
 import { HeartbeatHistory } from './heartbeat/HeartbeatHistory';
@@ -11,13 +12,15 @@ interface Props {
 }
 
 export default function HeartbeatPanel({ agentSlug, apiPrefix }: Props) {
+  const { t } = useTranslation();
+
   const hb = useHeartbeat(agentSlug, apiPrefix);
 
   if (hb.loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '48px 0' }}>
         <div className="animate-spin w-5 h-5 border-2 border-ch-accent border-t-transparent rounded-full" />
-        <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>Loading heartbeat...</span>
+        <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>{t('heartbeatPanel.loading')}</span>
       </div>
     );
   }

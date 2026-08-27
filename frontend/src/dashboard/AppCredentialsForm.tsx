@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import { useCopyToClipboard } from '../agent/hooks/useCopyToClipboard';
 
@@ -45,6 +46,7 @@ export function AppCredentialsForm({
   onSaved,
   onCancel,
 }: AppCredentialsFormProps) {
+  const { t } = useTranslation();
   const isEditing = !!currentClientId;
   const canOmitSecret = isEditing && source === 'stored';
   const [clientId, setClientId] = useState(currentClientId || '');
@@ -56,11 +58,11 @@ export function AppCredentialsForm({
 
   async function handleSave() {
     if (!clientId.trim()) {
-      setError('Client ID is required.');
+      setError(t('appCredentials.clientIdRequired'));
       return;
     }
     if (!canOmitSecret && !clientSecret.trim()) {
-      setError('Client Secret is required.');
+      setError(t('appCredentials.clientSecretRequired'));
       return;
     }
     setSaving(true); setError('');
@@ -75,7 +77,11 @@ export function AppCredentialsForm({
       });
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save credentials');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('appCredentials.saveFailed')
+      );
     } finally {
       setSaving(false);
     }
@@ -91,16 +97,23 @@ export function AppCredentialsForm({
       borderTop: '1px solid rgba(230,235,242,0.07)',
     }}>
       <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5 }}>
-        Enter your own {title} OAuth app credentials.{' '}
-        <a href={doc.url} target="_blank" rel="noopener noreferrer"
-          style={{ color: 'var(--color-ch-accent, #C8D1D9)', textDecoration: 'none' }}>
-          Create one at {doc.label} &rarr;
+        {t('appCredentials.intro', { provider: title })}{' '}
+        <a
+          href={doc.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: 'var(--color-ch-accent, #C8D1D9)',
+            textDecoration: 'none',
+          }}
+        >
+          {t('appCredentials.createAt', { portal: doc.label })} &rarr;
         </a>
       </p>
 
       {/* Redirect URI — user needs to register this in their OAuth app */}
       <div>
-        <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>Redirect URI</label>
+        <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>{t('appCredentials.redirectUri')}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input readOnly value={redirectUri} style={{ ...inputStyle, color: 'rgba(237,240,244,0.62)' }} />
           <button
@@ -111,40 +124,58 @@ export function AppCredentialsForm({
               border: '1px solid rgba(230,235,242,0.14)', cursor: 'pointer',
             }}
           >
-            {copied ? 'Copied' : 'Copy'}
+            {copied
+              ? t('appCredentials.copied')
+              : t('appCredentials.copy')}
           </button>
         </div>
         <p style={{ fontSize: 11, color: 'rgba(237,240,244,0.30)', marginTop: 3 }}>
-          Add this URL as an authorized redirect URI in your OAuth app settings.
+          {t('appCredentials.redirectHint')}
         </p>
       </div>
 
       <div>
-        <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>Client ID</label>
+        <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>{t('appCredentials.clientId')}</label>
         <input
           value={clientId} onChange={e => setClientId(e.target.value)}
-          placeholder={`Your ${title} OAuth Client ID`}
+          placeholder={t('appCredentials.clientIdPlaceholder', {
+            provider: title,
+          })}
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>Client Secret</label>
+        <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>{t('appCredentials.clientSecret')}</label>
         <input
           type="password"
           value={clientSecret} onChange={e => setClientSecret(e.target.value)}
-          placeholder={canOmitSecret ? '(unchanged — leave blank to keep current)' : `Your ${title} OAuth Client Secret`}
+          placeholder={
+            canOmitSecret
+              ? t('appCredentials.clientSecretUnchanged')
+              : t('appCredentials.clientSecretPlaceholder', {
+                  provider: title,
+                })
+          }
           style={inputStyle}
         />
       </div>
 
       {integration === 'quickbooks' && (
         <div>
-          <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>Environment</label>
+          <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>{t('appCredentials.environment')}</label>
           <div style={{ display: 'flex', gap: 0, border: '1px solid rgba(230,235,242,0.07)', borderRadius: 3, overflow: 'hidden' }}>
             {([
-              { key: 'sandbox', label: 'Sandbox', hint: 'Free, instant — no app review needed' },
-              { key: 'production', label: 'Production', hint: 'Requires Intuit app review' },
+              {
+                key: 'sandbox',
+                label: t('appCredentials.sandbox'),
+                hint: t('appCredentials.sandboxHint'),
+              },
+              {
+                key: 'production',
+                label: t('appCredentials.production'),
+                hint: t('appCredentials.productionHint'),
+              },
             ] as const).map(opt => (
               <div
                 key={opt.key}
@@ -172,7 +203,7 @@ export function AppCredentialsForm({
             flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4,
             border: '1px solid rgba(230,235,242,0.14)', background: 'transparent',
             color: 'rgba(237,240,244,0.62)', cursor: 'pointer',
-          }}>Cancel</button>
+          }}>{t('appCredentials.cancel')}</button>
         )}
         <button onClick={handleSave} disabled={saving} style={{
           flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4,
@@ -180,7 +211,11 @@ export function AppCredentialsForm({
           border: 'none', cursor: 'pointer', fontWeight: 500,
           opacity: saving ? 0.5 : 1,
         }}>
-          {saving ? 'Saving...' : (isEditing ? 'Update Credentials' : 'Save Credentials')}
+          {saving
+            ? t('appCredentials.saving')
+            : isEditing
+              ? t('appCredentials.updateCredentials')
+              : t('appCredentials.saveCredentials')}
         </button>
       </div>
     </div>

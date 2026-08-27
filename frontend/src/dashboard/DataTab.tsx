@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconFile } from '../shared/icons';
 import { confirmDialog } from '../shared/confirm';
 
 export function DataTab() {
+  const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -25,9 +27,15 @@ export function DataTab() {
       a.download = `chatty-backup-${new Date().toISOString().slice(0, 10)}.zip`;
       a.click();
       URL.revokeObjectURL(url);
-      setMessage({ type: 'success', text: 'Backup downloaded.' });
+      setMessage({
+        type: 'success',
+        text: t('settings.data.downloaded'),
+      });
     } catch {
-      setMessage({ type: 'error', text: 'Failed to download backup.' });
+      setMessage({
+        type: 'error',
+        text: t('settings.data.downloadFailed'),
+      });
     } finally {
       setDownloading(false);
     }
@@ -36,9 +44,9 @@ export function DataTab() {
   async function handleRestore() {
     if (!selectedFile) return;
     const ok = await confirmDialog({
-      title: 'Restore from backup',
-      message: 'This will replace ALL current data with the backup contents. This cannot be undone.',
-      confirmLabel: 'Replace everything',
+      title: t('settings.data.restoreDialogTitle'),
+      message: t('settings.data.restoreDialogMessage'),
+      confirmLabel: t('settings.data.replaceEverything'),
       danger: true,
     });
     if (!ok) return;
@@ -58,10 +66,18 @@ export function DataTab() {
         const data = await res.json().catch(() => null);
         throw new Error(data?.detail || 'Restore failed');
       }
-      setMessage({ type: 'success', text: 'Restore complete. Reloading...' });
+      setMessage({
+        type: 'success',
+        text: t('settings.data.restoreComplete'),
+      });
       setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Restore failed.' });
+      setMessage({
+        type: 'error',
+        text: err instanceof Error
+          ? err.message
+          : t('settings.data.restoreFailed'),
+      });
     } finally {
       setRestoring(false);
     }
@@ -83,10 +99,12 @@ export function DataTab() {
             fontFamily: "'Fraunces', Georgia, serif",
             fontSize: 16, fontWeight: 400, letterSpacing: '-0.01em',
             color: '#EDF0F4', margin: 0,
-          }}>Download Backup</h3>
+          }}>
+            {t('settings.data.downloadBackup')}
+          </h3>
         </div>
         <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.62)', marginBottom: 16, lineHeight: 1.5 }}>
-          Download a ZIP containing all your agents, conversations, settings, and integrations data.
+          {t('settings.data.downloadDescription')}
         </p>
         <button onClick={handleDownload} disabled={downloading} style={{
           width: '100%', padding: '10px 16px',
@@ -94,7 +112,9 @@ export function DataTab() {
           border: 'none', borderRadius: 4, fontSize: 14, fontWeight: 500,
           cursor: 'pointer', opacity: downloading ? 0.5 : 1,
         }}>
-          {downloading ? 'Downloading...' : 'Download Backup'}
+          {downloading
+            ? t('settings.data.downloading')
+            : t('settings.data.downloadBackup')}
         </button>
       </div>
 
@@ -106,9 +126,11 @@ export function DataTab() {
           fontFamily: "'Fraunces', Georgia, serif",
           fontSize: 16, fontWeight: 400, letterSpacing: '-0.01em',
           color: '#EDF0F4', margin: '0 0 8px',
-        }}>Restore from Backup</h3>
+        }}>
+          {t('settings.data.restoreFromBackup')}
+        </h3>
         <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.62)', marginBottom: 12, lineHeight: 1.5 }}>
-          Upload a previously downloaded backup ZIP to restore all your data.
+          {t('settings.data.restoreDescription')}
         </p>
 
         <div style={{
@@ -116,7 +138,7 @@ export function DataTab() {
           borderRadius: 6, padding: '10px 16px', marginBottom: 16,
         }}>
           <p style={{ fontSize: 13, color: '#D4A85A', margin: 0 }}>
-            This will replace all current data and cannot be undone.
+            {t('settings.data.restoreWarning')}
           </p>
         </div>
 
@@ -143,7 +165,7 @@ export function DataTab() {
               whiteSpace: 'nowrap',
             }}
           >
-            Choose file
+            {t('settings.data.chooseFile')}
           </button>
           <span style={{
             fontSize: 13,
@@ -152,7 +174,9 @@ export function DataTab() {
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}>
-            {selectedFile ? selectedFile.name : 'No file selected'}
+            {selectedFile
+              ? selectedFile.name
+              : t('settings.data.noFileSelected')}
           </span>
         </div>
         <button onClick={handleRestore} disabled={restoring || !selectedFile} style={{
@@ -162,7 +186,9 @@ export function DataTab() {
           cursor: (restoring || !selectedFile) ? 'not-allowed' : 'pointer',
           opacity: (restoring || !selectedFile) ? 0.5 : 1,
         }}>
-          {restoring ? 'Restoring...' : 'Restore Backup'}
+          {restoring
+            ? t('settings.data.restoring')
+            : t('settings.data.restoreBackup')}
         </button>
       </div>
 

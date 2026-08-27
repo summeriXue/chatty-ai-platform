@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../core/api/client';
 import { useIsMobile } from '../../shared/useIsMobile';
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function ActivityTimeline({ activities, onUpdate }: Props) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [selected, setSelected] = useState<CrmActivity | null>(null);
@@ -31,7 +33,7 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
   const [saving, setSaving] = useState(false);
 
   if (activities.length === 0) {
-    return <p style={{ color: INK_DIM, fontSize: 13 }}>No activity yet.</p>;
+    return <p style={{ color: INK_DIM, fontSize: 13 }}>{t('crmActivityTimeline.empty')}</p>;
   }
 
   function handleClick(a: CrmActivity) {
@@ -57,16 +59,19 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
       });
       setSelected(null);
       onUpdate?.();
-    } catch { toast.error('Failed to save activity.'); }
-    setSaving(false);
+    } catch {
+      toast.error(t('crmActivityTimeline.errors.save'));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
     if (!selected) return;
     const ok = await confirmDialog({
-      title: 'Delete activity',
-      message: 'This activity entry will be permanently deleted.',
-      confirmLabel: 'Delete',
+      title: t('crmActivityTimeline.deleteDialog.title'),
+      message: t('crmActivityTimeline.deleteDialog.message'),
+      confirmLabel: t('crmActivityTimeline.deleteDialog.confirm'),
       danger: true,
     });
     if (!ok) return;
@@ -74,7 +79,9 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
       await api(`/api/crm/activity/${selected.id}`, { method: 'DELETE' });
       setSelected(null);
       onUpdate?.();
-    } catch { toast.error('Failed to delete activity.'); }
+    } catch {
+      toast.error(t('crmActivityTimeline.errors.delete'));
+    }
   }
 
   return (
@@ -99,7 +106,11 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15 }}>
-                  <span style={{ color: INK, textTransform: 'capitalize' }}>{a.activity.replace('_', ' ')}</span>
+                  <span style={{ color: INK }}>
+                    {t(`crmActivityTimeline.activityTypes.${a.activity}`, {
+                      defaultValue: a.activity.replace('_', ' '),
+                    })}
+                  </span>
                   {a.contact_name && <span style={{ color: INK_MUTE }}> · {a.contact_name}</span>}
                 </div>
                 {a.note && <p style={{ color: INK_SOFT, fontSize: 14, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.note}</p>}
@@ -107,7 +118,7 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
               <div style={{
                 ...mono(11),
                 flexShrink: 0,
-              }}>{formatDate(a.created_at)}</div>
+              }}>{formatDate(a.created_at, i18n.language)}</div>
             </div>
           );
         })}
@@ -132,11 +143,13 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
             <h3 style={{
               fontFamily: FONT_DISPLAY,
               fontSize: 18, fontWeight: 400, color: INK, margin: '0 0 16px',
-            }}>Edit Activity</h3>
+            }}>{t('crmActivityTimeline.editTitle')}</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ ...mono(10), display: 'block', marginBottom: 6 }}>Activity</label>
+                <label style={{ ...mono(10), display: 'block', marginBottom: 6 }}>
+                  {t('crmActivityTimeline.fields.activity')}
+                </label>
                 <textarea
                   value={editActivity}
                   onChange={e => setEditActivity(e.target.value)}
@@ -151,12 +164,14 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
                 />
               </div>
               <div>
-                <label style={{ ...mono(10), display: 'block', marginBottom: 6 }}>Note</label>
+                <label style={{ ...mono(10), display: 'block', marginBottom: 6 }}>
+                  {t('crmActivityTimeline.fields.note')}
+                </label>
                 <textarea
                   value={editNote}
                   onChange={e => setEditNote(e.target.value)}
                   rows={3}
-                  placeholder="Add a note..."
+                  placeholder={t('crmActivityTimeline.notePlaceholder')}
                   style={{
                     width: '100%', boxSizing: 'border-box',
                     background: BG_RAISED, border: `1px solid ${LINE_STRONG}`,
@@ -171,7 +186,7 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {selected.contact_name && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ ...mono(10) }}>Contact</span>
+                    <span style={{ ...mono(10) }}>{t('crmActivityTimeline.meta.contact')}</span>
                     <span
                       onClick={handleNavigateToContact}
                       style={{ fontSize: 13, color: ACCENT, cursor: 'pointer' }}
@@ -180,13 +195,15 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
                 )}
                 {selected.deal_title && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ ...mono(10) }}>Deal</span>
+                    <span style={{ ...mono(10) }}>{t('crmActivityTimeline.meta.deal')}</span>
                     <span style={{ fontSize: 13, color: INK }}>{selected.deal_title}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ ...mono(10) }}>Logged</span>
-                  <span style={{ fontSize: 12, color: INK_MUTE }}>{formatDate(selected.created_at)}</span>
+                  <span style={{ ...mono(10) }}>{t('crmActivityTimeline.meta.logged')}</span>
+                  <span style={{ fontSize: 12, color: INK_MUTE }}>
+                    {formatDate(selected.created_at, i18n.language)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -196,17 +213,17 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
                 padding: '10px 16px', borderRadius: 6,
                 border: `1px solid ${LINE_STRONG}`, background: 'transparent',
                 color: INK_MUTE, fontSize: 13, cursor: 'pointer',
-              }}>Cancel</button>
+              }}>{t('crmActivityTimeline.cancel')}</button>
               <button onClick={handleDelete} style={{
                 ...btnDanger,
                 padding: '10px 16px', borderRadius: 6, fontSize: 13,
-              }}>Delete</button>
+              }}>{t('crmActivityTimeline.delete')}</button>
               <button onClick={handleSave} disabled={saving} style={{
                 flex: 1, padding: '10px 16px', borderRadius: 6,
                 background: ACCENT, color: ACCENT_INK,
                 border: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                 opacity: saving ? 0.5 : 1,
-              }}>{saving ? 'Saving...' : 'Save'}</button>
+              }}>{saving ? t('crmActivityTimeline.saving') : t('crmActivityTimeline.save')}</button>
             </div>
           </div>
         </div>
@@ -215,10 +232,12 @@ export function ActivityTimeline({ activities, onUpdate }: Props) {
   );
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   try {
     const d = new Date(iso + 'Z');
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-      ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  } catch { return iso; }
+    return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  } catch {
+    return iso;
+  }
 }

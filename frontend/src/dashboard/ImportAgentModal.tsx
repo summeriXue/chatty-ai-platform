@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 
@@ -24,6 +25,8 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function ImportAgentModal({ onClose }: Props) {
+  const { t } = useTranslation();
+
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +49,7 @@ export function ImportAgentModal({ onClose }: Props) {
       });
       navigate(`/agent/${result.agent_id}?conversation=${result.conversation_id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to start import');
+      setError(err instanceof Error ? err.message : t('importAgent.startFailed'));
       setLoading(false);
     }
   }
@@ -72,31 +75,30 @@ export function ImportAgentModal({ onClose }: Props) {
           fontFamily: "'Fraunces', Georgia, serif",
           fontSize: 24, fontWeight: 400, letterSpacing: '-0.02em',
           marginBottom: 8, color: '#EDF0F4',
-        }}>Import Existing Agent</h2>
+        }}>{t('importAgent.title')}</h2>
 
         <p style={{
           fontSize: 13, color: 'rgba(237,240,244,0.5)',
           marginBottom: 24, lineHeight: 1.5,
         }}>
-          Bring knowledge from another AI system into a new Chatty agent.
-          Your agent will walk you through the import.
+          {t('importAgent.description')}
         </p>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 24 }}>
-            <label style={labelStyle}>Agent name *</label>
+            <label style={labelStyle}>{t('importAgent.agentName')}</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Name for your new agent"
+              placeholder={t('importAgent.namePlaceholder')}
               autoFocus
               maxLength={60}
               style={inputStyle}
             />
             <p style={{
               fontSize: 11, color: 'rgba(237,240,244,0.28)', marginTop: 4,
-            }}>You can change this during import if you're cloning an existing agent.</p>
+            }}>{t('importAgent.nameHint')}</p>
           </div>
 
           {error && <p style={{ color: '#D97757', fontSize: 13, marginBottom: 16 }}>{error}</p>}
@@ -112,7 +114,7 @@ export function ImportAgentModal({ onClose }: Props) {
                 cursor: 'pointer', fontSize: 13,
               }}
             >
-              Cancel
+              {t('importAgent.cancel')}
             </button>
             <button
               type="submit"
@@ -124,7 +126,9 @@ export function ImportAgentModal({ onClose }: Props) {
                 opacity: (loading || !name.trim()) ? 0.5 : 1,
               }}
             >
-              {loading ? 'Starting...' : 'Start Import'}
+              {loading
+                ? t('importAgent.starting')
+                : t('importAgent.startImport')}
             </button>
           </div>
         </form>

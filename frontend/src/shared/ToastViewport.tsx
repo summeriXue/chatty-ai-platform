@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import { subscribeToasts, getToasts, dismissToast } from './toast';
 import type { ToastItem, ToastSeverity } from './toast';
 import { useIsMobile } from './useIsMobile';
@@ -15,10 +16,10 @@ const SEVERITY_COLOR: Record<ToastSeverity, string> = {
   info: GOLD,
 };
 
-const SEVERITY_TAG: Record<ToastSeverity, string> = {
-  error: 'Error',
-  success: 'Success',
-  info: 'Notice',
+const SEVERITY_TAG_KEY: Record<ToastSeverity, string> = {
+  error: 'common.toast.error',
+  success: 'common.toast.success',
+  info: 'common.toast.notice',
 };
 
 // getServerSnapshot must return a stable reference, or React warns about
@@ -52,7 +53,9 @@ export function ToastViewport() {
 }
 
 function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
+  const { t } = useTranslation();
   const color = SEVERITY_COLOR[item.severity];
+
   // Auto-dismiss with hover-pause: track remaining time across pauses.
   const remainingRef = useRef(item.duration);
   const startedAtRef = useRef(0);
@@ -102,14 +105,26 @@ function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: () => void
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...mono(10, color), marginBottom: 3 }}>{SEVERITY_TAG[item.severity]}</div>
-        <div style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK, lineHeight: 1.45, overflowWrap: 'break-word' }}>
+        <div style={{ ...mono(10, color), marginBottom: 3 }}>
+          {t(SEVERITY_TAG_KEY[item.severity])}
+        </div>
+
+        <div
+          style={{
+            fontFamily: FONT_SANS,
+            fontSize: 13,
+            color: INK,
+            lineHeight: 1.45,
+            overflowWrap: 'break-word',
+          }}
+        >
           {item.message}
         </div>
       </div>
+
       <button
         onClick={onDismiss}
-        aria-label="Dismiss"
+        aria-label={t('common.toast.dismiss')}
         style={{
           background: 'none',
           border: 'none',

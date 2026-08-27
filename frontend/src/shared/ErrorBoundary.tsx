@@ -9,6 +9,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   INK, INK_DIM, INK_MUTE, INK_SOFT, LINE_STRONG, ACCENT, ACCENT_INK,
   FONT_DISPLAY, FONT_SANS, FONT_MONO, mono,
@@ -56,21 +57,33 @@ interface ErrorDetailProps {
  *  the authenticated route fallback only, and a generic pointer to the
  *  console for the root fallback. */
 function ErrorDetail({ error, redactMessage }: ErrorDetailProps) {
+  const { t } = useTranslation();
+
   const detail = import.meta.env.DEV
     ? `${error.message}\n${error.stack ?? ''}`
     : redactMessage
-      ? 'Details were logged to the browser console.'
+      ? t('common.errorBoundary.detailsLogged')
       : error.message;
+
   return (
     <details style={{ marginTop: 24, maxWidth: 560, width: '100%' }}>
-      <summary style={{ ...mono(10, INK_DIM), cursor: 'pointer' }}>Error detail</summary>
+      <summary style={{ ...mono(10, INK_DIM), cursor: 'pointer' }}>
+        {t('common.errorBoundary.errorDetail')}
+      </summary>
+
       <pre
         style={{
-          fontFamily: FONT_MONO, fontSize: 11, color: INK_DIM,
-          whiteSpace: 'pre-wrap', overflowWrap: 'break-word',
-          maxHeight: 240, overflowY: 'auto',
-          margin: '8px 0 0', padding: 12,
-          border: `1px solid ${LINE_STRONG}`, borderRadius: 6,
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          color: INK_DIM,
+          whiteSpace: 'pre-wrap',
+          overflowWrap: 'break-word',
+          maxHeight: 240,
+          overflowY: 'auto',
+          margin: '8px 0 0',
+          padding: 12,
+          border: `1px solid ${LINE_STRONG}`,
+          borderRadius: 6,
           textAlign: 'left',
         }}
       >
@@ -81,15 +94,21 @@ function ErrorDetail({ error, redactMessage }: ErrorDetailProps) {
 }
 
 const buttonStyle = {
-  padding: '9px 20px', borderRadius: 4,
-  background: ACCENT, color: ACCENT_INK,
-  border: 'none', fontWeight: 500, cursor: 'pointer',
-  fontSize: 13, fontFamily: FONT_SANS,
+  padding: '9px 20px',
+  borderRadius: 4,
+  background: ACCENT,
+  color: ACCENT_INK,
+  border: 'none',
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontSize: 13,
+  fontFamily: FONT_SANS,
 } as const;
 
 const secondaryButtonStyle = {
   ...buttonStyle,
-  background: 'transparent', color: INK_MUTE,
+  background: 'transparent',
+  color: INK_MUTE,
   border: `1px solid ${LINE_STRONG}`,
 } as const;
 
@@ -98,25 +117,51 @@ interface RootErrorFallbackProps {
 }
 
 export function RootErrorFallback({ error }: RootErrorFallbackProps) {
+  const { t } = useTranslation();
+
   // No router hooks here — this mounts outside BrowserRouter.
   return (
     <div
       style={{
-        minHeight: '100svh', background: '#0A0C0F', color: INK,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', padding: 24, textAlign: 'center',
+        minHeight: '100svh',
+        background: '#0A0C0F',
+        color: INK,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        textAlign: 'center',
         fontFamily: FONT_SANS,
       }}
     >
-      <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 400, letterSpacing: '-0.02em', margin: '0 0 8px' }}>
-        Something went wrong
+      <h1
+        style={{
+          fontFamily: FONT_DISPLAY,
+          fontSize: 28,
+          fontWeight: 400,
+          letterSpacing: '-0.02em',
+          margin: '0 0 8px',
+        }}
+      >
+        {t('common.errorBoundary.rootTitle')}
       </h1>
-      <p style={{ fontSize: 13, color: INK_SOFT, lineHeight: 1.5, margin: '0 0 24px' }}>
-        An unexpected error occurred. Reloading usually fixes it.
+
+      <p
+        style={{
+          fontSize: 13,
+          color: INK_SOFT,
+          lineHeight: 1.5,
+          margin: '0 0 24px',
+        }}
+      >
+        {t('common.errorBoundary.rootDescription')}
       </p>
+
       <button onClick={() => window.location.reload()} style={buttonStyle}>
-        Reload
+        {t('common.errorBoundary.reload')}
       </button>
+
       <ErrorDetail error={error} redactMessage />
     </div>
   );
@@ -128,6 +173,7 @@ interface RouteErrorFallbackProps {
 }
 
 export function RouteErrorFallback({ error, reset }: RouteErrorFallbackProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // The explicit reset() matters when the crashed route IS '/': the
@@ -141,25 +187,53 @@ export function RouteErrorFallback({ error, reset }: RouteErrorFallbackProps) {
   return (
     <div
       style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', padding: 24, textAlign: 'center',
-        color: INK, fontFamily: FONT_SANS,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        textAlign: 'center',
+        color: INK,
+        fontFamily: FONT_SANS,
       }}
     >
-      <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 24, fontWeight: 400, letterSpacing: '-0.02em', margin: '0 0 8px' }}>
-        This page hit an error
+      <h2
+        style={{
+          fontFamily: FONT_DISPLAY,
+          fontSize: 24,
+          fontWeight: 400,
+          letterSpacing: '-0.02em',
+          margin: '0 0 8px',
+        }}
+      >
+        {t('common.errorBoundary.routeTitle')}
       </h2>
-      <p style={{ fontSize: 13, color: INK_SOFT, lineHeight: 1.5, margin: '0 0 24px' }}>
-        The rest of the app is still running. You can head back to the dashboard or reload.
+
+      <p
+        style={{
+          fontSize: 13,
+          color: INK_SOFT,
+          lineHeight: 1.5,
+          margin: '0 0 24px',
+        }}
+      >
+        {t('common.errorBoundary.routeDescription')}
       </p>
+
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={handleBackToDashboard} style={buttonStyle}>
-          Back to Dashboard
+          {t('common.errorBoundary.backToDashboard')}
         </button>
-        <button onClick={() => window.location.reload()} style={secondaryButtonStyle}>
-          Reload
+
+        <button
+          onClick={() => window.location.reload()}
+          style={secondaryButtonStyle}
+        >
+          {t('common.errorBoundary.reload')}
         </button>
       </div>
+
       <ErrorDetail error={error} />
     </div>
   );

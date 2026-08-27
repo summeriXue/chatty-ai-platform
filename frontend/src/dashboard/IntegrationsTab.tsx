@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import { getToken } from '../core/auth/tokenUtils';
 import { LoadError } from '../shared/LoadError';
@@ -33,6 +34,7 @@ const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
 });
 
 export function IntegrationsTab() {
+  const { t } = useTranslation();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -164,7 +166,7 @@ export function IntegrationsTab() {
       startQrPolling(slug);
     } catch (err: unknown) {
       setWaConnecting(prev => ({ ...prev, [slug]: false }));
-      setWaErrors(prev => ({ ...prev, [slug]: err instanceof Error ? err.message : 'Connection failed' }));
+      setWaErrors(prev => ({ ...prev, [slug]: err instanceof Error ? err.message : t('integrations.connectionFailed') }));
     }
   }
 
@@ -203,7 +205,7 @@ export function IntegrationsTab() {
       setSetupFor(null);
       const data = await api<{ integrations: Integration[] }>('/api/integrations');
       setIntegrations(data.integrations);
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Setup failed'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.setupFailed')); }
     finally { setSaving(false); }
   }
 
@@ -221,9 +223,9 @@ export function IntegrationsTab() {
         setOdooManualMode(false);
         if (result.databases.length === 1) setOdooDb(result.databases[0]);
       } else {
-        setError(result.error || 'No databases found. Enter the name manually.');
+        setError(result.error || t('integrations.odooNoDatabases'));
       }
-    } catch { setError('Could not reach the Odoo instance. Check the URL and try again.'); }
+    } catch { setError(t('integrations.odooUnreachable')); }
     finally { setOdooDiscovering(false); }
   }
 
@@ -234,7 +236,7 @@ export function IntegrationsTab() {
       setSetupFor(null);
       const data = await api<{ integrations: Integration[] }>('/api/integrations');
       setIntegrations(data.integrations);
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Setup failed'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.setupFailed')); }
     finally { setSaving(false); }
   }
 
@@ -245,7 +247,7 @@ export function IntegrationsTab() {
       setSetupFor(null);
       const data = await api<{ integrations: Integration[] }>('/api/integrations');
       setIntegrations(data.integrations);
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Setup failed'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.setupFailed')); }
     finally { setSaving(false); }
   }
 
@@ -272,7 +274,7 @@ export function IntegrationsTab() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Setup failed',
+          : t('integrations.setupFailed'),
       );
     } finally {
       setSaving(false);
@@ -303,7 +305,7 @@ export function IntegrationsTab() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Setup failed'
+          : t('integrations.setupFailed')
       );
     } finally {
       setSaving(false);
@@ -337,7 +339,7 @@ export function IntegrationsTab() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Setup failed'
+          : t('integrations.setupFailed')
       );
     } finally {
       setSaving(false);
@@ -355,7 +357,7 @@ export function IntegrationsTab() {
       setSetupFor(null);
       const data = await api<{ integrations: Integration[] }>('/api/integrations');
       setIntegrations(data.integrations);
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Setup failed'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.setupFailed')); }
     finally { setSaving(false); }
   }
 
@@ -375,7 +377,7 @@ export function IntegrationsTab() {
         body: JSON.stringify({ agent_mapping: pcAgentMapping, chatty_base_url: chattyBaseUrl }),
       });
       setError('');
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to save mapping'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.mappingSaveFailed')); }
     finally { setSaving(false); }
   }
 
@@ -388,7 +390,7 @@ export function IntegrationsTab() {
       setPcAgentMapping({});
       const data = await api<{ integrations: Integration[] }>('/api/integrations');
       setIntegrations(data.integrations);
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Disconnect failed'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.disconnectFailed')); }
     finally { setSaving(false); }
   }
 
@@ -418,7 +420,7 @@ export function IntegrationsTab() {
       await api('/api/integrations/quickbooks/disconnect', { method: 'POST' });
       const data = await api<{ integrations: Integration[] }>('/api/integrations');
       setIntegrations(data.integrations);
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Disconnect failed'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : t('integrations.disconnectFailed')); }
     finally { setSaving(false); }
   }
 
@@ -432,6 +434,43 @@ export function IntegrationsTab() {
     await api('/api/integrations/qb_csv/setup', { method: 'POST' });
     const data = await api<{ integrations: Integration[] }>('/api/integrations');
     setIntegrations(data.integrations);
+  }
+
+  function getIntegrationDescription(id: string, fallback: string): string {
+    const keys: Record<string, string> = {
+      quickbooks: 'integrations.descriptions.quickbooks',
+      qb_csv: 'integrations.descriptions.qbCsv',
+      odoo: 'integrations.descriptions.odoo',
+      bamboohr: 'integrations.descriptions.bamboohr',
+      hubspot: 'integrations.descriptions.hubspot',
+      salesforce: 'integrations.descriptions.salesforce',
+      whatsapp: 'integrations.descriptions.whatsapp',
+      telegram: 'integrations.descriptions.telegram',
+      feishu: 'integrations.descriptions.feishu',
+      wecom: 'integrations.descriptions.wecom',
+      gmail: 'integrations.descriptions.gmail',
+      calendar: 'integrations.descriptions.calendar',
+      paperclip: 'integrations.descriptions.paperclip',
+      todoist: 'integrations.descriptions.todoist',
+      github: 'integrations.descriptions.github',
+    };
+
+    const key = keys[id];
+    return key ? t(key, { defaultValue: fallback }) : fallback;
+  }
+
+  function formatWhatsAppStatus(status: string): string {
+    const labels: Record<string, string> = {
+      connected: t('integrations.statusConnected'),
+      disconnected: t('integrations.statusDisconnected'),
+      connecting: t('integrations.statusConnecting'),
+      scan_qr: t('integrations.statusScanQr'),
+      checking: t('integrations.statusChecking'),
+      'checking...': t('integrations.statusChecking'),
+      unknown: t('integrations.statusUnknown'),
+    };
+
+    return labels[status] || status.replace('_', ' ');
   }
 
   const inputStyle: React.CSSProperties = {
@@ -448,7 +487,7 @@ export function IntegrationsTab() {
   );
 
   if (loadFailed && integrations.length === 0) {
-    return <LoadError label="Couldn't load integrations" onRetry={() => { setLoading(true); setLoadFailed(false); loadIntegrations(); }} />;
+    return <LoadError label={t('integrations.loadFailed')} onRetry={() => { setLoading(true); setLoadFailed(false); loadIntegrations(); }} />;
   }
 
   async function openQbCredForm() {
@@ -501,10 +540,12 @@ export function IntegrationsTab() {
                         fontSize: 10, fontWeight: 600, letterSpacing: 0.3, textTransform: 'uppercase',
                         color: '#E0A458', background: 'rgba(224,164,88,0.12)',
                         border: '1px solid rgba(224,164,88,0.3)', borderRadius: 4, padding: '1px 6px',
-                      }}>Deprecated · Frozen</span>
+                      }}>{t('integrations.deprecatedFrozen')}</span>
                     )}
                   </p>
-                  <p style={{ fontSize: 11, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>{integration.description}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                    {getIntegrationDescription(integration.id, integration.description)}
+                  </p>
                 </div>
               </div>
 
@@ -522,12 +563,12 @@ export function IntegrationsTab() {
                       {/* Broken state for QuickBooks */}
                       {isBroken && integration.id === 'quickbooks' && (
                         <>
-                          <span style={{ fontSize: 11, color: '#D97757', background: 'rgba(217,119,87,0.08)', padding: '2px 8px', borderRadius: 4 }}>Connection lost</span>
+                          <span style={{ fontSize: 11, color: '#D97757', background: 'rgba(217,119,87,0.08)', padding: '2px 8px', borderRadius: 4 }}>{t('integrations.connectionLost')}</span>
                           <button onClick={() => hasAppCreds ? reconnectQuickBooks() : openQbCredForm()} disabled={saving} style={{
                             fontSize: 11, padding: '4px 12px', borderRadius: 4,
                             background: 'transparent', color: '#D97757', border: '1px solid rgba(217,119,87,0.25)', cursor: 'pointer',
                             opacity: saving ? 0.5 : 1,
-                          }}>{hasAppCreds ? 'Reconnect' : 'Setup credentials'}</button>
+                          }}>{hasAppCreds ? t('integrations.reconnect') : t('integrations.setupCredentials')}</button>
                         </>
                       )}
 
@@ -554,8 +595,8 @@ export function IntegrationsTab() {
                           border: '1px solid rgba(230,235,242,0.14)', cursor: 'pointer',
                           opacity: saving ? 0.5 : 1,
                         }}>
-                          {integration.id === 'quickbooks' && qbConnecting ? 'Connecting...'
-                            : integration.id === 'quickbooks' && hasAppCreds ? 'Connect' : 'Setup'}
+                          {integration.id === 'quickbooks' && qbConnecting ? t('integrations.connecting')
+                            : integration.id === 'quickbooks' && hasAppCreds ? t('integrations.connect') : t('integrations.setup')}
                         </button>
                       )}
 
@@ -601,7 +642,7 @@ export function IntegrationsTab() {
                             cursor: 'pointer',
                           }}
                         >
-                          Manage
+                          {t('integrations.manage')}
                         </button>
                       )}
 
@@ -640,12 +681,12 @@ export function IntegrationsTab() {
                             fontSize: 11, padding: '4px 8px', borderRadius: 4,
                             background: 'transparent', color: 'rgba(237,240,244,0.38)',
                             border: 'none', cursor: 'pointer',
-                          }}>Edit credentials</button>
+                          }}>{t('integrations.editCredentials')}</button>
                           <button onClick={disconnectQuickBooks} disabled={saving} style={{
                             fontSize: 11, padding: '4px 8px', borderRadius: 4,
                             background: 'transparent', color: 'rgba(237,240,244,0.38)',
                             border: 'none', cursor: 'pointer',
-                          }}>Disconnect</button>
+                          }}>{t('integrations.disconnect')}</button>
                         </>
                       )}
                     </>
@@ -656,17 +697,17 @@ export function IntegrationsTab() {
                     fontSize: 11, padding: '4px 12px', borderRadius: 4,
                     background: 'rgba(142,165,137,0.1)', color: '#8EA589',
                     border: '1px solid rgba(142,165,137,0.2)', cursor: 'pointer',
-                  }}>{waExpanded ? 'Close' : 'Manage'}</button>
+                  }}>{waExpanded ? t('integrations.close') : t('integrations.manage')}</button>
                 )}
                 {integration.auth_type === 'per_agent' && (
                   <button onClick={() => setTelegramExpanded(prev => !prev)} style={{
                     fontSize: 11, padding: '4px 12px', borderRadius: 4,
                     background: 'rgba(0,136,204,0.1)', color: '#0088cc',
                     border: '1px solid rgba(0,136,204,0.2)', cursor: 'pointer',
-                  }}>{telegramExpanded ? 'Close' : 'Manage'}</button>
+                  }}>{telegramExpanded ? t('integrations.close') : t('integrations.manage')}</button>
                 )}
                 {integration.auth_type === 'stub' && (
-                  <span style={{ ...mono(9, 'rgba(237,240,244,0.38)') }}>Coming soon</span>
+                  <span style={{ ...mono(9, 'rgba(237,240,244,0.38)') }}>{t('integrations.comingSoon')}</span>
                 )}
               </div>
             </div>
@@ -674,15 +715,15 @@ export function IntegrationsTab() {
             {/* Permission level selector for Odoo and QuickBooks */}
             {(integration.id === 'odoo' || integration.id === 'quickbooks' || integration.id === 'paperclip') && integration.enabled && integration.configured && integration.connection_status !== 'broken' && (
               <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ ...mono(9), whiteSpace: 'nowrap' }}>Permissions</span>
+                <span style={{ ...mono(9), whiteSpace: 'nowrap' }}>{t('integrations.permissions')}</span>
                 <div style={{
                   display: 'flex', border: '1px solid rgba(230,235,242,0.07)',
                   borderRadius: 3, overflow: 'hidden',
                 }}>
                   {([
-                    { key: 'read-only', label: 'Read' },
-                    { key: 'normal', label: 'Approval' },
-                    { key: 'power', label: 'Full Control' },
+                    { key: 'read-only', label: t('integrations.permissionRead') },
+                    { key: 'normal', label: t('integrations.permissionApproval') },
+                    { key: 'power', label: t('integrations.permissionFullControl') },
                   ] as const).map(m => (
                     <div
                       key={m.key}
@@ -711,12 +752,12 @@ export function IntegrationsTab() {
                   fontSize: 11, padding: '4px 8px', borderRadius: 4,
                   background: 'transparent', color: 'rgba(237,240,244,0.38)',
                   border: 'none', cursor: 'pointer',
-                }}>Reconfigure</button>
+                }}>{t('integrations.reconfigure')}</button>
                 <button onClick={disconnectPaperclip} disabled={saving} style={{
                   fontSize: 11, padding: '4px 8px', borderRadius: 4,
                   background: 'transparent', color: '#D97757',
                   border: 'none', cursor: 'pointer', opacity: saving ? 0.5 : 1,
-                }}>Disconnect</button>
+                }}>{t('integrations.disconnect')}</button>
               </div>
             )}
 
@@ -736,16 +777,16 @@ export function IntegrationsTab() {
                   style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <span style={{ ...mono(9), color: 'rgba(237,240,244,0.62)' }}>
-                    {pcMappingExpanded ? '▾' : '▸'} Agent Mapping
+                    {pcMappingExpanded ? '▾' : '▸'} {t('integrations.agentMapping')}
                   </span>
                   <span style={{ fontSize: 10, color: 'rgba(237,240,244,0.38)' }}>
-                    (required for heartbeats)
+                    {t('integrations.agentMappingRequired')}
                   </span>
                 </div>
                 {pcMappingExpanded && (
                   <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {pcPaperclipAgents.length === 0 ? (
-                      <p style={{ color: 'rgba(237,240,244,0.38)', fontSize: 12 }}>No Paperclip agents found. Create agents in the Paperclip UI first.</p>
+                      <p style={{ color: 'rgba(237,240,244,0.38)', fontSize: 12 }}>{t('integrations.noPaperclipAgents')}</p>
                     ) : (
                       <>
                         {pcPaperclipAgents.map(pa => (
@@ -759,7 +800,7 @@ export function IntegrationsTab() {
                               onChange={e => setPcAgentMapping(prev => ({ ...prev, [pa.id]: e.target.value }))}
                               style={{ flex: 1, padding: '4px 8px', fontSize: 12, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'rgba(230,235,242,0.04)', color: 'rgba(237,240,244,0.86)' }}
                             >
-                              <option value="">Not mapped</option>
+                              <option value="">{t('integrations.notMapped')}</option>
                               {agents.map(a => (
                                 <option key={a.slug} value={a.slug}>{a.agent_name}</option>
                               ))}
@@ -771,7 +812,7 @@ export function IntegrationsTab() {
                           disabled={saving}
                           style={{ alignSelf: 'flex-end', padding: '4px 14px', fontSize: 11, borderRadius: 3, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving ? 0.5 : 1, marginTop: 4 }}
                         >
-                          {saving ? 'Saving...' : 'Save Mapping'}
+                          {saving ? t('integrations.saving') : t('integrations.saveMapping')}
                         </button>
                       </>
                     )}
@@ -801,21 +842,20 @@ export function IntegrationsTab() {
             {integration.auth_type === 'qr_session' && waExpanded && (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(230,235,242,0.07)' }}>
                 <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5, marginBottom: 14 }}>
-                  WhatsApp requires a QR code scan from your phone, so it must be set up here.
-                  Select an agent below, then scan the code with WhatsApp &rarr; Settings &rarr; Linked Devices.
+{t('integrations.whatsappSetupDescription')}
                 </p>
                 {agents.length === 0 ? (
-                  <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 13 }}>No agents created yet.</p>
+                  <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 13 }}>{t('integrations.noAgents')}</p>
                 ) : (
                   <>
                     <div style={{ marginBottom: 12 }}>
-                      <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>Select agent</label>
+                      <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>{t('integrations.selectAgent')}</label>
                       <select value={waSelectedAgent} onChange={e => setWaSelectedAgent(e.target.value)}
                         style={{ ...inputStyle }}>
-                        <option value="">Choose an agent...</option>
+                        <option value="">{t('integrations.chooseAgent')}</option>
                         {agents.map(a => (
                           <option key={a.id} value={a.slug}>
-                            {a.agent_name} {a.whatsapp_session_id ? '(connected)' : ''}
+                            {a.agent_name} {a.whatsapp_session_id ? `(${t('integrations.connected')})` : ''}
                           </option>
                         ))}
                       </select>
@@ -840,21 +880,21 @@ export function IntegrationsTab() {
                                 background: st === 'connected' ? '#8EA589' : st === 'scan_qr' || st === 'connecting' ? '#D4A85A' : 'rgba(237,240,244,0.38)',
                                 animation: (st === 'scan_qr' || st === 'connecting') ? 'pulse 2s infinite' : 'none',
                               }} />
-                              <span style={{ ...mono(9, 'rgba(237,240,244,0.62)'), textTransform: 'capitalize' }}>{st.replace('_', ' ')}</span>
+                              <span style={{ ...mono(9, 'rgba(237,240,244,0.62)'), textTransform: 'capitalize' }}>{formatWhatsAppStatus(st)}</span>
                             </div>
                             {st === 'connected' && (
                               <button onClick={() => disconnectWhatsApp(slug)} style={{
                                 fontSize: 11, padding: '4px 12px', borderRadius: 4,
                                 background: 'rgba(217,119,87,0.1)', color: '#D97757',
                                 border: '1px solid rgba(217,119,87,0.2)', cursor: 'pointer',
-                              }}>Disconnect</button>
+                              }}>{t('integrations.disconnect')}</button>
                             )}
                             {st === 'disconnected' && !isConnecting && (
                               <button onClick={() => connectWhatsApp(slug)} style={{
                                 fontSize: 11, padding: '4px 12px', borderRadius: 4,
                                 background: 'rgba(142,165,137,0.1)', color: '#8EA589',
                                 border: '1px solid rgba(142,165,137,0.2)', cursor: 'pointer',
-                              }}>Connect WhatsApp</button>
+                              }}>{t('integrations.connectWhatsApp')}</button>
                             )}
                           </div>
                           {errMsg && <p style={{ color: '#D97757', fontSize: 12, marginBottom: 8 }}>{errMsg}</p>}
@@ -868,16 +908,16 @@ export function IntegrationsTab() {
                                 </div>
                               )}
                               <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontSize: 13, color: '#EDF0F4' }}>Scan with WhatsApp</p>
+                                <p style={{ fontSize: 13, color: '#EDF0F4' }}>{t('integrations.scanWithWhatsApp')}</p>
                                 <p style={{ fontSize: 11, color: 'rgba(237,240,244,0.38)', marginTop: 4 }}>
-                                  Open WhatsApp &rarr; Settings &rarr; Linked Devices &rarr; Link a Device
+{t('integrations.whatsappScanInstructions')}
                                 </p>
                               </div>
                             </div>
                           )}
                           {st === 'connected' && (
                             <p style={{ fontSize: 12, color: '#8EA589' }}>
-                              Messages to this WhatsApp number will be handled by {agent.agent_name}.
+{t('integrations.whatsappHandledBy', { agent: agent.agent_name })}
                             </p>
                           )}
                         </div>
@@ -886,7 +926,7 @@ export function IntegrationsTab() {
 
                     {agents.filter(a => a.whatsapp_session_id).length > 0 && (
                       <div style={{ marginTop: 12 }}>
-                        <p style={{ ...mono(9), marginBottom: 8 }}>Connected agents</p>
+                        <p style={{ ...mono(9), marginBottom: 8 }}>{t('integrations.connectedAgents')}</p>
                         {agents.filter(a => a.whatsapp_session_id).map(a => (
                           <div key={a.id} style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -898,7 +938,7 @@ export function IntegrationsTab() {
                             </div>
                             <button onClick={() => setWaSelectedAgent(a.slug)} style={{
                               fontSize: 11, color: 'rgba(237,240,244,0.62)', background: 'none', border: 'none', cursor: 'pointer',
-                            }}>Manage</button>
+                            }}>{t('integrations.manage')}</button>
                           </div>
                         ))}
                       </div>
@@ -912,20 +952,19 @@ export function IntegrationsTab() {
             {integration.auth_type === 'per_agent' && telegramExpanded && (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(230,235,242,0.07)' }}>
                 <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5, marginBottom: 14 }}>
-                  Each agent gets its own Telegram bot. You can set this up here, or just ask your agent
-                  &mdash; say something like "set up Telegram" and it will walk you through creating a bot with @BotFather.
+{t('integrations.telegramSetupDescription')}
                 </p>
                 {agents.length === 0 ? (
-                  <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 13 }}>No agents created yet.</p>
+                  <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 13 }}>{t('integrations.noAgents')}</p>
                 ) : (
                   <>
                     <div style={{ marginBottom: 12 }}>
-                      <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>Select agent</label>
+                      <label style={{ display: 'block', ...mono(9), marginBottom: 4 }}>{t('integrations.selectAgent')}</label>
                       <select value={tgSelectedAgent} onChange={e => setTgSelectedAgent(e.target.value)} style={{ ...inputStyle }}>
-                        <option value="">Choose an agent...</option>
+                        <option value="">{t('integrations.chooseAgent')}</option>
                         {agents.map(a => (
                           <option key={a.id} value={a.id}>
-                            {a.agent_name} {a.telegram_bot_token ? '(connected)' : ''}
+                            {a.agent_name} {a.telegram_bot_token ? `(${t('integrations.connected')})` : ''}
                           </option>
                         ))}
                       </select>
@@ -957,9 +996,9 @@ export function IntegrationsTab() {
                 {integration.id === 'odoo' && (
                   <>
                     <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5, marginBottom: 4 }}>
-                      You can also set this up by asking your agent &mdash; say "connect Odoo" and provide your credentials in chat.
+{t('integrations.odooSetupDescription')}
                     </p>
-                    <input placeholder="Odoo URL (https://...)" value={odooUrl} onChange={e => {
+                    <input placeholder={t('integrations.odooUrlPlaceholder')} value={odooUrl} onChange={e => {
                       setOdooUrl(e.target.value);
                       if (odooDiscoveredDbs.length > 0) {
                         setOdooDiscoveredDbs([]); setOdooDiscoveryMethod(''); setOdooDb(''); setOdooManualMode(false);
@@ -967,63 +1006,63 @@ export function IntegrationsTab() {
                     }} style={inputStyle} />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
                       <button onClick={discoverOdooDatabases} disabled={odooDiscovering || !odooUrl.trim()} style={{ background: 'none', border: 'none', color: 'var(--color-ch-accent, #C8D1D9)', fontSize: 11, cursor: 'pointer', padding: 0, opacity: odooDiscovering || !odooUrl.trim() ? 0.3 : 1 }}>
-                        {odooDiscovering ? 'Searching...' : 'Find my database'}
+                        {odooDiscovering ? t('integrations.searching') : t('integrations.findDatabase')}
                       </button>
                     </div>
                     {odooDiscoveredDbs.length > 0 && !odooManualMode ? (
                       <>
                         <select value={odooDb} onChange={e => setOdooDb(e.target.value)} style={{ ...inputStyle }}>
-                          <option value="">Select a database...</option>
+                          <option value="">{t('integrations.selectDatabase')}</option>
                           {odooDiscoveredDbs.map(db => <option key={db} value={db}>{db}</option>)}
                         </select>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ color: 'rgba(237,240,244,0.38)', fontSize: 11 }}>
-                            {odooDiscoveredDbs.length === 1 ? 'Database found' : `${odooDiscoveredDbs.length} databases found`}
-                            {odooDiscoveryMethod === 'url_inference' && ' (inferred from URL)'}
+                            {odooDiscoveredDbs.length === 1 ? t('integrations.databaseFound') : t('integrations.databasesFound', { count: odooDiscoveredDbs.length })}
+                            {odooDiscoveryMethod === 'url_inference' && ` ${t('integrations.inferredFromUrl')}`}
                           </span>
-                          <button onClick={() => setOdooManualMode(true)} style={{ background: 'none', border: 'none', color: 'rgba(237,240,244,0.38)', fontSize: 11, cursor: 'pointer', padding: 0 }}>Type manually</button>
+                          <button onClick={() => setOdooManualMode(true)} style={{ background: 'none', border: 'none', color: 'rgba(237,240,244,0.38)', fontSize: 11, cursor: 'pointer', padding: 0 }}>{t('integrations.typeManually')}</button>
                         </div>
                       </>
                     ) : (
                       <>
-                        <input placeholder="Database name" value={odooDb} onChange={e => setOdooDb(e.target.value)} style={inputStyle} />
+                        <input placeholder={t('integrations.databaseNamePlaceholder')} value={odooDb} onChange={e => setOdooDb(e.target.value)} style={inputStyle} />
                         {odooDiscoveredDbs.length > 0 && odooManualMode && (
                           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setOdooManualMode(false)} style={{ background: 'none', border: 'none', color: 'rgba(237,240,244,0.38)', fontSize: 11, cursor: 'pointer', padding: 0 }}>Use discovered databases</button>
+                            <button onClick={() => setOdooManualMode(false)} style={{ background: 'none', border: 'none', color: 'rgba(237,240,244,0.38)', fontSize: 11, cursor: 'pointer', padding: 0 }}>{t('integrations.useDiscoveredDatabases')}</button>
                           </div>
                         )}
                       </>
                     )}
-                    <input placeholder="Username / email" value={odooUser} onChange={e => setOdooUser(e.target.value)} style={inputStyle} />
-                    <input placeholder="API key" type="password" value={odooKey} onChange={e => setOdooKey(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.usernameEmailPlaceholder')} value={odooUser} onChange={e => setOdooUser(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.apiKeyPlaceholder')} type="password" value={odooKey} onChange={e => setOdooKey(e.target.value)} style={inputStyle} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>Cancel</button>
-                      <button onClick={setupOdoo} disabled={saving} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving ? 0.5 : 1 }}>{saving ? 'Connecting...' : 'Connect'}</button>
+                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>{t('integrations.cancel')}</button>
+                      <button onClick={setupOdoo} disabled={saving} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving ? 0.5 : 1 }}>{saving ? t('integrations.connecting') : t('integrations.connect')}</button>
                     </div>
                   </>
                 )}
                 {integration.id === 'bamboohr' && (
                   <>
                     <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5, marginBottom: 4 }}>
-                      You can also set this up by asking your agent &mdash; say "connect BambooHR" and provide your subdomain and API key in chat.
+{t('integrations.bambooSetupDescription')}
                     </p>
-                    <input placeholder="Subdomain (company.bamboohr.com)" value={bambooSubdomain} onChange={e => setBambooSubdomain(e.target.value)} style={inputStyle} />
-                    <input placeholder="API key" value={bambooKey} onChange={e => setBambooKey(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.bambooSubdomainPlaceholder')} value={bambooSubdomain} onChange={e => setBambooSubdomain(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.apiKeyPlaceholder')} value={bambooKey} onChange={e => setBambooKey(e.target.value)} style={inputStyle} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>Cancel</button>
-                      <button onClick={setupBambooHR} disabled={saving} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving ? 0.5 : 1 }}>{saving ? 'Connecting...' : 'Connect'}</button>
+                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>{t('integrations.cancel')}</button>
+                      <button onClick={setupBambooHR} disabled={saving} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving ? 0.5 : 1 }}>{saving ? t('integrations.connecting') : t('integrations.connect')}</button>
                     </div>
                   </>
                 )}
                 {integration.id === 'todoist' && (
                   <>
                     <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5, marginBottom: 4 }}>
-                      Paste your Todoist API token. Find it in Todoist &rarr; Settings &rarr; Integrations &rarr; Developer.
+{t('integrations.todoistSetupDescription')}
                     </p>
-                    <input placeholder="Todoist API token" type="password" value={todoistToken} onChange={e => setTodoistToken(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.todoistTokenPlaceholder')} type="password" value={todoistToken} onChange={e => setTodoistToken(e.target.value)} style={inputStyle} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>Cancel</button>
-                      <button onClick={setupTodoist} disabled={saving || !todoistToken.trim()} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving || !todoistToken.trim() ? 0.5 : 1 }}>{saving ? 'Connecting...' : 'Connect'}</button>
+                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>{t('integrations.cancel')}</button>
+                      <button onClick={setupTodoist} disabled={saving || !todoistToken.trim()} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving || !todoistToken.trim() ? 0.5 : 1 }}>{saving ? t('integrations.connecting') : t('integrations.connect')}</button>
                     </div>
                   </>
                 )}
@@ -1036,12 +1075,11 @@ export function IntegrationsTab() {
                       lineHeight: 1.5,
                       marginBottom: 4,
                     }}>
-                      Paste your GitHub Personal Access Token. The token determines which
-                      repositories Chatty can access.
+{t('integrations.githubSetupDescription')}
                     </p>
 
                     <input
-                      placeholder="GitHub Personal Access Token"
+                      placeholder={t('integrations.githubTokenPlaceholder')}
                       type="password"
                       value={githubToken}
                       onChange={e => setGithubToken(e.target.value)}
@@ -1062,7 +1100,7 @@ export function IntegrationsTab() {
                           cursor: 'pointer',
                         }}
                       >
-                        Cancel
+                        {t('integrations.cancel')}
                       </button>
 
                       <button
@@ -1081,7 +1119,7 @@ export function IntegrationsTab() {
                           opacity: saving || !githubToken.trim() ? 0.5 : 1,
                         }}
                       >
-                        {saving ? 'Connecting...' : 'Connect'}
+                        {saving ? t('integrations.connecting') : t('integrations.connect')}
                       </button>
                     </div>
                   </>
@@ -1096,18 +1134,18 @@ export function IntegrationsTab() {
                         marginBottom: 4,
                       }}
                     >
-                      Connect a Feishu custom app using its App ID and App Secret.
+                      {t('integrations.feishuSetupDescription')}
                     </p>
 
                     <input
-                      placeholder="Feishu App ID"
+                      placeholder={t('integrations.feishuAppIdPlaceholder')}
                       value={feishuAppId}
                       onChange={e => setFeishuAppId(e.target.value)}
                       style={inputStyle}
                     />
 
                     <input
-                      placeholder="Feishu App Secret"
+                      placeholder={t('integrations.feishuAppSecretPlaceholder')}
                       type="password"
                       value={feishuAppSecret}
                       onChange={e => setFeishuAppSecret(e.target.value)}
@@ -1119,7 +1157,7 @@ export function IntegrationsTab() {
                       onChange={e => setFeishuAgentId(e.target.value)}
                       style={inputStyle}
                     >
-                      <option value="">Select a Chatty agent...</option>
+                      <option value="">{t('integrations.selectChattyAgent')}</option>
 
                       {agents.map(agent => (
                         <option key={agent.id} value={agent.id}>
@@ -1149,7 +1187,7 @@ export function IntegrationsTab() {
                           cursor: 'pointer',
                         }}
                       >
-                        Cancel
+                        {t('integrations.cancel')}
                       </button>
 
                       <button
@@ -1179,7 +1217,7 @@ export function IntegrationsTab() {
                               : 1,
                         }}
                       >
-                        {saving ? 'Connecting...' : 'Connect'}
+                        {saving ? t('integrations.connecting') : t('integrations.connect')}
                       </button>
                     </div>
                   </>
@@ -1194,26 +1232,25 @@ export function IntegrationsTab() {
                         marginBottom: 4,
                       }}
                     >
-                      Connect a WeCom custom application using its Corp ID,
-                      application Agent ID, and Secret.
+{t('integrations.wecomSetupDescription')}
                     </p>
 
                     <input
-                      placeholder="WeCom Corp ID"
+                      placeholder={t('integrations.wecomCorpIdPlaceholder')}
                       value={wecomCorpId}
                       onChange={e => setWecomCorpId(e.target.value)}
                       style={inputStyle}
                     />
 
                     <input
-                      placeholder="WeCom Application Agent ID"
+                      placeholder={t('integrations.wecomAppAgentIdPlaceholder')}
                       value={wecomAppAgentId}
                       onChange={e => setWecomAppAgentId(e.target.value)}
                       style={inputStyle}
                     />
 
                     <input
-                      placeholder="WeCom Application Secret"
+                      placeholder={t('integrations.wecomSecretPlaceholder')}
                       type="password"
                       value={wecomCorpSecret}
                       onChange={e => setWecomCorpSecret(e.target.value)}
@@ -1221,14 +1258,14 @@ export function IntegrationsTab() {
                     />
 
                     <input
-                      placeholder="WeCom Callback Token"
+                      placeholder={t('integrations.wecomCallbackTokenPlaceholder')}
                       value={wecomCallbackToken}
                       onChange={e => setWecomCallbackToken(e.target.value)}
                       style={inputStyle}
                     />
 
                     <input
-                      placeholder="WeCom EncodingAESKey"
+                      placeholder={t('integrations.wecomEncodingAesKeyPlaceholder')}
                       type="password"
                       value={wecomEncodingAesKey}
                       onChange={e => setWecomEncodingAesKey(e.target.value)}
@@ -1240,7 +1277,7 @@ export function IntegrationsTab() {
                       onChange={e => setWecomAgentId(e.target.value)}
                       style={inputStyle}
                     >
-                      <option value="">Select a Chatty agent...</option>
+                      <option value="">{t('integrations.selectChattyAgent')}</option>
 
                       {agents.map(agent => (
                         <option key={agent.id} value={agent.id}>
@@ -1269,7 +1306,7 @@ export function IntegrationsTab() {
                           cursor: 'pointer',
                         }}
                       >
-                        Cancel
+                        {t('integrations.cancel')}
                       </button>
 
                       <button
@@ -1305,7 +1342,7 @@ export function IntegrationsTab() {
                               : 1,
                         }}
                       >
-                        {saving ? 'Connecting...' : 'Connect'}
+                        {saving ? t('integrations.connecting') : t('integrations.connect')}
                       </button>
                     </div>
                   </>
@@ -1313,14 +1350,14 @@ export function IntegrationsTab() {
                 {integration.id === 'paperclip' && (
                   <>
                     <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.50)', lineHeight: 1.5, marginBottom: 4 }}>
-                      Sign in to your Paperclip instance. Chatty will auto-detect your company.
+                      {t('integrations.paperclipSetupDescription')}
                     </p>
-                    <input placeholder="Paperclip URL (https://your-instance.up.railway.app)" value={pcUrl} onChange={e => setPcUrl(e.target.value)} style={inputStyle} />
-                    <input placeholder="Email" value={pcEmail} onChange={e => setPcEmail(e.target.value)} style={inputStyle} />
-                    <input placeholder="Password" type="password" value={pcPassword} onChange={e => setPcPassword(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.paperclipUrlPlaceholder')} value={pcUrl} onChange={e => setPcUrl(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.emailPlaceholder')} value={pcEmail} onChange={e => setPcEmail(e.target.value)} style={inputStyle} />
+                    <input placeholder={t('integrations.passwordPlaceholder')} type="password" value={pcPassword} onChange={e => setPcPassword(e.target.value)} style={inputStyle} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>Cancel</button>
-                      <button onClick={setupPaperclip} disabled={saving || !pcUrl.trim() || !pcEmail.trim() || !pcPassword.trim()} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving || !pcUrl.trim() || !pcEmail.trim() || !pcPassword.trim() ? 0.5 : 1 }}>{saving ? 'Connecting...' : 'Connect'}</button>
+                      <button onClick={() => setSetupFor(null)} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, border: '1px solid rgba(230,235,242,0.14)', background: 'transparent', color: 'rgba(237,240,244,0.62)', cursor: 'pointer' }}>{t('integrations.cancel')}</button>
+                      <button onClick={setupPaperclip} disabled={saving || !pcUrl.trim() || !pcEmail.trim() || !pcPassword.trim()} style={{ flex: 1, padding: '8px 16px', fontSize: 13, borderRadius: 4, background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: saving || !pcUrl.trim() || !pcEmail.trim() || !pcPassword.trim() ? 0.5 : 1 }}>{saving ? t('integrations.connecting') : t('integrations.connect')}</button>
                     </div>
                   </>
                 )}

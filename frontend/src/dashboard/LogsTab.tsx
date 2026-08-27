@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import type { Agent } from '../core/types';
 
@@ -74,6 +75,31 @@ function formatTokens(n: number): string {
 }
 
 export function LogsTab() {
+  const { t } = useTranslation();
+
+  function formatStatus(status: string): string {
+      const labels: Record<string, string> = {
+        ok: t('settings.logs.statusOk'),
+        error: t('settings.logs.statusError'),
+        action_taken: t('settings.logs.statusActionTaken'),
+        lease_lost: t('settings.logs.statusLeaseLost'),
+        skipped: t('settings.logs.statusSkipped'),
+        running: t('settings.logs.statusRunning'),
+      };
+
+      return labels[status] || status;
+    }
+
+    function formatEventType(eventType: string): string {
+      const labels: Record<string, string> = {
+        chat: t('settings.logs.eventChat'),
+        review: t('settings.logs.eventReview'),
+        scheduled_action: t('settings.logs.eventScheduledAction'),
+        security: t('settings.logs.eventSecurity'),
+      };
+
+      return labels[eventType] || eventType;
+    }
   const [logs, setLogs] = useState<LogRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('activity');
@@ -147,7 +173,7 @@ export function LogsTab() {
       }
       setLogs(records);
     } catch {
-      setError('Failed to load logs.');
+      setError(t('settings.logs.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -189,29 +215,29 @@ export function LogsTab() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError('Export failed.');
+      setError(t('settings.logs.exportFailed'));
     } finally {
       setExporting(false);
     }
   }
 
   const categoryFilters: { id: CategoryFilter; label: string }[] = [
-    { id: 'activity', label: 'Activity' },
-    { id: 'security', label: 'Security' },
-    { id: 'all', label: 'All' },
+    { id: 'activity', label: t('settings.logs.activity') },
+    { id: 'security', label: t('settings.logs.security') },
+    { id: 'all', label: t('settings.logs.all') },
   ];
 
   const statusFilters: { id: StatusFilter; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'ok', label: 'OK' },
-    { id: 'action_taken', label: 'Activity' },
-    { id: 'error', label: 'Errors' },
+    { id: 'all', label: t('settings.logs.all') },
+    { id: 'ok', label: t('settings.logs.ok') },
+    { id: 'action_taken', label: t('settings.logs.activity') },
+    { id: 'error', label: t('settings.logs.errors') },
   ];
 
   const eventTypeFilters: { id: EventTypeFilter; label: string }[] = [
-    { id: 'all', label: 'All Types' },
-    { id: 'scheduled_action', label: 'Scheduled' },
-    { id: 'chat', label: 'Chat' },
+    { id: 'all', label: t('settings.logs.allTypes') },
+    { id: 'scheduled_action', label: t('settings.logs.scheduled') },
+    { id: 'chat', label: t('settings.logs.chat') },
   ];
 
   return (
@@ -240,7 +266,7 @@ export function LogsTab() {
             onChange={e => setAutoRefresh(e.target.checked)}
             className="accent-ch-accent"
           />
-          Auto-refresh
+          {t('settings.logs.autoRefresh')}
         </label>
       </div>
 
@@ -287,7 +313,7 @@ export function LogsTab() {
               onChange={e => setAgentFilter(e.target.value)}
               className={`${categoryFilter !== 'security' ? 'ml-2' : ''} px-2 py-1 text-xs rounded-md bg-ch-bg-raised/50 text-ch-ink-dim border border-ch-line-strong/50 outline-none`}
             >
-              <option value="all">All agents</option>
+              <option value="all">{t('settings.logs.allAgents')}</option>
               {agents.map(a => (
                 <option key={a.id} value={a.slug}>{a.agent_name}</option>
               ))}
@@ -300,7 +326,9 @@ export function LogsTab() {
             disabled={exporting}
             className="px-3 py-1.5 text-xs rounded-md text-ch-ink-dim hover:text-ch-ink hover:bg-ch-bg-raised/50 transition-colors disabled:opacity-50"
           >
-            {exporting ? 'Exporting...' : 'Export JSON'}
+            {exporting
+              ? t('settings.logs.exporting')
+              : t('settings.logs.exportJson')}
           </button>
           <button
             onClick={() => handleExport('csv')}
@@ -315,7 +343,7 @@ export function LogsTab() {
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-ch-ink-dim py-8 justify-center">
           <div className="animate-spin w-4 h-4 border-2 border-ch-accent border-t-transparent rounded-full" />
-          Loading logs...
+          {t('settings.logs.loading')}
         </div>
       ) : error ? (
         <div className="text-center py-12">
@@ -323,7 +351,9 @@ export function LogsTab() {
         </div>
       ) : logs.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-ch-ink-dim">No log entries yet.</p>
+          <p className="text-sm text-ch-ink-dim">
+            {t('settings.logs.empty')}
+          </p>
         </div>
       ) : (
         <div className="space-y-1">
@@ -351,13 +381,15 @@ export function LogsTab() {
                     {rec.agent}
                   </span>
                   <span className="text-ch-ink-dim w-[70px] shrink-0">
-                    {eventType === 'chat' ? (rec.source || 'chat') : rec.action_type}
+                    {eventType === 'chat'
+                      ? formatEventType(rec.source || 'chat')
+                      : formatEventType(rec.action_type)}
                   </span>
                   <span
                     className="w-[80px] shrink-0 font-medium"
                     style={{ color: isSecurityEvent ? (SEVERITY_COLORS[rec.status] || '#6B7280') : (STATUS_COLORS[rec.status] || '#6B7280') }}
                   >
-                    {rec.status}
+                    {formatStatus(rec.status)}
                   </span>
                   <span className="text-ch-ink-dim flex-1 truncate">
                     {rec.result_summary || ''}
@@ -381,11 +413,31 @@ export function LogsTab() {
                 {expanded === rec.id && (
                   <div className="px-3 pb-3 border-t border-ch-line-strong/30 mt-0">
                     <div className="flex flex-wrap gap-3 mt-2 text-xs text-ch-ink-dim">
-                      {rec.model_used && <span>Model: {rec.model_used}</span>}
-                      <span>In: {formatTokens(rec.input_tokens)} / Out: {formatTokens(rec.output_tokens)}</span>
-                      {rec.completed_at && <span>Completed: {formatTime(rec.completed_at)}</span>}
-                      {rec.source && <span>Source: {rec.source}</span>}
-                      {rec.event_type && <span>Type: {rec.event_type}</span>}
+                      {rec.model_used && (
+                        <span>
+                          {t('settings.logs.model')}: {rec.model_used}
+                        </span>
+                      )}
+                      <span>
+                        {t('settings.logs.input')}: {formatTokens(rec.input_tokens)}
+                        {' / '}
+                        {t('settings.logs.output')}: {formatTokens(rec.output_tokens)}
+                      </span>
+                      {rec.completed_at && (
+                        <span>
+                          {t('settings.logs.completed')}: {formatTime(rec.completed_at)}
+                        </span>
+                      )}
+                      {rec.source && (
+                        <span>
+                          {t('settings.logs.source')}: {rec.source}
+                        </span>
+                      )}
+                      {rec.event_type && (
+                        <span>
+                          {t('settings.logs.type')}: {formatEventType(rec.event_type)}
+                        </span>
+                      )}
                     </div>
 
                     {rec.result_full && (
@@ -396,7 +448,9 @@ export function LogsTab() {
 
                     {Array.isArray(rec.tool_calls) && rec.tool_calls.length > 0 && (
                       <div className="mt-2 space-y-1">
-                        <div className="text-xs text-ch-ink-dim font-medium">Tool Calls ({rec.tool_calls.length})</div>
+                        <div className="text-xs text-ch-ink-dim font-medium">
+                          {t('settings.logs.toolCalls')} ({rec.tool_calls.length})
+                        </div>
                         {rec.tool_calls.map((tc, i) => (
                           <div key={i} className="text-xs bg-ch-bg-raised/50 px-3 py-1.5 rounded font-mono">
                             <div className="flex items-center justify-between">

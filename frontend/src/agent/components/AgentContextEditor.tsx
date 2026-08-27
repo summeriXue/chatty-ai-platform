@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { useIsMobile } from '../../shared/useIsMobile';
 import { confirmDialog } from '../../shared/confirm';
@@ -29,6 +30,7 @@ const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
 });
 
 export function AgentContextEditor({ agentId }: Props) {
+  const { t } = useTranslation();
   const [files, setFiles] = useState<ContextFile[]>([]);
   const [filesError, setFilesError] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -72,10 +74,10 @@ export function AgentContextEditor({ agentId }: Props) {
 
   function confirmDiscard() {
     return confirmDialog({
-      title: 'Discard changes',
-      message: 'You have unsaved changes that will be lost.',
-      confirmLabel: 'Discard',
-      cancelLabel: 'Keep editing',
+      title: t('agentContext.discard.title'),
+      message: t('agentContext.discard.message'),
+      confirmLabel: t('agentContext.discard.confirm'),
+      cancelLabel: t('agentContext.discard.keepEditing'),
       danger: true,
     });
   }
@@ -89,7 +91,7 @@ export function AgentContextEditor({ agentId }: Props) {
       setContent(data.content);
       setDirty(false);
     } catch {
-      toast.error('Failed to load file.');
+      toast.error(t('agentContext.errors.loadFile'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +108,7 @@ export function AgentContextEditor({ agentId }: Props) {
         });
         setDirty(false);
       } catch {
-        toast.error('Failed to save file.');
+        toast.error(t('agentContext.errors.saveFile'));
         return;
       }
       // best-effort: list refresh; the save itself succeeded
@@ -121,16 +123,16 @@ export function AgentContextEditor({ agentId }: Props) {
 
   async function deleteFile(name: string) {
     const ok = await confirmDialog({
-      title: 'Delete file',
-      message: `${name} will be permanently removed from this agent's knowledge.`,
-      confirmLabel: 'Delete',
+      title: t('agentContext.deleteFile.title'),
+      message: t('agentContext.deleteFile.message', { name }),
+      confirmLabel: t('agentContext.delete'),
       danger: true,
     });
     if (!ok) return;
     try {
       await api(`${apiBase}/context/${encodeURIComponent(name)}`, { method: 'DELETE' });
     } catch {
-      toast.error('Failed to delete file.');
+      toast.error(t('agentContext.errors.deleteFile'));
       return;
     }
     setFiles(prev => prev.filter(f => f.name !== name));
@@ -146,16 +148,16 @@ export function AgentContextEditor({ agentId }: Props) {
 
   async function deleteObservation(id: number) {
     const ok = await confirmDialog({
-      title: 'Delete observation',
-      message: 'This observation will be permanently removed from memory.',
-      confirmLabel: 'Delete',
+      title: t('agentContext.deleteObservation.title'),
+      message: t('agentContext.deleteObservation.message'),
+      confirmLabel: t('agentContext.delete'),
       danger: true,
     });
     if (!ok) return;
     try {
       await api(`${apiBase}/observations/${id}`, { method: 'DELETE' });
       setObservations(prev => prev.filter(o => o.id !== id));
-    } catch { toast.error('Failed to delete observation.'); }
+    } catch { toast.error(t('agentContext.errors.deleteObservation')); }
   }
 
   function formatSize(bytes: number) {
@@ -173,7 +175,7 @@ export function AgentContextEditor({ agentId }: Props) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <p style={{ ...mono(10, 'rgba(237,240,244,0.62)'), margin: 0 }}>What I've Learned</p>
+          <p style={{ ...mono(10, 'rgba(237,240,244,0.62)'), margin: 0 }}>{t('agentContext.learned.title')}</p>
           {observations.length > 0 && (
             <span style={{
               ...mono(9, 'rgba(237,240,244,0.38)'),
@@ -188,7 +190,7 @@ export function AgentContextEditor({ agentId }: Props) {
         <div style={{ padding: '0 16px 12px' }}>
           {observations.length === 0 ? (
             <p style={{ color: 'rgba(237,240,244,0.28)', fontSize: 12, margin: 0 }}>
-              No observations yet — these appear automatically after conversations
+              {t('agentContext.learned.empty')}
             </p>
           ) : (
             observations.map(o => (
@@ -248,7 +250,7 @@ export function AgentContextEditor({ agentId }: Props) {
                   opacity: saving ? 0.5 : 1,
                 }}
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('agentContext.saving') : t('agentContext.save')}
               </button>
             )}
           </div>
@@ -281,14 +283,14 @@ export function AgentContextEditor({ agentId }: Props) {
           padding: '12px 16px',
           borderBottom: '1px solid rgba(230,235,242,0.07)',
         }}>
-          <p style={{ ...mono(10, 'rgba(237,240,244,0.62)'), margin: 0 }}>Knowledge Files</p>
+          <p style={{ ...mono(10, 'rgba(237,240,244,0.62)'), margin: 0 }}>{t('agentContext.files.title')}</p>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
           {filesError && files.length === 0 ? (
-            <LoadError compact label="Couldn't load files" onRetry={loadFiles} />
+            <LoadError compact label={t('agentContext.files.loadFailed')} onRetry={loadFiles} />
           ) : files.length === 0 ? (
             <p style={{ color: 'rgba(237,240,244,0.38)', fontSize: 12, textAlign: 'center', padding: '16px 12px' }}>
-              No knowledge files yet
+              {t('agentContext.files.empty')}
             </p>
           ) : (
             files.map(f => (
@@ -344,14 +346,14 @@ export function AgentContextEditor({ agentId }: Props) {
           padding: '12px 16px',
           borderBottom: '1px solid rgba(230,235,242,0.07)',
         }}>
-          <p style={{ ...mono(10, 'rgba(237,240,244,0.62)'), margin: 0 }}>Knowledge Files</p>
+          <p style={{ ...mono(10, 'rgba(237,240,244,0.62)'), margin: 0 }}>{t('agentContext.files.title')}</p>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
           {filesError && files.length === 0 ? (
-            <LoadError compact label="Couldn't load files" onRetry={loadFiles} />
+            <LoadError compact label={t('agentContext.files.loadFailed')} onRetry={loadFiles} />
           ) : files.length === 0 ? (
             <p style={{ color: 'rgba(237,240,244,0.38)', fontSize: 12, textAlign: 'center', padding: '16px 12px' }}>
-              No knowledge files yet
+              {t('agentContext.files.empty')}
             </p>
           ) : (
             files.map(f => (
@@ -416,7 +418,7 @@ export function AgentContextEditor({ agentId }: Props) {
                     opacity: saving ? 0.5 : 1,
                   }}
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? t('agentContext.saving') : t('agentContext.save')}
                 </button>
               )}
             </div>
@@ -444,7 +446,7 @@ export function AgentContextEditor({ agentId }: Props) {
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'rgba(237,240,244,0.38)', fontSize: 14,
           }}>
-            Select a file to edit
+            {t('agentContext.files.selectToEdit')}
           </div>
         )}
       </div>

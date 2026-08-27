@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import type { CrmContact } from '../core/types';
@@ -21,6 +22,7 @@ const COLS = '2fr 1.5fr 2fr 1.2fr 80px';
 const PAGE_SIZE = 50;
 
 export function ContactsPage() {
+  const { t } = useTranslation();
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
@@ -94,7 +96,7 @@ export function ContactsPage() {
       setTotal(data.total);
     } catch {
       if (id !== loadIdRef.current) return;
-      toast.error('Failed to load more contacts.');
+      toast.error(t('crmContacts.errors.loadMore'));
     } finally {
       if (id === loadIdRef.current) setLoadingMore(false);
     }
@@ -121,15 +123,15 @@ export function ContactsPage() {
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 44px', maxWidth: 1000 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 24 }}>
-        <h1 style={pageHeading(isMobile)}>Contacts</h1>
+        <h1 style={pageHeading(isMobile)}>{t('crmContacts.title')}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowImport(true)} style={{
             ...btnSecondary, ...btnSmall,
-          }}>{isMobile ? 'Import' : 'Import Contacts'}</button>
+          }}>{isMobile ? t('crmContacts.importShort') : t('crmContacts.importContacts')}</button>
           <button onClick={() => setShowCreate(true)} style={{
             ...btnPrimary, ...btnSmall,
           }}>
-            <IconPlus size={13} strokeWidth={2.25} /> {isMobile ? 'Add' : 'Add Contact'}
+            <IconPlus size={13} strokeWidth={2.25} /> {isMobile ? t('crmContacts.addShort') : t('crmContacts.addContact')}
           </button>
         </div>
       </div>
@@ -142,7 +144,7 @@ export function ContactsPage() {
           borderRadius: 4, padding: '0 12px',
         }}>
           <IconSearch size={14} strokeWidth={1.85} style={{ color: INK_DIM }} />
-          <input type="text" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder={t('crmContacts.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)}
             style={{
               flex: 1, background: 'transparent', border: 'none', color: INK,
               padding: '9px 0', fontSize: 13, outline: 'none',
@@ -156,7 +158,7 @@ export function ContactsPage() {
           {STATUS_TABS.map(tab => {
             const isActive = status === tab;
             return (
-              <button key={tab} onClick={() => setStatus(tab)} style={filterTab(isMobile, isActive)}>{tab}</button>
+              <button key={tab} onClick={() => setStatus(tab)} style={filterTab(isMobile, isActive)}>{t(`crmContacts.statusTabs.${tab}`)}</button>
             );
           })}
         </div>
@@ -172,7 +174,7 @@ export function ContactsPage() {
               minWidth: isMobile ? '100%' : 140, textAlign: 'left',
               position: 'relative',
             }}>
-              {tagFilter.length ? `Tags (${tagFilter.length})` : 'Tags'}
+              {tagFilter.length ? t('crmContacts.tagsWithCount', { count: tagFilter.length }) : t('crmContacts.tags')}
               <span style={{
                 position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                 fontSize: 10, color: INK_DIM, pointerEvents: 'none',
@@ -191,7 +193,7 @@ export function ContactsPage() {
                     fontFamily: FONT_SANS, border: 'none', borderBottom: `1px solid ${LINE}`,
                     background: 'transparent', color: INK_DIM, cursor: 'pointer',
                     textAlign: 'left',
-                  }}>Clear all</button>
+                  }}>{t('crmContacts.clearAll')}</button>
                 )}
                 {availableTags.map(t => {
                   const checked = tagFilter.includes(t);
@@ -222,16 +224,16 @@ export function ContactsPage() {
           <div className="w-6 h-6 border-2 border-ch-accent border-t-transparent rounded-full animate-spin" />
         </div>
       ) : loadFailed && contacts.length === 0 ? (
-        <LoadError label="Couldn't load contacts" onRetry={reload} />
+        <LoadError label={t('crmContacts.loadFailed')} onRetry={reload} />
       ) : contacts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 0' }}>
           <p style={{ color: INK_DIM, fontSize: 14 }}>
-            {search ? 'No contacts match your search.' : 'No contacts yet. Add your first one!'}
+            {search ? t('crmContacts.emptySearch') : t('crmContacts.empty')}
           </p>
         </div>
       ) : (
         <>
-          <p style={{ ...mono(12), marginBottom: 12 }}>{total} contact{total !== 1 ? 's' : ''}</p>
+          <p style={{ ...mono(12), marginBottom: 12 }}>{t('crmContacts.contactCount', { count: total })}</p>
           {isMobile ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {contacts.map(c => (
@@ -253,7 +255,7 @@ export function ContactsPage() {
           ) : (
             <div style={{ borderTop: `1px solid ${LINE}` }}>
               <div style={tableHeader(COLS)}>
-                <span>Name</span><span>Company</span><span>Email</span><span>Phone</span><span>Status</span>
+                <span>{t('crmContacts.columns.name')}</span><span>{t('crmContacts.columns.company')}</span><span>{t('crmContacts.columns.email')}</span><span>{t('crmContacts.columns.phone')}</span><span>{t('crmContacts.columns.status')}</span>
               </div>
               {contacts.map(c => (
                 <div key={c.id} onClick={() => navigate(`/crm/contacts/${c.id}`)}
@@ -275,7 +277,7 @@ export function ContactsPage() {
           )}
           {contacts.length < total && (
             <div ref={sentinelRef} style={{ display: 'flex', justifyContent: 'center', padding: '20px 0', ...mono(12), color: INK_DIM }}>
-              {loadingMore ? 'Loading more…' : `${total - contacts.length} more`}
+              {loadingMore ? t('crmContacts.loadingMore') : t('crmContacts.more', { count: total - contacts.length })}
             </div>
           )}
         </>

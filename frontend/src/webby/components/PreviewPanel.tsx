@@ -4,6 +4,8 @@
  * Adapted from CAKE OS webby-website-agent — TNC-specific URLs removed.
  */
 
+import { useTranslation } from 'react-i18next';
+
 interface PreviewData {
   file_path: string;
   preview_html: string;
@@ -25,19 +27,24 @@ function injectBaseTag(html: string, baseUrl: string): string {
 }
 
 export function PreviewPanel({ preview, siteUrl }: Props) {
+  const { t } = useTranslation();
+
   if (!preview) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
         <div className="text-5xl mb-4">🖥️</div>
-        <p className="text-gray-400 font-medium">No preview yet</p>
+        <p className="text-gray-400 font-medium">
+          {t('webbyPreview.emptyTitle')}
+        </p>
         <p className="text-gray-600 text-sm mt-1 max-w-sm">
-          Ask Webby to make a change and a preview will appear here so you can see what it will look like.
+          {t('webbyPreview.emptyDescription')}
         </p>
       </div>
     );
   }
 
   const resolvedBase = preview.site_url || siteUrl || '';
+
   const htmlToRender = resolvedBase
     ? injectBaseTag(preview.preview_html, resolvedBase.replace(/\/?$/, '/'))
     : preview.preview_html;
@@ -54,14 +61,17 @@ export function PreviewPanel({ preview, siteUrl }: Props) {
             {preview.file_path}
           </span>
         </div>
+
         {preview.summary && (
-          <span className="text-xs text-gray-500">{preview.summary}</span>
+          <span className="text-xs text-gray-500">
+            {preview.summary}
+          </span>
         )}
       </div>
 
       {isPHP && (
         <div className="px-4 py-2 bg-amber-950/30 border-b border-amber-800/40 text-xs text-amber-400 flex-shrink-0">
-          PHP file — dynamic content (like product listings) won't render in the preview.
+          {t('webbyPreview.phpWarning')}
         </div>
       )}
 
@@ -71,7 +81,7 @@ export function PreviewPanel({ preview, siteUrl }: Props) {
           srcDoc={htmlToRender}
           className="w-full h-full border-0"
           sandbox="allow-same-origin"
-          title={`Preview of ${preview.file_path}`}
+          title={t('webbyPreview.iframeTitle', { file: preview.file_path })}
         />
       </div>
     </div>

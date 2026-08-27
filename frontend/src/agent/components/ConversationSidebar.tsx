@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Conversation } from '../hooks/useConversations';
 import { AgentMark } from '../../shared/AgentMark';
 import { IconPlus } from '../../shared/icons';
@@ -30,6 +31,7 @@ export function ConversationSidebar({
   loadError, onRetryLoad,
   onNew, onSelect, onDelete, onSearch, onRename,
 }: Props) {
+  const { t, i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -61,7 +63,7 @@ export function ConversationSidebar({
       // Keep the inline edit visible until the rename resolves.
       const ok = await onRename(id, editTitle.trim());
       setEditingId(null);
-      if (!ok) toast.error('Failed to rename conversation.');
+      if (!ok) toast.error(t('conversationSidebar.renameFailed'));
     } finally {
       editCommittingRef.current = false;
       setEditCommitting(false);
@@ -118,7 +120,7 @@ export function ConversationSidebar({
         <input
           value={localQuery}
           onChange={e => handleSearchChange(e.target.value)}
-          placeholder="Search..."
+          placeholder={t('conversationSidebar.search')}
           style={{
             width: '100%', boxSizing: 'border-box',
             background: 'rgba(34,40,48,0.55)',
@@ -144,7 +146,7 @@ export function ConversationSidebar({
           cursor: 'pointer',
         }}
       >
-        + New chat
+        + {t('conversationSidebar.newChat')}
       </div>
 
       {/* Conversation list */}
@@ -154,15 +156,15 @@ export function ConversationSidebar({
             <div className="w-4 h-4 border-2 border-ch-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : loadError && conversations.length === 0 && !searchQuery.trim() ? (
-          <LoadError compact label="Couldn't load conversations" onRetry={() => onRetryLoad?.()} />
+          <LoadError compact label={t('conversationSidebar.loadFailed')} onRetry={() => onRetryLoad?.()} />
         ) : displayList.length === 0 ? (
           <p style={{ color: 'rgba(237,240,244,0.38)', fontSize: 12, textAlign: 'center', padding: '24px 16px' }}>
-            {searchQuery ? 'No results found' : 'No conversations yet'}
+            {searchQuery ? t('conversationSidebar.noResults') : t('conversationSidebar.noConversations')}
           </p>
         ) : (
           displayList.map((item: Conversation | { id: string; title: string; snippet?: string }) => {
             const id = item.id;
-            const title = item.title || 'New conversation';
+            const title = item.title || t('conversationSidebar.newConversation');
             const snippet = 'snippet' in item ? item.snippet : undefined;
             const isActive = id === activeId;
 
@@ -228,7 +230,10 @@ export function ConversationSidebar({
                             whiteSpace: 'nowrap',
                             flexShrink: 0,
                           }}>
-                            {formatSidebarTime((item as Conversation).updated_at)}
+                            {formatSidebarTime(
+                              (item as Conversation).updated_at,
+                              i18n.language
+                            )}
                           </span>
                         )}
                       </div>
@@ -247,6 +252,7 @@ export function ConversationSidebar({
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition" style={{ marginLeft: 8 }}>
                     <button
                       onClick={e => startEdit(item as Conversation, e)}
+                      title={t('conversationSidebar.rename')}
                       style={{
                         background: 'none', border: 'none',
                         color: 'rgba(237,240,244,0.38)', fontSize: 12,
@@ -255,6 +261,7 @@ export function ConversationSidebar({
                     >✎</button>
                     <button
                       onClick={e => { e.stopPropagation(); onDelete(id); }}
+                      title={t('conversationSidebar.delete')}
                       style={{
                         background: 'none', border: 'none',
                         color: 'rgba(237,240,244,0.38)', fontSize: 12,

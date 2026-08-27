@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, Fragment, type RefObject, type KeyboardEvent, type DragEvent, type MouseEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ChatMessage, ContextUsage, ToolMode, ModelTier } from '../hooks/useAgentChat';
 import type { AgentAlert } from '../../core/types';
 import { AgentMessageBubble } from './AgentMessageBubble';
@@ -63,10 +64,10 @@ interface Props {
   liveError?: string | null;
 }
 
-const TOOL_MODES: { key: ToolMode; label: string }[] = [
-  { key: 'read-only', label: 'Read' },
-  { key: 'normal', label: 'Normal' },
-  { key: 'power', label: 'Power' },
+const TOOL_MODES: { key: ToolMode; labelKey: string }[] = [
+  { key: 'read-only', labelKey: 'agentChat.toolModes.read' },
+  { key: 'normal', labelKey: 'agentChat.toolModes.normal' },
+  { key: 'power', labelKey: 'agentChat.toolModes.power' },
 ];
 
 const TIER_KEYS: ModelTier[] = ['auto', 'top', 'mid', 'light'];
@@ -82,6 +83,7 @@ export function AgentChatPanel({
   playbooks, onOpenPlaybooks,
   liveStatus, onStartLive, liveError,
 }: Props) {
+  const { t } = useTranslation();
   const [input, setInput] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [showRecordPrep, setShowRecordPrep] = useState(false);
@@ -158,20 +160,20 @@ export function AgentChatPanel({
       const allowed = importMode
         ? new Set([...ALLOWED_EXTENSIONS, ...AUDIO_EXTENSIONS, 'zip'])
         : new Set([...ALLOWED_EXTENSIONS, ...AUDIO_EXTENSIONS]);
-      if (!allowed.has(ext)) { errors.push(`${f.name}: unsupported type (.${ext})`); continue; }
+      if (!allowed.has(ext)) { errors.push(t('agentChat.files.unsupportedType', { name: f.name, ext })); continue; }
       const maxSize = AUDIO_EXTENSIONS.has(ext) ? MAX_AUDIO_SIZE
         : ext === 'zip' ? 25 * 1024 * 1024 : (ext === 'pdf' || ext === 'docx') ? MAX_PDF_SIZE : MAX_FILE_SIZE;
       const maxLabel = AUDIO_EXTENSIONS.has(ext) ? '2 GB'
         : ext === 'zip' ? '25 MB' : (ext === 'pdf' || ext === 'docx') ? '10 MB' : '1 MB';
-      if (f.size > maxSize) { errors.push(`${f.name}: exceeds ${maxLabel}`); continue; }
-      if (f.size === 0) { errors.push(`${f.name}: empty file`); continue; }
-      if (pendingFiles.some(p => p.name === f.name)) { errors.push(`${f.name}: already attached`); continue; }
+      if (f.size > maxSize) { errors.push(t('agentChat.files.exceedsSize', { name: f.name, max: maxLabel })); continue; }
+      if (f.size === 0) { errors.push(t('agentChat.files.emptyFile', { name: f.name })); continue; }
+      if (pendingFiles.some(p => p.name === f.name)) { errors.push(t('agentChat.files.alreadyAttached', { name: f.name })); continue; }
       valid.push(f);
     }
 
     const remaining = MAX_FILES - pendingFiles.length;
     if (valid.length > remaining) {
-      errors.push(`Max ${MAX_FILES} files. Dropped ${valid.length - remaining}.`);
+      errors.push(t('agentChat.files.maxFiles', { max: MAX_FILES, dropped: valid.length - remaining }));
       valid.splice(remaining);
     }
 
@@ -209,7 +211,7 @@ export function AgentChatPanel({
   function stagePlaybook(p: PlaybookSummary) {
     if (!p.available) {
       const needs = p.missing_integrations.map(integrationLabel).join(', ');
-      toast.info(`“${p.name}” needs ${needs} connected. Connect it in Settings → Integrations.`);
+      toast.info(t('agentChat.playbooks.needsIntegration', { name: p.name, needs }));
       return;
     }
     setStagedPlaybook(p);
@@ -258,7 +260,7 @@ export function AgentChatPanel({
       onSend(text, files.length > 0 ? files : undefined,
         { playbook: { slug: playbook.slug, name: playbook.name } });
     } else {
-      onSend(text || '(see attached files)', files.length > 0 ? files : undefined);
+      onSend(text || t('agentChat.attachedFilesMessage'), files.length > 0 ? files : undefined);
     }
   }, [onSend]);
 
@@ -414,11 +416,11 @@ export function AgentChatPanel({
               <span style={{
                 fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
                 color: 'var(--color-ch-accent, #C8D1D9)', whiteSpace: 'nowrap',
-              }}>Queued ↵</span>
+              }}>{t('agentChat.queued.label')}</span>
               <span style={{
                 flex: 1, minWidth: 0, fontSize: 13, color: 'rgba(237,240,244,0.7)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>{queued.text || (queued.files.length > 0 ? `${queued.files.length} file(s)` : '(message)')}</span>
+              }}>{queued.text || (queued.files.length > 0 ? t('agentChat.queued.files', { count: queued.files.length }) : t('agentChat.queued.message'))}</span>
               <span
                 onClick={() => {
                   const q = queued;
@@ -428,7 +430,7 @@ export function AgentChatPanel({
                   setStagedPlaybook(q.playbook);
                   textareaRef.current?.focus();
                 }}
-                title="Cancel — move back to the message box"
+                title={t('agentChat.queued.cancelTitle')}
                 style={{ cursor: 'pointer', color: 'rgba(237,240,244,0.45)', fontSize: 14, lineHeight: 1 }}
               >✕</span>
             </div>
@@ -453,7 +455,7 @@ export function AgentChatPanel({
                       setShowRecordPrep(false); setPrepText('');
                     }
                   }}
-                  placeholder="What's this meeting? What do you want out of it? (optional)"
+                  placeholder={t('agentChat.live.prepPlaceholder')}
                   style={{
                     flex: 1, minWidth: 0, background: 'transparent', border: 'none',
                     outline: 'none', color: '#EDF0F4', fontSize: 13,
@@ -468,7 +470,7 @@ export function AgentChatPanel({
                     background: 'rgba(224,82,77,0.12)', border: '1px solid rgba(224,82,77,0.3)',
                     borderRadius: 4, padding: '3px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
                   }}
-                >Start</button>
+                >{t('agentChat.live.start')}</button>
                 <span
                   onClick={() => { setShowRecordPrep(false); setPrepText(''); }}
                   style={{ cursor: 'pointer', color: 'rgba(237,240,244,0.45)', fontSize: 14, lineHeight: 1 }}
@@ -485,10 +487,10 @@ export function AgentChatPanel({
             onChange={autoResize}
             onKeyDown={handleKeyDown}
             placeholder={stagedPlaybook
-              ? `Add details for “${stagedPlaybook.name}” (optional) — Enter to run`
+              ? t('agentChat.input.playbookDetails', { name: stagedPlaybook.name })
               : isStreaming
-                ? `Type your next message — sends when ${agentName || 'the agent'} finishes…`
-                : `Message ${agentName || 'agent'}…`}
+                ? t('agentChat.input.nextMessage', { name: agentName || t('agentChat.theAgent') })
+                : t('agentChat.input.messageAgent', { name: agentName || t('agentChat.agent') })}
             rows={1}
             style={{
               width: '100%', boxSizing: 'border-box',
@@ -513,7 +515,7 @@ export function AgentChatPanel({
                     if (liveStatus && liveStatus !== 'idle' && liveStatus !== 'error') return;
                     setShowRecordPrep(v => !v);
                   }}
-                  title="Record a live meeting"
+                  title={t('agentChat.live.recordMeeting')}
                   style={{
                     cursor: liveStatus && liveStatus !== 'idle' && liveStatus !== 'error' ? 'default' : 'pointer',
                     color: liveStatus && liveStatus !== 'idle' && liveStatus !== 'error'
@@ -557,7 +559,7 @@ export function AgentChatPanel({
                         cursor: alwaysPowerMode ? 'default' : 'pointer',
                       }}
                     >
-                      {m.label}
+                      {t(m.labelKey)}
                     </div>
                   ))}
                 </div>
@@ -566,7 +568,7 @@ export function AgentChatPanel({
               {/* Model tier toggle */}
               {tierLabels && Object.keys(tierLabels).length > 0 && onSwitchTier && !isMobile && (
                 <div
-                  title="Model tier"
+                  title={t('agentChat.modelTier.title')}
                   style={{
                     display: 'flex', border: '1px solid rgba(230,235,242,0.07)',
                     borderRadius: 3, overflow: 'hidden',
@@ -575,7 +577,7 @@ export function AgentChatPanel({
                 >
                   {TIER_KEYS.map(tier => {
                     const isActive = modelTier === tier;
-                    const label = tier === 'auto' ? 'Auto' : tierLabels[tier] || tier;
+                    const label = tier === 'auto' ? t('agentChat.modelTier.auto') : tierLabels[tier] || tier;
                     return (
                       <div
                         key={tier}
@@ -613,7 +615,7 @@ export function AgentChatPanel({
                 >
                   {TIER_KEYS.map(tier => (
                     <option key={tier} value={tier}>
-                      {tier === 'auto' ? 'Auto' : tierLabels[tier] || tier}
+                      {tier === 'auto' ? t('agentChat.modelTier.auto') : tierLabels[tier] || tier}
                     </option>
                   ))}
                 </select>
@@ -629,7 +631,7 @@ export function AgentChatPanel({
                   borderRadius: 4, padding: '4px 12px',
                   background: 'transparent', cursor: 'pointer',
                 }}
-              >Stop</button>
+              >{t('agentChat.stop')}</button>
             ) : (
               <div
                 onClick={handleSend}
@@ -658,8 +660,8 @@ export function AgentChatPanel({
             const pct = Math.max(0, Math.min(100, Math.round((contextUsage.contextTokens / contextUsage.contextWindow) * 100)));
             // Neutral < 75%, amber 75–90%, red > 90%.
             const color = pct > 90 ? '#e0524d' : pct >= 75 ? '#d9a441' : 'rgba(237,240,244,0.38)';
-            return <span style={{ color }}>{`${pct}% ctx · ⏎ send`}</span>;
-          })() : '⏎ send'}
+            return <span style={{ color }}>{t('agentChat.context.withPercent', { pct })}</span>;
+          })() : t('agentChat.context.send')}
         </div>
       </div>
     );
@@ -682,7 +684,7 @@ export function AgentChatPanel({
           border: '2px dashed rgba(200,209,217,0.3)',
           borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 16 }}>Drop files here</p>
+          <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 16 }}>{t('agentChat.dropFiles')}</p>
         </div>
       )}
 
@@ -707,7 +709,7 @@ export function AgentChatPanel({
                 color: 'rgba(237,240,244,0.62)', textAlign: 'center',
                 marginBottom: 40, lineHeight: 1.1,
               }}>
-                How can I help?
+                {t('agentChat.emptyState')}
               </h2>
               {renderInputBox()}
             </div>
@@ -726,10 +728,10 @@ export function AgentChatPanel({
                   fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
                   color: conversationSource?.startsWith('telegram') ? '#0088cc' : '#25D366',
                 }}>
-                  {conversationSource?.startsWith('telegram') ? (conversationSource === 'telegram-group' ? 'Telegram Group' : 'Telegram') : 'WhatsApp'}
+                  {conversationSource?.startsWith('telegram') ? (conversationSource === 'telegram-group' ? t('agentChat.sources.telegramGroup') : 'Telegram') : 'WhatsApp'}
                 </span>
                 <span style={{ fontSize: 11, color: 'rgba(237,240,244,0.4)' }}>
-                  Messages from {conversationSource?.startsWith('telegram') ? 'Telegram' : 'WhatsApp'} appear here
+                  {t('agentChat.sources.messagesFrom', { source: conversationSource?.startsWith('telegram') ? 'Telegram' : 'WhatsApp' })}
                 </span>
               </div>
             )}
@@ -740,10 +742,10 @@ export function AgentChatPanel({
                 background: 'rgba(212,168,90,0.08)', border: '1px solid rgba(212,168,90,0.2)',
               }}>
                 <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: '#D4A85A' }}>
-                  Import Mode
+                  {t('agentChat.importMode.title')}
                 </span>
                 <span style={{ flex: 1, fontSize: 11, color: 'rgba(237,240,244,0.4)' }}>
-                  Importing knowledge from another system
+                  {t('agentChat.importMode.description')}
                 </span>
                 {onCancelImport && (
                   <button
@@ -767,14 +769,14 @@ export function AgentChatPanel({
                 try {
                   await api(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
                   setAlerts(prev => prev.filter(a => a.id !== alertId));
-                } catch { toast.error('Failed to dismiss alert.'); }
+                } catch { toast.error(t('agentChat.alerts.dismissFailed')); }
               }}
               onDiscuss={(alertId) => {
                 const alert = alerts.find(a => a.id === alertId);
                 if (alert) {
                   onSend(`Tell me about this alert: "${alert.title}" — ${alert.message}`);
                   api(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' })
-                    .catch(() => toast.error('Failed to acknowledge alert.'));
+                    .catch(() => toast.error(t('agentChat.alerts.ackFailed')));
                   setAlerts(prev => prev.filter(a => a.id !== alertId));
                 }
               }}
@@ -822,13 +824,13 @@ export function AgentChatPanel({
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0' }}>
                         <div style={{ flex: 1, height: 1, background: 'rgba(200,209,217,0.12)' }} />
                         <span
-                          title="Earlier messages were summarized to free up context"
+                          title={t('agentChat.compacted.title')}
                           style={{
                             fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
                             color: 'var(--color-ch-accent, #C8D1D9)', whiteSpace: 'nowrap',
                             display: 'inline-flex', alignItems: 'center', gap: 5,
                           }}
-                        >✦ Compacted</span>
+                        >✦ {t('agentChat.compacted.label')}</span>
                         <div style={{ flex: 1, height: 1, background: 'rgba(200,209,217,0.12)' }} />
                       </div>
                     )}

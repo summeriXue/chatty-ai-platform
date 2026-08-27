@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { api } from '../../core/api/client';
 
@@ -13,6 +14,8 @@ export function ProjectPanel({
   projectRoot = '',
   onSaved,
 }: Props) {
+  const { t } = useTranslation();
+
   const [value, setValue] = useState(projectRoot);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -46,7 +49,7 @@ export function ProjectPanel({
       setError(
         err instanceof Error
           ? err.message
-          : 'Failed to save project root',
+          : t('projectPanel.saveFailed'),
       );
     } finally {
       setSaving(false);
@@ -71,7 +74,7 @@ export function ProjectPanel({
             marginBottom: 8,
           }}
         >
-          Project
+          {t('projectPanel.title')}
         </h2>
 
         <p
@@ -82,8 +85,7 @@ export function ProjectPanel({
             marginBottom: 28,
           }}
         >
-          Connect this agent to a local software project. Project tools are
-          restricted to files inside this directory.
+          {t('projectPanel.description')}
         </p>
 
         <label
@@ -96,7 +98,7 @@ export function ProjectPanel({
             marginBottom: 8,
           }}
         >
-          Project root
+          {t('projectPanel.projectRoot')}
         </label>
 
         <input
@@ -128,7 +130,7 @@ export function ProjectPanel({
             color: 'rgba(237,240,244,0.32)',
           }}
         >
-          The backend must be able to access this directory.
+          {t('projectPanel.backendAccess')}
         </p>
 
         {error && (
@@ -151,7 +153,7 @@ export function ProjectPanel({
               marginTop: 12,
             }}
           >
-            Project root saved.
+            {t('projectPanel.saved')}
           </p>
         )}
 
@@ -172,7 +174,9 @@ export function ProjectPanel({
             opacity: saving ? 0.5 : 1,
           }}
         >
-          {saving ? 'Saving...' : 'Save project'}
+          {saving
+            ? t('projectPanel.saving')
+            : t('projectPanel.saveProject')}
         </button>
       </div>
     </div>

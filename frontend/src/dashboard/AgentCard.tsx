@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AgentMark } from '../shared/AgentMark';
 import { StatusDot } from '../shared/StatusDot';
 import type { Agent } from '../core/types';
@@ -8,13 +9,15 @@ interface Props {
 }
 
 export function AgentCard({ agent }: Props) {
+  const { t } = useTranslation();
+
   const navigate = useNavigate();
   const letter = agent.agent_name.charAt(0);
   const avatarUrl = agent.avatar_url || undefined;
 
   const capabilities = [
-    agent.gmail_enabled && 'Email',
-    agent.calendar_enabled && 'Calendar',
+    agent.gmail_enabled && t('agentCard.email'),
+    agent.calendar_enabled && t('agentCard.calendar'),
   ].filter(Boolean);
 
   return (

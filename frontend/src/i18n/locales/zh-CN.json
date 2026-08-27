@@ -1,0 +1,2012 @@
+{
+  "settings": {
+    "title": "设置",
+    "tabs": {
+      "providers": "模型服务",
+      "branding": "品牌",
+      "integrations": "集成",
+      "chat": "聊天",
+      "language": "语言",
+      "data": "数据",
+      "logs": "日志",
+      "security": "安全",
+      "danger": "危险操作"
+    },
+    "language": {
+      "title": "界面语言",
+      "description": "选择 Chatty 界面使用的语言。",
+      "english": "English",
+      "chinese": "简体中文"
+    },
+    "branding": {
+      "companyName": "公司名称",
+      "accentColor": "主题色",
+      "logo": "Logo",
+      "saving": "保存中...",
+      "save": "保存品牌设置",
+      "saveFailed": "品牌设置保存失败。"
+    },
+    "chat": {
+    "showToolCalls": "显示工具调用",
+    "showToolCallsDescription": "在聊天中显示工具调用的详细信息",
+    "alwaysPowerMode": "始终启用 Power 模式",
+    "alwaysPowerModeDescription": "所有 Agent 使用写入工具时跳过确认",
+    "limitBotReplies": "限制机器人回复",
+    "limitBotRepliesDescription": "限制 Telegram 群组中机器人之间连续回复的次数",
+    "maxReplies": "最大回复次数",
+    "maxRepliesDescription": "达到该连续回复次数后停止机器人继续回复",
+    "inferredFollowUps": "智能跟进",
+    "inferredFollowUpsDescription": "Agent 会识别对话中的后续事项，并通过 heartbeat 主动跟进",
+    "dailyFollowUpCap": "每日跟进上限",
+    "dailyFollowUpCapDescription": "每个 Agent 每天最多触发的跟进次数",
+    "defaultModel": "默认模型",
+    "defaultModelDescription": "自动为每条消息选择最合适的模型，也可以固定使用某个模型。",
+    "autoSmartRouting": "自动（智能路由）",
+
+    "heartbeatTriage": "Heartbeat 分流",
+    "triageStandardDescription": "使用 Agent 当前模型进行分流判断",
+    "triageCheapDescription": "支持时使用成本更低的模型进行分流判断",
+    "triageAlwaysCheapDescription": "强制启用分流，并使用支持的最低成本模型",
+    "triageStandard": "标准",
+    "triageCheap": "低成本",
+    "triageAlwaysCheap": "始终低成本",
+    "triageTip": "提示：添加 OpenAI API Key 可使用更适合分流的模型（GPT-4.1 Nano）",
+
+    "securitySection": "安全",
+    "importScanning": "导入内容扫描",
+    "importScanningDescription": "扫描导入内容中可能存在的 Prompt Injection 模式",
+    "scanOff": "关闭",
+    "scanFlag": "标记",
+    "scanBlock": "拦截",
+    "writeBudgets": "写入预算",
+    "heartbeatWriteBudget": "Heartbeat 写入预算",
+    "heartbeatWriteBudgetDescription": "每次后台运行允许的最大写入操作次数",
+    "chatWriteBudget": "聊天写入预算",
+    "chatWriteBudgetDescription": "每轮聊天允许的最大写入操作次数",
+    "hourlyWriteLimit": "每小时写入上限",
+    "hourlyWriteLimitDescription": "所有 Agent 每小时允许的写入操作总上限",
+    "eventLogRetention": "事件日志保留时间",
+    "eventLogRetentionDescription": "事件日志记录的保留时长",
+    "days": "天"
+    },
+    "danger": {
+    "warning": "此处的操作无法撤销。删除 Agent 后，其知识、对话和记忆都会永久丢失。",
+    "deleteAgents": "删除 Agent",
+    "noAgents": "没有可删除的 Agent。",
+    "delete": "删除",
+    "clearCrmData": "清除 CRM 数据",
+    "crmCleared": "所有 CRM 数据已清除。",
+    "clearCrmDescription": "删除 CRM 中的所有联系人、交易、任务和活动。此操作无法撤销。",
+    "confirmClearCrm": "输入 \"clear crm\" 以确认。",
+    "clearing": "清除中...",
+    "clearAll": "全部清除",
+    "clearFailed": "清除 CRM 数据失败",
+    "clearCrmPhrase": "清空 crm",
+    "confirmClearCrmPrefix": "输入",
+    "confirmClearCrmSuffix": "以确认。"
+    },
+    "notifications": {
+    "title": "通知",
+    "webPush": "网页推送",
+    "webPushDescription": "向当前浏览器发送推送通知",
+    "webPushBlocked": "已被浏览器阻止，请在网站设置中修改权限",
+    "webPushUnsupported": "当前浏览器不支持网页推送",
+    "telegram": "Telegram",
+    "telegramDescription": "通过已连接的 Telegram 机器人发送",
+    "whatsapp": "WhatsApp",
+    "whatsappDescription": "通过已连接的 WhatsApp 会话发送"
+    },
+    "data": {
+    "downloadBackup": "下载备份",
+    "downloadDescription": "下载一个包含所有 Agent、对话、设置和集成数据的 ZIP 备份文件。",
+    "downloading": "下载中...",
+    "downloaded": "备份已下载。",
+    "downloadFailed": "备份下载失败。",
+
+    "restoreFromBackup": "从备份恢复",
+    "restoreDescription": "上传之前下载的备份 ZIP 文件，以恢复所有数据。",
+    "restoreWarning": "此操作将替换当前所有数据，且无法撤销。",
+    "chooseFile": "选择文件",
+    "noFileSelected": "未选择文件",
+    "restoring": "恢复中...",
+    "restoreBackup": "恢复备份",
+
+    "restoreDialogTitle": "从备份恢复",
+    "restoreDialogMessage": "此操作会使用备份内容替换当前所有数据，且无法撤销。",
+    "replaceEverything": "替换全部数据",
+
+    "restoreComplete": "恢复完成，正在重新加载...",
+    "restoreFailed": "恢复失败。"
+    },
+    "logs": {
+    "loadFailed": "日志加载失败。",
+    "exportFailed": "日志导出失败。",
+
+    "activity": "活动",
+    "security": "安全",
+    "all": "全部",
+    "ok": "正常",
+    "errors": "错误",
+    "allTypes": "全部类型",
+    "scheduled": "计划任务",
+    "chat": "聊天",
+
+    "autoRefresh": "自动刷新",
+    "allAgents": "所有 Agent",
+    "exporting": "导出中...",
+    "exportJson": "导出 JSON",
+
+    "loading": "正在加载日志...",
+    "empty": "暂无日志记录。",
+
+    "model": "模型",
+    "input": "输入",
+    "output": "输出",
+    "completed": "完成时间",
+    "source": "来源",
+    "type": "类型",
+    "toolCalls": "工具调用",
+
+    "statusOk": "正常",
+    "statusError": "错误",
+    "statusActionTaken": "已执行操作",
+    "statusLeaseLost": "租约丢失",
+    "statusSkipped": "已跳过",
+    "statusRunning": "运行中",
+
+    "eventChat": "聊天",
+    "eventReview": "审查",
+    "eventScheduledAction": "计划任务",
+    "eventSecurity": "安全"
+    },
+    "security": {
+    "loading": "加载中...",
+
+    "twoFactor": "双重身份验证",
+    "twoFactorDescription": "为账户增加一层额外的安全保护。你需要使用 Google Authenticator、Authy 或 1Password 等身份验证器应用。",
+    "settingUp": "设置中...",
+    "enableTwoFactor": "启用双重身份验证",
+
+    "scanQrCode": "扫描二维码",
+    "scanQrDescription": "使用身份验证器应用扫描此二维码，然后输入 6 位验证码进行确认。",
+    "manualEntryKey": "手动输入密钥",
+    "verificationCode": "验证码",
+    "confirmPassword": "确认密码",
+    "enterPassword": "请输入密码",
+    "cancel": "取消",
+    "verifying": "验证中...",
+    "verifyAndEnable": "验证并启用",
+
+    "saveBackupCodes": "保存备用代码",
+    "backupCodesWarning": "请将这些代码保存在安全的位置。每个代码只能使用一次。如果你无法访问身份验证器应用，这些代码将是登录账户的唯一备用方式。",
+    "copyAll": "全部复制",
+    "downloadTxt": "下载 .txt",
+    "savedCodes": "我已保存备用代码",
+
+    "backupCodesRemaining": "剩余 {{count}} 个备用代码",
+    "trustedDevice": "{{count}} 台受信任设备",
+    "trustedDevices": "{{count}} 台受信任设备",
+    "enabled": "已启用",
+    "regenerateBackupCodes": "重新生成备用代码",
+    "disableTwoFactor": "关闭双重身份验证",
+
+    "disableDescription": "输入密码以确认。此操作还会撤销所有受信任设备。",
+    "password": "密码",
+    "disabling": "关闭中...",
+    "disable2FA": "关闭 2FA",
+
+    "regenerateDescription": "此操作会替换现有的备用代码。请输入密码以确认。",
+    "regenerating": "重新生成中...",
+    "regenerateCodes": "重新生成代码",
+    "qrCodeAlt": "2FA 二维码",
+
+    "setupFailed": "设置失败",
+    "invalidCode": "验证码无效",
+    "disableFailed": "关闭失败",
+    "regenerateFailed": "重新生成失败",
+
+    "backupFileTitle": "Chatty — 备用代码",
+    "backupFileSafePlace": "请将这些代码保存在安全的位置。",
+    "backupFileSingleUse": "每个代码只能使用一次。"
+    }
+  },
+  "providers": {
+    "apiKey": "API Key",
+    "localSetup": "本地设置",
+    "active": "当前使用",
+    "expired": "已过期",
+    "connected": "已连接",
+    "setAsActive": "设为当前服务",
+    "disconnect": "断开连接",
+    "invalidApiKey": "API Key 无效",
+    "validating": "验证中...",
+    "connect": "连接",
+
+    "getAnthropicApiKey": "前往 console.anthropic.com 获取 API Key",
+    "getOpenAIApiKey": "前往 platform.openai.com 获取 API Key",
+    "getGoogleApiKey": "前往 aistudio.google.com 获取 API Key",
+    "getDeepSeekApiKey": "前往 platform.deepseek.com 获取 API Key",
+    "getKimiApiKey": "前往 Kimi API Platform 获取 API Key",
+    "model": "模型",
+    "tiers": "模型分层（用于自动分流和每个 Agent 的 top/mid/light 配置）",
+    "tierTop": "高",
+    "tierMid": "中",
+    "tierLight": "轻量",
+    "useInferredDefault": "使用推断的默认模型",
+    "ollamaDetecting": "正在检测 Ollama...",
+    "ollamaDetected": "已检测到 Ollama",
+    "ollamaSelectModel": "选择模型",
+    "connecting": "连接中...",
+
+    "ollamaNoModels": "Ollama 正在运行，但尚未安装模型",
+    "ollamaPullHint": "请先在终端中拉取模型，然后点击“刷新”：",
+    "ollamaModelLight": "轻量级（3.4 GB）— 适合大多数电脑",
+    "ollamaModelBalanced": "均衡型（6 GB）— 体积与效果较均衡",
+    "ollamaModelQuality": "高质量（5 GB）— 建议 16 GB 内存",
+    "refresh": "刷新",
+
+    "ollamaNotDetected": "未检测到 Ollama",
+    "ollamaLocalIntro": "可在本地免费运行 AI 模型：",
+    "ollamaInstallStep": "从以下地址安装 Ollama：",
+    "ollamaRunStep": "在终端中运行 {{command}}",
+    "ollamaReturnStep": "完成后返回这里并点击“刷新”",
+    "selectModel": "选择模型",
+
+    "advanced": "高级设置",
+    "hide": "收起",
+    "customOllamaUrl": "自定义 Ollama 地址",
+    "ollamaConnectFailed": "连接 Ollama 失败",
+    "ollamaRunStepPrefix": "在终端中运行",
+    "ollamaRunStepSuffix": "",
+    "togetherIntro": "在云端运行开放权重 AI 模型，并以较低成本调用。",
+    "togetherStepCreateAccount": "在 together.ai 创建免费账户（含 $25 免费额度，无需信用卡）",
+    "togetherStepCreateKey": "进入 Settings > API Keys 并创建 API Key",
+    "togetherStepPaste": "将 API Key 粘贴到下方",
+    "getTogetherApiKey": "前往 api.together.xyz 获取 API Key",
+    "invalidSetupToken": "Setup Token 无效",
+    "setupTokenPrefix": "在终端中运行",
+    "setupTokenSuffix": "然后将生成的 Token 粘贴到下方。",
+    "setupTokenPlaceholder": "粘贴 Setup Token"
+  },
+  "onboarding": {
+    "provider": {
+      "connectYourModel": "连接你的模型",
+      "headingBefore": "你要在哪里进行",
+      "headingEmphasis": "思考",
+      "headingAfter": "？",
+      "intro": "Chatty 会通过你连接的模型来路由 Agents。你可以稍后更改，也可以让不同的 Agent 使用不同的服务提供商。",
+      "connectedBanner": "已连接 Provider。可以在下方继续连接，或继续操作。",
+      "continue": "继续",
+      "connectOneRequired": "至少连接一个 Provider 才能继续",
+
+      "subtitleDeepseek": "DeepSeek 对话与推理模型",
+      "subtitleKimi": "Moonshot AI 对话与推理模型",
+      "subtitleOllama": "在本地运行模型 - 无需 API Key",
+
+      "methodApiKeyAnthropic": "粘贴来自 console.anthropic.com 的 API Key",
+      "methodApiKeyOpenai": "粘贴来自 platform.openai.com 的 API Key",
+      "methodApiKeyGoogle": "粘贴来自 aistudio.google.com 的 API Key",
+      "methodApiKeyDeepseek": "粘贴你的 DeepSeek API Key",
+      "methodApiKeyKimi": "粘贴你的 Kimi API Key",
+      "methodImportCli": "从 CLI 导入",
+      "methodImportCliDesc": "如果已安装并登录 OpenAI CLI，Chatty 可以自动导入你的凭据。",
+      "methodLocal": "本地",
+      "methodOllamaDesc": "自动检测正在运行的 Ollama 模型",
+
+      "linkAnthropic": "打开 Anthropic Console",
+      "linkOpenai": "打开 OpenAI Platform",
+      "linkGoogle": "打开 Google AI Studio",
+      "linkDeepseek": "打开 DeepSeek Platform",
+      "linkKimi": "打开 Kimi Platform",
+
+      "cliSyncIntro": "如果已安装并登录 OpenAI CLI，Chatty 可以自动导入你的凭据。",
+      "searching": "搜索中...",
+      "noCliCredentials": "未找到 CLI 凭据",
+      "setupTokenPlaceholder": "在此粘贴 setup token",
+      "setupTokenStepRun": "1. 打开终端并运行：",
+      "setupTokenStepPaste": "2. 复制生成的 token，并粘贴到下方："
+    },
+    "messaging": {
+      "title": "连接消息平台",
+      "intro": "我们强烈建议为你的 Agent 设置消息连接。Telegram 是推荐选择，也是目前最简单的方案。Telegram 无需单独的号码，使用你现有的手机号，即可轻松快速地为你的 Agent 设置一个 Telegram 机器人。",
+      "alreadyConfigured": "消息集成已配置完成！",
+      "recommended": "推荐",
+      "footnote": "如果跳过此步骤，你需要登录浏览器才能与 Agent 聊天。设置消息平台后，你可以随时随地通过手机与 Agent 对话。",
+      "skipForNow": "暂时跳过",
+      "continue": "继续"
+    },
+    "integrations": {
+      "title": "连接业务工具",
+      "intro": "连接你的业务工具，让 Agent 能够处理会计、HR、CRM 等工作。你也可以稍后随时在设置中配置。",
+      "alreadyConfigured": "所有集成均已配置完成！",
+      "continueToChatty": "继续进入 Chatty",
+      "skip": "跳过",
+      "continue": "继续"
+    },
+    "completion": {
+      "title": "全部设置完成！",
+      "summary": "这是你的配置摘要：",
+      "aiProvider": "AI 模型服务",
+      "agentWillHelp": "你的 Agent 会帮你完成这项设置",
+      "noIntegrations": "未选择任何集成 — 你可以随时在设置中添加。",
+      "walkThrough": "当你创建第一个 Agent 时，它会引导你以对话的方式完成这些设置。",
+      "goToChatty": "进入 Chatty"
+    },
+    "bamboohr": {
+      "title": "连接 BambooHR",
+      "description": "连接 BambooHR，让你的 Agent 可以访问员工目录、工时跟踪和 HR 数据。",
+      "companySubdomain": "公司子域名",
+      "subdomainHelp": "填写 BambooHR URL 中的子域名（例如 acme.bamboohr.com 中的 \"acme\"）",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "你的 BambooHR API Key",
+      "apiKeyScreenshot": "截图：BambooHR 账户 → API Keys → Add New Key（即将支持）",
+      "connectionFailed": "连接失败",
+      "skip": "跳过",
+      "connecting": "正在连接...",
+      "connect": "连接 BambooHR"
+    },
+    "odoo": {
+      "title": "连接 Odoo",
+      "description": "连接你的 Odoo ERP，让 Agent 可以访问库存、销售、会计等数据。",
+      "url": "Odoo URL",
+      "urlHelp": "你的 Odoo 实例 URL",
+      "searching": "正在搜索...",
+      "findDatabase": "查找我的数据库",
+      "databaseName": "数据库名称",
+      "selectDatabase": "选择数据库...",
+      "databaseFound": "已找到数据库",
+      "databasesFound": "已找到 {{count}} 个数据库",
+      "inferredFromUrl": "（根据 URL 推断）",
+      "typeManually": "手动输入",
+      "enterDatabaseName": "输入你的数据库名称",
+      "useDiscoveredDatabases": "使用已发现的数据库",
+      "databaseHelp": "使用上方“查找我的数据库”，或手动输入数据库名称",
+      "username": "用户名 / 邮箱",
+      "usernameHelp": "你用于登录 Odoo 的邮箱",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "你的 Odoo API Key",
+      "apiKeyHelp": "设置 → 用户 → 你的个人资料 → API Keys 标签页",
+      "noDatabasesFound": "未找到数据库，请手动输入数据库名称。",
+      "couldNotReach": "无法连接 Odoo 实例，请检查 URL 后重试。",
+      "connectionFailed": "连接失败",
+      "skip": "跳过",
+      "connecting": "正在连接...",
+      "connect": "连接 Odoo"
+    },
+    "quickbooks": {
+      "title": "连接 QuickBooks",
+      "description": "连接 QuickBooks Online，让你的 Agent 可以访问发票、账单、付款和财务报表。",
+      "howItWorks": "连接流程",
+      "stepConnect": "点击下方“连接 QuickBooks”",
+      "stepPopup": "系统会打开一个弹窗并进入 Intuit 登录页面",
+      "stepAuthorize": "登录并授权 Chatty 访问你的 QuickBooks 数据",
+      "stepClose": "授权完成后弹窗会自动关闭",
+      "preparingAuthorization": "正在准备授权...",
+      "completeAuthorization": "请在弹窗中完成授权...",
+      "finalizingConnection": "正在完成连接...",
+      "connectedSuccessfully": "连接成功！",
+      "skip": "跳过",
+      "waiting": "等待中...",
+      "connect": "连接 QuickBooks"
+    }
+  },
+  "integrations": {
+    "loadFailed": "无法加载集成",
+    "deprecatedFrozen": "已弃用 · 已冻结",
+    "connectionLost": "连接已断开",
+    "reconnect": "重新连接",
+    "setupCredentials": "配置凭据",
+    "connecting": "连接中...",
+    "connect": "连接",
+    "setup": "设置",
+    "manage": "管理",
+    "editCredentials": "编辑凭据",
+    "disconnect": "断开连接",
+    "close": "关闭",
+    "comingSoon": "即将推出",
+    "permissions": "权限",
+    "permissionRead": "只读",
+    "permissionApproval": "需确认",
+    "permissionFullControl": "完全控制",
+    "reconfigure": "重新配置",
+    "agentMapping": "Agent 映射",
+    "agentMappingRequired": "（Heartbeat 必需）",
+    "noPaperclipAgents": "未找到 Paperclip Agent。请先在 Paperclip 界面中创建 Agent。",
+    "notMapped": "未映射",
+    "saving": "保存中...",
+    "saveMapping": "保存映射",
+    "connectionFailed": "连接失败",
+    "setupFailed": "设置失败",
+    "disconnectFailed": "断开连接失败",
+    "mappingSaveFailed": "保存映射失败",
+    "noAgents": "尚未创建 Agent。",
+    "selectAgent": "选择 Agent",
+    "chooseAgent": "请选择 Agent...",
+    "connected": "已连接",
+    "connectWhatsApp": "连接 WhatsApp",
+    "scanWithWhatsApp": "使用 WhatsApp 扫描",
+    "whatsappSetupDescription": "WhatsApp 需要使用手机扫描二维码，因此需要在此处完成设置。先选择一个 Agent，然后在 WhatsApp → 设置 → 已关联设备中扫描二维码。",
+    "whatsappScanInstructions": "打开 WhatsApp → 设置 → 已关联设备 → 关联设备",
+    "whatsappHandledBy": "发送到此 WhatsApp 号码的消息将由 {{agent}} 处理。",
+    "connectedAgents": "已连接的 Agent",
+    "telegramSetupDescription": "每个 Agent 都可以拥有自己的 Telegram 机器人。你可以在这里设置，也可以直接让 Agent“设置 Telegram”，它会引导你通过 @BotFather 创建机器人。",
+    "odooSetupDescription": "你也可以直接让 Agent“连接 Odoo”，并在聊天中提供连接凭据。",
+    "odooUrlPlaceholder": "Odoo URL（https://...）",
+    "searching": "搜索中...",
+    "findDatabase": "查找数据库",
+    "selectDatabase": "选择数据库...",
+    "databaseFound": "已找到数据库",
+    "databasesFound": "已找到 {{count}} 个数据库",
+    "inferredFromUrl": "（根据 URL 推断）",
+    "typeManually": "手动输入",
+    "databaseNamePlaceholder": "数据库名称",
+    "useDiscoveredDatabases": "使用已发现的数据库",
+    "usernameEmailPlaceholder": "用户名 / 邮箱",
+    "apiKeyPlaceholder": "API Key",
+    "cancel": "取消",
+    "odooNoDatabases": "未找到数据库，请手动输入数据库名称。",
+    "odooUnreachable": "无法连接到 Odoo 实例，请检查 URL 后重试。",
+    "bambooSetupDescription": "你也可以直接让 Agent“连接 BambooHR”，并在聊天中提供子域名和 API Key。",
+    "bambooSubdomainPlaceholder": "子域名（company.bamboohr.com）",
+    "todoistSetupDescription": "粘贴 Todoist API Token。可在 Todoist → Settings → Integrations → Developer 中找到。",
+    "todoistTokenPlaceholder": "Todoist API Token",
+    "githubSetupDescription": "粘贴 GitHub Personal Access Token。该 Token 决定 Chatty 可以访问哪些仓库。",
+    "githubTokenPlaceholder": "GitHub Personal Access Token",
+    "feishuSetupDescription": "使用 App ID 和 App Secret 连接飞书自建应用。",
+    "feishuAppIdPlaceholder": "飞书 App ID",
+    "feishuAppSecretPlaceholder": "飞书 App Secret",
+    "selectChattyAgent": "选择 Chatty Agent...",
+    "wecomSetupDescription": "使用 Corp ID、应用 Agent ID 和 Secret 连接企业微信自建应用。",
+    "wecomCorpIdPlaceholder": "企业微信 Corp ID",
+    "wecomAppAgentIdPlaceholder": "企业微信应用 Agent ID",
+    "wecomSecretPlaceholder": "企业微信应用 Secret",
+    "wecomCallbackTokenPlaceholder": "企业微信 Callback Token",
+    "wecomEncodingAesKeyPlaceholder": "企业微信 EncodingAESKey",
+    "paperclipSetupDescription": "登录你的 Paperclip 实例，Chatty 会自动识别所属公司。",
+    "paperclipUrlPlaceholder": "Paperclip URL（https://your-instance.up.railway.app）",
+    "emailPlaceholder": "邮箱",
+    "passwordPlaceholder": "密码",
+    "statusConnected": "已连接",
+    "statusDisconnected": "未连接",
+    "statusConnecting": "连接中",
+    "statusScanQr": "等待扫码",
+    "statusChecking": "检查中",
+    "statusUnknown": "未知",
+    "descriptions": {
+      "quickbooks": "连接 QuickBooks，用于财务和会计相关工作流。",
+      "qbCsv": "通过 CSV 文件导入 QuickBooks 数据。",
+      "odoo": "连接 Odoo 业务数据和工作流。",
+      "bamboohr": "连接 BambooHR 员工与人力资源数据。",
+      "hubspot": "连接 HubSpot CRM 数据和工作流。",
+      "salesforce": "连接 Salesforce CRM 数据和工作流。",
+      "whatsapp": "为 Agent 接入 WhatsApp 消息渠道。",
+      "telegram": "为各个 Agent 接入独立的 Telegram 机器人。",
+      "feishu": "将飞书自建应用连接到 Chatty。",
+      "wecom": "将企业微信自建应用连接到 Chatty。",
+      "gmail": "连接 Gmail 以使用邮件工具。",
+      "calendar": "连接 Google Calendar 以使用日程工具。",
+      "paperclip": "连接 Paperclip 工作区并配置 Agent 映射。",
+      "todoist": "连接 Todoist 任务和项目。",
+      "github": "使用 Personal Access Token 连接 GitHub 仓库。"
+    }
+  },
+    "googleIntegration": {
+    "description": "连接 Google 邮箱、日历和 Drive，并可分别配置各项权限。",
+    "setup": "设置",
+    "connect": "连接",
+    "connecting": "连接中...",
+    "addAccount": "+ 添加账号",
+    "editCredentials": "编辑凭据",
+    "accountsConnected_one": "已连接 {{count}} 个账号",
+    "accountsConnected_other": "已连接 {{count}} 个账号",
+    "enableOneService": "请至少启用 Gmail、Google Calendar 或 Google Drive 中的一项。",
+    "disconnectFailed": "断开连接失败",
+    "updateAgentFailed": "更新 Agent 失败",
+    "preparingAuthorization": "正在准备授权...",
+    "completeAuthorization": "请在弹出的窗口中完成授权...",
+    "finalizingConnection": "正在完成连接...",
+    "connectionLost": "连接已断开",
+    "reconnect": "重新连接",
+    "changeScopes": "修改权限",
+    "disconnect": "断开连接",
+    "agentAssignments": "Agent 账号分配",
+    "noAgents": "尚未创建 Agent。",
+    "noAccounts": "没有可用账号",
+    "default": "默认",
+    "updateScopesDescription": "修改此账号的访问权限。之后需要在 Google 授权页面重新授权。",
+    "newAccountScopesDescription": "为新的 Google 账号选择访问权限。",
+    "cancel": "取消",
+    "connectGoogleAccount": "连接 Google 账号",
+    "gmail": {
+      "none": {
+        "label": "关闭",
+        "hint": "不请求 Gmail 访问权限"
+      },
+      "read": {
+        "label": "只读",
+        "hint": "搜索和读取邮件、读取邮件线程"
+      },
+      "send": {
+        "label": "读取 + 发送 + 草稿",
+        "hint": "除以上权限外，还可撰写、回复邮件并保存草稿"
+      }
+    },
+    "calendar": {
+      "none": {
+        "label": "关闭",
+        "hint": "不请求 Google Calendar 访问权限"
+      },
+      "read": {
+        "label": "只读",
+        "hint": "列出和搜索日程，并查看忙闲状态"
+      },
+      "full": {
+        "label": "完全访问",
+        "hint": "除以上权限外，还可创建、更新和删除日程"
+      }
+    },
+    "drive": {
+      "none": {
+        "label": "关闭",
+        "hint": "不请求 Google Drive 访问权限"
+      },
+      "file": {
+        "label": "仅应用文件",
+        "hint": "Chatty 可读取和上传自己创建的文件。权限最小，无需 Google 验证。"
+      },
+      "readonly": {
+        "label": "只读（所有文件）",
+        "hint": "搜索并读取任意 Drive 文件。需要通过 Google OAuth 验证。"
+      },
+      "full": {
+        "label": "完全访问",
+        "hint": "可读取、写入和删除任意 Drive 文件。权限最高，需要通过验证。"
+      }
+    },
+    "scopeValues": {
+      "gmail": {
+        "none": "关闭",
+        "read": "只读",
+        "send": "读取+发送"
+      },
+      "calendar": {
+        "none": "关闭",
+        "read": "只读",
+        "full": "完全访问"
+      },
+      "drive": {
+        "none": "关闭",
+        "file": "仅应用文件",
+        "readonly": "只读",
+        "full": "完全访问"
+      }
+    },
+    "services": {
+      "gmail": "Gmail",
+      "calendar": "日历",
+      "drive": "云端硬盘",
+      "calendarFull": "Google Calendar",
+      "driveFull": "Google Drive"
+    }
+  },
+  "appCredentials": {
+    "clientIdRequired": "Client ID 不能为空。",
+    "clientSecretRequired": "Client Secret 不能为空。",
+    "saveFailed": "保存凭据失败",
+
+    "intro": "输入你自己的 {{provider}} OAuth 应用凭据。",
+    "createAt": "前往 {{portal}} 创建",
+
+    "redirectUri": "重定向 URI",
+    "copied": "已复制",
+    "copy": "复制",
+    "redirectHint": "请将此 URL 添加到 OAuth 应用的已授权重定向 URI 中。",
+
+    "clientId": "Client ID",
+    "clientIdPlaceholder": "你的 {{provider}} OAuth Client ID",
+
+    "clientSecret": "Client Secret",
+    "clientSecretPlaceholder": "你的 {{provider}} OAuth Client Secret",
+    "clientSecretUnchanged": "（保持不变，留空即可继续使用当前值）",
+
+    "environment": "环境",
+    "sandbox": "Sandbox",
+    "sandboxHint": "免费且可立即使用，无需应用审核",
+    "production": "Production",
+    "productionHint": "需要通过 Intuit 应用审核",
+
+    "cancel": "取消",
+    "saving": "保存中...",
+    "updateCredentials": "更新凭据",
+    "saveCredentials": "保存凭据"
+  },
+  "telegramSettings": {
+    "webhookFailed": "Webhook 注册失败，请确认服务器可从公网访问。",
+    "validateTokenFailed": "Bot Token 验证失败",
+    "connectTitle": "连接 Telegram",
+    "connectDescriptionPrefix": "让用户可以直接通过 Telegram 向",
+    "connectDescriptionSuffix": "发送消息",
+    "step1Title": "步骤 1：创建 Telegram Bot",
+    "step1OpenTelegram": "打开 Telegram，并搜索",
+    "step1Send": "发送",
+    "step1ChooseName": "为 Bot 设置名称（例如“我的业务助手”）",
+    "step1ChooseUsernamePrefix": "设置一个以",
+    "step1ChooseUsernameMiddle": "结尾的用户名（例如",
+    "step1ChooseUsernameSuffix": "）",
+    "step1TokenPrefix": "BotFather 会提供一个",
+    "step1TokenSuffix": "请复制它",
+    "botFatherConversation": "BotFather 对话",
+    "screenshotPlaceholder": "截图占位",
+    "botTokenResponse": "Bot Token 返回结果",
+    "haveTokenNext": "我已经获取 Bot Token — 下一步",
+    "step2Title": "步骤 2：粘贴 Bot Token",
+    "step2Description": "粘贴 BotFather 提供的 Token，格式类似：",
+    "tokenPlaceholder": "在此粘贴 Bot Token",
+    "whereToken": "在哪里找到 Token",
+    "back": "返回",
+    "validating": "验证中...",
+    "connect": "连接",
+    "accountLinked": "账号已关联！",
+    "messagesToPrefix": "发送到",
+    "messagesToMiddle": "的消息将由",
+    "continue": "继续",
+    "step3Title": "步骤 3：关联你的 Telegram 账号",
+    "botConnected": "Bot 已连接！",
+    "botReadyPrefix": "你的 Bot",
+    "botReadySuffix": "已经准备就绪。现在关联你的 Telegram 账号：",
+    "openTelegram": "打开 Telegram",
+    "searchFor": "搜索",
+    "sendAnyMessage": "发送任意消息（例如“你好！”）",
+    "registrationOpen_one": "注册窗口已开启 — 剩余 {{count}} 分钟",
+    "registrationOpen_other": "注册窗口已开启 — 剩余 {{count}} 分钟",
+    "registrationExpired": "注册窗口已过期 — 请在下方重置",
+    "searchForBot": "搜索 Bot",
+    "sendFirstMessage": "发送第一条消息",
+    "screenshot": "截图",
+    "checking": "检查中...",
+    "sentMessage": "我已经发送消息",
+    "allSet": "设置完成！",
+    "agentLivePrefix": "你的 Agent",
+    "agentLiveMiddle": "现在已经通过 Telegram Bot 提供服务：",
+    "botAnswerDescription": "发送给 Bot 的消息会由该 Agent 回复，并可使用其工具和知识。",
+    "enablePushPrompt": "同时启用网页推送通知吗？",
+    "enable": "启用",
+    "skip": "跳过",
+    "openBot": "在 Telegram 中打开 @{{username}}",
+    "updateGroupFailed": "更新群聊设置失败。",
+    "updateTelegramFailed": "更新 Telegram 设置失败。",
+    "disconnectFailed": "断开 Telegram 连接失败。",
+    "resetRegistrationFailed": "重置注册窗口失败。",
+    "active": "已启用",
+    "disabled": "已停用",
+    "telegramMessaging": "Telegram 消息",
+    "respondTelegram": "通过 Telegram 接收并回复消息",
+    "openInTelegram": "在 Telegram 中打开",
+    "accountLinking": "账号关联",
+    "accountLinkingDescription": "重置注册窗口，以便将其他 Telegram 账号关联到此 Agent。",
+    "resetting": "重置中...",
+    "resetRegistrationWindow": "重置注册窗口",
+    "registrationReopened": "注册窗口已重新开启 10 分钟。向 Bot 发送消息即可关联账号。",
+    "groupChats": "群聊",
+    "groupChatsDescription": "允许 Bot 在 Telegram 群组中被 @提及或被回复时进行响应。群内成员都可以与 Agent 及其工具交互。",
+    "enableGroupChats": "启用群聊",
+    "respondGroupChats": "在群聊中响应消息",
+    "disconnectBot": "断开 Bot",
+    "disconnectBotDescription": "移除 Telegram Bot 连接。断开后 Bot 将不再响应消息。",
+    "disconnect": "断开连接",
+    "disconnecting": "正在断开...",
+    "confirmDisconnect": "确认断开",
+    "cancel": "取消"
+  },
+  "dashboard": {
+    "goodMorning": "早上好",
+    "goodAfternoon": "下午好",
+    "goodEvening": "晚上好",
+    "searchPlaceholder": "询问 Chatty，或快速跳转到…",
+    "loadingAgents": "正在加载你的 Agent...",
+    "noAgentsHero": "还没有 Agent — 在下方创建你的第一个 Agent。",
+    "youHave": "你有",
+    "agentCount_one": "{{count}} 个 Agent",
+    "agentCount_other": "{{count}} 个 Agent",
+    "readyToWork": "已准备好开始工作。",
+    "agents": "Agent",
+    "yourAgents": "你的 Agent",
+    "importAgent": "导入 Agent",
+    "commissionAgent": "创建 Agent",
+    "loadAgentsFailed": "无法加载你的 Agent",
+    "buildTeam": "组建你的团队",
+    "teamIdeas": "团队角色建议",
+    "roles": {
+      "personalAssistant": {
+        "role": "个人助理",
+        "desc": "日程安排、邮件草稿、会议准备"
+      },
+      "apClerk": {
+        "role": "应付账款专员",
+        "desc": "发票审核、供应商付款、费用跟踪"
+      },
+      "arClerk": {
+        "role": "应收账款专员",
+        "desc": "账款催收、付款跟踪、客户开票"
+      },
+      "customerService": {
+        "role": "客户服务",
+        "desc": "工单分流、客户咨询、问题升级"
+      },
+      "purchasing": {
+        "role": "采购",
+        "desc": "供应商寻源、采购订单、成本分析"
+      },
+      "salesRep": {
+        "role": "销售代表",
+        "desc": "线索筛选、客户触达、成交推进"
+      },
+      "salesSupport": {
+        "role": "销售支持",
+        "desc": "方案制作、客户跟进、CRM 更新"
+      },
+      "researchAnalyst": {
+        "role": "研究分析师",
+        "desc": "市场研究、竞品分析、报告撰写"
+      },
+      "bookkeeper": {
+        "role": "记账专员",
+        "desc": "账务核对、会计分录、财务报告"
+      },
+      "hrCoordinator": {
+        "role": "人事协调员",
+        "desc": "入职流程、休假申请、制度答疑"
+      },
+      "marketingAssistant": {
+        "role": "市场助理",
+        "desc": "内容创意、社交媒体、活动跟踪"
+      },
+      "operationsManager": {
+        "role": "运营经理",
+        "desc": "流程优化、供应商协调、物流管理"
+      }
+    }
+  },
+    "agentCard": {
+    "email": "邮件",
+    "calendar": "日历"
+  },
+  "createAgent": {
+    "title": "创建 Agent",
+    "agentType": "Agent 类型",
+    "general": "通用",
+    "generalDesc": "适用于日常任务的通用型助理",
+    "technicalEngineer": "技术工程师",
+    "technicalEngineerDesc": "代码、系统架构与问题调试",
+    "agentName": "Agent 名称 *",
+    "namePlaceholder": "例如：Arthur、Penelope、Rhea",
+    "titleRole": "职位 / 角色",
+    "rolePlaceholder": "例如：应付账款专员、销售代表",
+    "roleHint": "这有助于 Agent 在初始化过程中理解自己的职责。",
+    "creating": "正在创建...",
+    "commission": "创建",
+    "cancel": "取消",
+    "createFailed": "创建 Agent 失败"
+  },
+  "importAgent": {
+    "title": "导入现有 Agent",
+    "description": "将其他 AI 系统中的知识导入到新的 Chatty Agent 中。Agent 会引导你完成整个导入过程。",
+    "agentName": "Agent 名称 *",
+    "namePlaceholder": "为新 Agent 设置名称",
+    "nameHint": "如果你正在克隆已有 Agent，也可以在导入过程中修改名称。",
+    "cancel": "取消",
+    "starting": "正在开始...",
+    "startImport": "开始导入",
+    "startFailed": "启动导入失败"
+  },
+  "agentPage": {
+    "tabs": {
+      "chat": "聊天",
+      "knowledge": "知识",
+      "project": "项目",
+      "playbooks": "工作手册",
+      "reports": "报告",
+      "reminders": "提醒",
+      "heartbeat": "活动"
+    },
+    "toolModes": {
+      "read": "只读",
+      "normal": "普通",
+      "power": "强力"
+    },
+    "thisAgent": "此 Agent",
+    "trainAgent": "训练 {{name}}",
+    "improveAgent": "完善 {{name}}",
+    "exit": "退出",
+    "on": "开启",
+    "off": "关闭",
+    "deleteConversation": {
+      "title": "删除对话",
+      "message": "此对话及其中的消息将被永久删除。",
+      "confirm": "删除",
+      "failed": "删除对话失败。"
+    },
+    "powerMode": {
+      "enableTitle": "启用强力模式",
+      "enableMessage": "{{name}} 将能够直接读取和写入数据，无需每次请求确认。",
+      "enableConfirm": "启用强力模式",
+      "banner": "强力模式",
+      "alwaysOn": "始终开启",
+      "alwaysEnabled": "已在设置中启用始终强力模式。",
+      "canWrite": "{{name}} 可以无需确认直接读取和写入数据。"
+    },
+    "plan": {
+      "plan": "计划",
+      "planOn": "计划已开启",
+      "banner": "计划模式",
+      "description": "{{name}} 会先提出计划，再执行操作。",
+      "mobileLabel": "计划模式"
+    },
+    "training": {
+      "improveMode": "完善模式",
+      "trainingMode": "训练模式",
+      "improvingKnowledge": "正在检查并完善 {{name}} 的知识。",
+      "teachingBusiness": "正在向 {{name}} 介绍你的业务。",
+      "exitTitle": "退出训练",
+      "exitMessage": "{{name}} 将使用目前已经保存的知识。",
+      "exitConfirm": "退出训练",
+      "keepTraining": "继续训练"
+    },
+    "live": {
+      "starting": "正在启动…",
+      "recording": "录制中",
+      "pausedResuming": "已暂停 — 正在恢复…",
+      "pausedTapToResume": "已暂停 — 点击继续",
+      "finishing": "正在结束",
+      "uploadingCount_one": "正在上传 {{count}} 项",
+      "uploadingCount_other": "正在上传 {{count}} 项",
+      "finalizing": "正在完成…",
+      "saved": "已保存",
+      "uploading_one": "{{count}} 项正在上传",
+      "uploading_other": "{{count}} 项正在上传",
+      "stop": "停止",
+      "downloadRecording": "下载录音",
+      "foreignSession": "{{name}} 正在录音 — 点击打开"
+    },
+    "avatar": {
+      "change": "更换头像",
+      "set": "设置头像"
+    },
+    "importCancel": {
+      "title": "取消导入",
+      "message": "该 Agent 及所有导入进度都将被永久删除。",
+      "confirm": "删除导入",
+      "keep": "继续导入",
+      "failed": "取消导入失败。"
+    }
+  },
+  "agentChat": {
+    "toolModes": {
+      "read": "只读",
+      "normal": "普通",
+      "power": "强力"
+    },
+    "files": {
+      "unsupportedType": "{{name}}：不支持的文件类型（.{{ext}}）",
+      "exceedsSize": "{{name}}：超过大小限制 {{max}}",
+      "emptyFile": "{{name}}：文件为空",
+      "alreadyAttached": "{{name}}：已添加",
+      "maxFiles": "最多可添加 {{max}} 个文件，已忽略 {{dropped}} 个。"
+    },
+    "playbooks": {
+      "needsIntegration": "“{{name}}”需要连接 {{needs}}。请前往 设置 → 集成 完成连接。"
+    },
+    "attachedFilesMessage": "（见附件）",
+    "queued": {
+      "label": "已排队 ↵",
+      "files_one": "{{count}} 个文件",
+      "files_other": "{{count}} 个文件",
+      "message": "（消息）",
+      "cancelTitle": "取消排队并移回输入框"
+    },
+    "live": {
+      "prepPlaceholder": "这是什么会议？你希望从会议中获得什么？（可选）",
+      "start": "开始",
+      "recordMeeting": "录制实时会议"
+    },
+    "input": {
+      "playbookDetails": "补充“{{name}}”的执行细节（可选）— 按 Enter 运行",
+      "nextMessage": "输入下一条消息 — {{name}} 完成后自动发送…",
+      "messageAgent": "给 {{name}} 发送消息…"
+    },
+    "theAgent": "Agent",
+    "agent": "Agent",
+    "modelTier": {
+      "title": "模型层级",
+      "auto": "自动"
+    },
+    "stop": "停止",
+    "context": {
+      "withPercent": "上下文 {{pct}}% · ⏎ 发送",
+      "send": "⏎ 发送"
+    },
+    "dropFiles": "将文件拖放到这里",
+    "emptyState": "有什么可以帮你？",
+    "sources": {
+      "telegramGroup": "Telegram 群聊",
+      "messagesFrom": "来自 {{source}} 的消息会显示在这里"
+    },
+    "importMode": {
+      "title": "导入模式",
+      "description": "正在从其他系统导入知识",
+      "cancel": "取消"
+    },
+    "alerts": {
+      "dismissFailed": "忽略提醒失败。",
+      "ackFailed": "确认提醒失败。"
+    },
+    "compacted": {
+      "title": "较早的消息已被总结，以释放上下文空间",
+      "label": "已压缩"
+    }
+  },
+  "conversationSidebar": {
+    "search": "搜索...",
+    "newChat": "新建对话",
+    "loadFailed": "无法加载对话",
+    "noResults": "未找到结果",
+    "noConversations": "还没有对话",
+    "newConversation": "新对话",
+    "renameFailed": "重命名对话失败。",
+    "rename": "重命名对话",
+    "delete": "删除对话"
+  },
+  "agentMessage": {
+    "copied": "已复制！",
+    "copyMessage": "复制消息",
+    "input": "输入",
+    "output": "输出",
+    "toolMayBeStuck": "工具可能已卡住...",
+    "waitingForResult": "正在等待结果...",
+    "approved": "已批准",
+    "denied": "已拒绝",
+    "awaitingApproval": "等待批准",
+    "executeTool": "执行 {{tool}}",
+    "approve": "批准",
+    "deny": "拒绝",
+    "proposedPlan": "建议计划",
+    "planApproved": "计划已批准",
+    "refiningPlan": "正在完善计划...",
+    "approveExecute": "批准并执行",
+    "keepIterating": "继续完善",
+    "runPlaybook": "运行“{{name}}”",
+    "agent": "智能体",
+    "viaModel": "通过 {{model}}",
+    "transcribing": "正在转录 {{filename}}…",
+    "tools": {
+      "list_context_files": "正在列出文件",
+      "read_context_file": "正在读取文件",
+      "write_context_file": "正在写入文件",
+      "append_to_context_file": "正在追加文件内容",
+      "delete_context_file": "正在删除文件",
+      "search_memory": "正在搜索记忆",
+      "append_daily_note": "正在添加每日笔记",
+      "read_daily_note": "正在读取每日笔记",
+      "list_daily_notes": "正在列出每日笔记",
+      "read_memory": "正在读取 MEMORY.md",
+      "update_memory": "正在更新 MEMORY.md",
+      "add_fact": "正在记录事实",
+      "query_facts": "正在查询事实",
+      "invalidate_fact": "正在使事实失效",
+      "search_emails": "正在搜索邮件",
+      "get_email": "正在读取邮件",
+      "get_email_thread": "正在读取邮件线程",
+      "list_calendar_events": "正在列出日历事件",
+      "get_calendar_event": "正在读取日历事件",
+      "search_calendar_events": "正在搜索日历事件",
+      "web_search": "正在搜索网页",
+      "web_fetch": "正在获取网页",
+      "generate_report": "正在生成报告",
+      "create_reminder": "正在创建提醒",
+      "list_reminders": "正在列出提醒",
+      "cancel_reminder": "正在取消提醒",
+      "create_scheduled_action": "正在创建计划任务",
+      "list_scheduled_actions": "正在列出计划任务",
+      "list_shared_context": "正在列出共享上下文",
+      "read_shared_context": "正在读取共享上下文",
+      "write_shared_context": "正在写入共享上下文"
+    }
+  },
+  "alertBanner": {
+    "alertCount_one": "{{count}} 条提醒",
+    "alertCount_other": "{{count}} 条提醒",
+    "discuss": "讨论",
+    "dismiss": "忽略",
+    "sources": {
+      "heartbeatFailure": "活动检查失败",
+      "heartbeat": "活动检查",
+      "scheduledAction": "计划任务",
+      "agentMessage": "Agent 消息",
+      "reminder": "提醒",
+      "alert": "提醒"
+    }
+  },
+  "notificationLog": {
+    "notificationCount_one": "条通知",
+    "notificationCount_other": "条通知",
+    "clearAll": "全部清除",
+    "dismiss": "忽略",
+    "dismissFailed": "忽略通知失败。",
+    "dismissAllFailed": "清除通知失败。"
+  },
+  "slashCommandMenu": {
+    "playbooks": "工作手册",
+    "noMatches": "没有匹配的工作手册",
+    "needs": "需要连接 {{integrations}}",
+    "manage": "管理工作手册"
+  },
+  "playbookChips": {
+    "integrationRequired": "“{{name}}”需要连接 {{integrations}}。请前往设置 → 集成进行连接。",
+    "needs": "需要连接 {{integrations}}",
+    "more": "还有 {{count}} 个"
+  },
+  "agentContext": {
+    "discard": {
+      "title": "放弃更改",
+      "message": "你有尚未保存的更改，继续操作将会丢失这些内容。",
+      "confirm": "放弃更改",
+      "keepEditing": "继续编辑"
+    },
+    "deleteFile": {
+      "title": "删除文件",
+      "message": "{{name}} 将从此 Agent 的知识中永久移除。"
+    },
+    "deleteObservation": {
+      "title": "删除观察记录",
+      "message": "这条观察记录将从记忆中永久移除。"
+    },
+    "delete": "删除",
+    "save": "保存",
+    "saving": "保存中...",
+    "errors": {
+      "loadFile": "加载文件失败。",
+      "saveFile": "保存文件失败。",
+      "deleteFile": "删除文件失败。",
+      "deleteObservation": "删除观察记录失败。"
+    },
+    "learned": {
+      "title": "我学到的内容",
+      "empty": "还没有观察记录 — 它们会在对话后自动生成"
+    },
+    "files": {
+      "title": "知识文件",
+      "loadFailed": "无法加载文件",
+      "empty": "还没有知识文件",
+      "selectToEdit": "选择一个文件进行编辑"
+    }
+  },
+  "projectPanel": {
+    "title": "项目",
+    "description": "将此 Agent 连接到本地软件项目。项目工具只能访问该目录内的文件。",
+    "projectRoot": "项目根目录",
+    "backendAccess": "后端必须能够访问此目录。",
+    "saved": "项目根目录已保存。",
+    "saving": "保存中...",
+    "saveProject": "保存项目",
+    "saveFailed": "保存项目根目录失败"
+  },
+  "playbooksPanel": {
+    "title_one": "工作手册（{{count}}）",
+    "title_other": "工作手册（{{count}}）",
+    "loading": "正在加载工作手册...",
+    "loadFailed": "无法加载工作手册",
+    "newPlaybook": "新建工作手册",
+    "empty": {
+      "title": "还没有工作手册。",
+      "description": "工作手册是 {{name}} 可以按需执行的分步流程。你可以手动创建，也可以让 {{name}} 在学习你的工作习惯后自行编写。"
+    },
+    "you": "你",
+    "needsIntegration": "需要 {{integration}}",
+    "runCount_one": "已运行 {{count}} 次",
+    "runCount_other": "已运行 {{count}} 次",
+    "quickAction": "快捷操作",
+    "quickActionTitle": "在聊天输入框上方显示为快捷操作按钮",
+    "edit": "编辑",
+    "delete": "删除",
+    "loadingDetail": "加载中…",
+    "archived_one": "已归档（{{count}}）",
+    "archived_other": "已归档（{{count}}）",
+    "restore": "恢复",
+    "learned": "{{name}} 学到的内容",
+    "deleteDialog": {
+      "title": "删除工作手册",
+      "message": "“{{name}}”将被永久删除。",
+      "confirm": "删除"
+    },
+    "toasts": {
+      "deleted": "工作手册已删除。",
+      "restored": "工作手册已恢复。",
+      "created": "工作手册已创建。",
+      "saved": "工作手册已保存。"
+    },
+    "errors": {
+      "load": "加载工作手册失败。",
+      "delete": "删除工作手册失败。",
+      "quickAction": "更新快捷操作失败。",
+      "restore": "恢复工作手册失败。"
+    }
+  },
+  "learningFeed": {
+    "kinds": {
+      "playbookCreated": "新建工作手册",
+      "playbookUpdated": "工作手册已更新",
+      "playbookArchived": "工作手册已归档",
+      "memoryUpdated": "记忆已更新",
+      "blockedUnsafeLearning": "已阻止不安全学习"
+    },
+    "loading": "加载中…",
+    "loadFailed": "无法加载学习记录",
+    "showMore": "显示更多",
+    "revert": "撤销",
+    "reverted": "已撤销",
+    "empty": "{{name}} 还没有学习记录。随着它与你一起工作，新工作手册和记忆更新会显示在这里，你也可以一键撤销这些更改。",
+    "revertDialog": {
+      "title": "撤销这次更改？",
+      "message": "“{{title}}”将恢复到 {{name}} 修改之前的状态。"
+    },
+    "toasts": {
+      "reverted": "已撤销。"
+    },
+    "errors": {
+      "loadMore": "加载更多记录失败。",
+      "revert": "撤销失败。"
+    }
+  },
+  "reportsPanel": {
+    "loading": "正在加载报告...",
+    "loadFailed": "无法加载报告",
+    "empty": {
+      "title": "还没有报告",
+      "description": "可以让 Agent 创建一份报告。"
+    },
+    "searchPlaceholder": "搜索报告...",
+    "sectionCount_one": "{{count}} 个章节",
+    "sectionCount_other": "{{count}} 个章节",
+    "deleteReport": "删除报告",
+    "loadingReport": "正在加载报告...",
+    "failedToLoadReport": "报告加载失败",
+    "noMatches": "没有与“{{search}}”匹配的报告",
+    "deleteDialog": {
+      "title": "删除报告",
+      "message": "此报告将被永久删除。",
+      "confirm": "删除"
+    },
+    "errors": {
+      "loadReport": "加载报告失败。",
+      "deleteReport": "删除报告失败。"
+    }
+  },
+  "reportRenderer": {
+    "downloadPdf": "下载 PDF",
+    "unsupportedChartType": "不支持的图表类型：{{type}}"
+  },
+  "remindersPanel": {
+    "loading": "正在加载提醒...",
+    "loadFailed": "无法加载提醒",
+    "empty": {
+      "title": "还没有提醒。",
+      "description": "让 Agent 设置一个提醒，它就会显示在这里。"
+    },
+    "sections": {
+      "upcoming_one": "即将到来（{{count}}）",
+      "upcoming_other": "即将到来（{{count}}）",
+      "completed_one": "已完成（{{count}}）",
+      "completed_other": "已完成（{{count}}）",
+      "cancelled_one": "已取消（{{count}}）",
+      "cancelled_other": "已取消（{{count}}）",
+      "noPending": "没有待处理的提醒。",
+      "noCompleted": "还没有已触发的提醒。"
+    },
+    "time": {
+      "justNow": "刚刚",
+      "minutesAgo_one": "{{count}} 分钟前",
+      "minutesAgo_other": "{{count}} 分钟前",
+      "hoursAgo_one": "{{count}} 小时前",
+      "hoursAgo_other": "{{count}} 小时前",
+      "daysAgo_one": "{{count}} 天前",
+      "daysAgo_other": "{{count}} 天前",
+      "inLessThanMinute": "不到 1 分钟后",
+      "inMinutes_one": "{{count}} 分钟后",
+      "inMinutes_other": "{{count}} 分钟后",
+      "inHours_one": "{{count}} 小时后",
+      "inHours_other": "{{count}} 小时后",
+      "inDays_one": "{{count}} 天后",
+      "inDays_other": "{{count}} 天后"
+    },
+    "days": {
+      "mon": "周一",
+      "tue": "周二",
+      "wed": "周三",
+      "thu": "周四",
+      "fri": "周五",
+      "sat": "周六",
+      "sun": "周日"
+    },
+    "recurrence": {
+      "daily": "每天",
+      "weekly": "每周：{{days}}",
+      "monthly": "每月：第 {{day}} 天",
+      "everyHours_one": "每 {{count}} 小时",
+      "everyHours_other": "每 {{count}} 小时",
+      "everyMinutes_one": "每 {{count}} 分钟",
+      "everyMinutes_other": "每 {{count}} 分钟",
+      "everyHoursMinutes": "每 {{hours}} 小时 {{minutes}} 分钟",
+      "cron": "Cron：{{expression}}"
+    },
+    "status": {
+      "pending": "待处理",
+      "fired": "已触发",
+      "cancelled": "已取消"
+    },
+    "followUps": {
+      "title": "推断的后续事项",
+      "loadFailed": "无法加载推断的后续事项。",
+      "empty": "目前没有后续事项 — 当对话中出现值得之后跟进的内容时，它们会自动显示在这里。",
+      "due": "截止 {{date}}",
+      "noticed": "{{time}}注意到",
+      "viewConversation": "查看对话",
+      "markDone": "标记完成",
+      "dismiss": "忽略",
+      "toasts": {
+        "completed": "后续事项已标记完成。",
+        "dismissed": "后续事项已忽略。"
+      },
+      "errors": {
+        "complete": "无法完成该后续事项。",
+        "dismiss": "无法忽略该后续事项。"
+      }
+    },
+    "details": {
+      "message": "内容",
+      "context": "上下文",
+      "due": "到期时间",
+      "created": "创建时间",
+      "fired": "触发时间",
+      "status": "状态",
+      "result": "结果",
+      "seriesHistory_one": "系列历史（{{count}}）",
+      "seriesHistory_other": "系列历史（{{count}}）",
+      "loading": "加载中...",
+      "viewSeriesHistory": "查看系列历史"
+    }
+  },
+  "heartbeatPanel": {
+    "loading": "正在加载活动状态..."
+  },
+  "heartbeatStatus": {
+    "loadError": "无法加载活动检查配置，请确认后端正在运行。",
+    "initializing": "正在初始化活动检查...",
+    "paused": "已暂停",
+    "pausedRepeatedErrors": "由于连续发生错误，活动检查已暂停。",
+    "disabled": "活动检查已禁用。",
+    "reEnable": "重新启用",
+    "nextRun": "下次运行",
+    "running": "运行中...",
+    "runNow": "立即运行",
+    "disable": "禁用活动检查",
+    "enable": "启用活动检查",
+    "totalRuns_one": "共运行 {{count}} 次",
+    "totalRuns_other": "共运行 {{count}} 次",
+    "interval": {
+      "hours_one": "每 {{count}} 小时",
+      "hours_other": "每 {{count}} 小时",
+      "minutes_one": "每 {{count}} 分钟",
+      "minutes_other": "每 {{count}} 分钟",
+      "custom": "自定义"
+    },
+    "status": {
+      "ok": "一切正常",
+      "action_taken": "已执行操作",
+      "error": "错误",
+      "skipped": "已跳过"
+    }
+  },
+  "heartbeatChecklist": {
+    "title": "检查清单",
+    "save": "保存",
+    "saving": "保存中...",
+    "saveFailed": "保存检查清单失败。",
+    "addItem": "添加项目",
+    "empty": "还没有检查项目。",
+    "addFirstTask": "添加第一个任务",
+    "edit": "编辑",
+    "delete": "删除",
+    "placeholder": "描述一个需要 Agent 检查的任务...",
+    "add": "添加"
+  },
+  "heartbeatHistory": {
+    "title": "最近运行",
+    "empty": "还没有活动检查运行记录。",
+    "model": "模型",
+    "tokens": "Token",
+    "toolCount_one": "{{count}} 个工具",
+    "toolCount_other": "{{count}} 个工具",
+    "status": {
+      "ok": "一切正常",
+      "action_taken": "已执行操作",
+      "error": "错误",
+      "skipped": "已跳过"
+    }
+  },
+  "heartbeatConfig": {
+    "title": "配置",
+    "interval": "运行间隔（分钟）",
+    "triage": "分流检查（完整运行前快速检查）",
+    "advanced": "高级设置",
+    "alwaysOn": "始终启用（忽略活跃时间）",
+    "activeStart": "活跃开始时间",
+    "activeEnd": "活跃结束时间",
+    "modelOverride": "模型覆盖",
+    "defaultModel": "默认",
+    "maxToolIterations": "最大工具迭代次数",
+    "saving": "保存中...",
+    "saveChanges": "保存更改"
+  },
+  "playbookEditor": {
+    "newPlaybook": "新建工作手册",
+    "editPlaybook": "编辑工作手册",
+    "name": "名称",
+    "namePlaceholder": "例如：跟进逾期发票",
+    "nameExists": "已存在同名工作手册。",
+    "description": "描述",
+    "descriptionPlaceholder": "用一句话说明：什么时候适用？",
+    "descriptionHint": "会显示在 / 菜单和快捷操作按钮中。",
+    "steps": "步骤",
+    "stepsPlaceholder": "使用自然语言逐行写出步骤。例如：\n1. 在 Gmail 中搜索未付款发票\n2. 为每张发票起草友好的提醒消息…",
+    "quickAction": "在聊天上方显示为快捷操作",
+    "cancel": "取消",
+    "create": "创建",
+    "save": "保存",
+    "saving": "保存中…",
+    "discard": {
+      "title": "放弃更改",
+      "message": "你对这个工作手册的修改将会丢失。",
+      "confirm": "放弃"
+    },
+    "errors": {
+      "saveFailed": "保存工作手册失败。"
+    }
+  },
+  "agentActivity": {
+    "title": "最近活动",
+    "loading": "正在加载活动记录...",
+    "empty": {
+      "title": "还没有最近的活动检查记录。",
+      "description": "周期检查期间执行的操作会显示在这里。"
+    },
+    "model": "模型",
+    "tokens": "Token",
+    "toolCount_one": "{{count}} 个工具",
+    "toolCount_other": "{{count}} 个工具"
+  },
+  "crmLayout": {
+    "nav": {
+      "dashboard": "概览",
+      "contacts": "联系人",
+      "pipeline": "销售管道",
+      "tasks": "任务"
+    },
+    "demoDialog": {
+      "title": "此 CRM 包含示例数据",
+      "description": "我们添加了示例联系人、交易和任务，方便你了解整个 CRM 的使用方式。是否清除这些示例数据并从空白状态开始？",
+      "keepExploring": "继续体验",
+      "clearing": "正在清除...",
+      "clearData": "清除示例数据",
+      "doneTitle": "准备完成",
+      "doneDescription": "示例数据已清除，你的 CRM 现在可以开始使用了。",
+      "getStarted": "开始使用"
+    },
+    "demoBanner": {
+      "description": "你当前查看的是示例数据 — 联系人、交易和任务均为演示内容。",
+      "clearFailed": "清除示例数据失败，请重试。",
+      "clearing": "正在清除...",
+      "clearData": "清除示例数据"
+    }
+  },
+  "crmDashboard": {
+    "loadFailed": "无法加载 CRM 概览",
+    "weekOf": "{{date}}所在周",
+    "pipelineIs": "销售管道总额为",
+    "openDeals_one": "共有 {{count}} 个进行中的交易。",
+    "openDeals_other": "共有 {{count}} 个进行中的交易。",
+    "noActiveDeals": "还没有进行中的交易。",
+    "dealCount_one": "{{count}} 个交易",
+    "dealCount_other": "{{count}} 个交易",
+    "topDeals": "重点交易",
+    "noDeals": "还没有交易。",
+    "noContact": "无联系人",
+    "recentActivity": "最近活动",
+    "actions": {
+      "addContact": "+ 添加联系人",
+      "addDeal": "+ 添加交易",
+      "addTask": "+ 添加任务"
+    },
+    "errors": {
+      "moveDeal": "移动交易失败。"
+    },
+    "stages": {
+      "lead": "潜在线索",
+      "qualified": "已确认",
+      "proposal": "方案阶段",
+      "negotiation": "谈判阶段",
+      "won": "已赢单",
+      "lost": "已丢单"
+    }
+  },
+  "crmContacts": {
+    "title": "联系人",
+    "importShort": "导入",
+    "importContacts": "导入联系人",
+    "addShort": "添加",
+    "addContact": "添加联系人",
+    "searchPlaceholder": "搜索联系人...",
+    "statusTabs": {
+      "all": "全部",
+      "active": "活跃",
+      "inactive": "非活跃",
+      "archived": "已归档"
+    },
+    "tags": "标签",
+    "tagsWithCount": "标签（{{count}}）",
+    "clearAll": "清除全部",
+    "loadFailed": "无法加载联系人",
+    "emptySearch": "没有符合搜索条件的联系人。",
+    "empty": "还没有联系人，添加第一个联系人吧！",
+    "contactCount_one": "{{count}} 个联系人",
+    "contactCount_other": "{{count}} 个联系人",
+    "columns": {
+      "name": "姓名",
+      "company": "公司",
+      "email": "邮箱",
+      "phone": "电话",
+      "status": "状态"
+    },
+    "loadingMore": "正在加载更多…",
+    "more": "还有 {{count}} 个",
+    "errors": {
+      "loadMore": "加载更多联系人失败。"
+    }
+  },
+  "crmContactDetail": {
+    "notFound": "未找到该联系人。",
+    "backToContacts": "联系人",
+    "edit": "编辑",
+    "delete": "删除",
+    "atCompany": " · {{company}}",
+    "notes": "备注",
+    "deals": "商机",
+    "tasks": "任务",
+    "add": "+ 添加",
+    "noDeals": "暂无商机。",
+    "noTasks": "暂无任务。",
+    "logActivity": "记录活动",
+    "activityHistory": "活动记录",
+    "notePlaceholder": "添加备注...",
+    "saving": "保存中...",
+    "log": "记录",
+    "activityTypes": {
+      "call": "电话",
+      "email": "邮件",
+      "meeting": "会议",
+      "note": "备注"
+    },
+    "deleteDialog": {
+      "title": "删除联系人",
+      "message": "这将永久删除 {{name}} 及其活动记录，此操作无法撤销。",
+      "thisContact": "该联系人",
+      "confirm": "删除联系人"
+    },
+    "errors": {
+      "logActivity": "记录活动失败。",
+      "deleteContact": "删除联系人失败。"
+    }
+  },
+  "crmPipeline": {
+    "title": "销售管道",
+    "loadFailed": "无法加载销售管道",
+    "summary_one": "总金额 {{value}} · {{count}} 个进行中的交易",
+    "summary_other": "总金额 {{value}} · {{count}} 个进行中的交易",
+    "addShort": "添加",
+    "addDeal": "添加交易",
+    "all": "全部",
+    "noDeals": "暂无交易",
+    "stageSummary_one": "{{count}} 个交易 · {{value}}",
+    "stageSummary_other": "{{count}} 个交易 · {{value}}",
+    "columns": {
+      "deal": "交易",
+      "contact": "联系人",
+      "value": "金额",
+      "probability": "概率",
+      "closeDate": "预计关闭日期"
+    },
+    "stages": {
+      "lead": "潜在线索",
+      "qualified": "已确认",
+      "proposal": "方案阶段",
+      "negotiation": "谈判阶段",
+      "won": "已赢单",
+      "lost": "已丢单"
+    },
+    "errors": {
+      "moveDeal": "移动交易失败。"
+    }
+  },
+  "crmTasks": {
+    "title": "任务",
+    "addShort": "添加",
+    "addTask": "添加任务",
+    "loadFailed": "无法加载任务",
+    "completed": "已完成",
+    "filters": {
+      "all": "全部",
+      "pending": "待处理",
+      "dueToday": "今日到期",
+      "overdue": "已逾期",
+      "done": "已完成"
+    },
+    "empty": {
+      "all": "暂无任务。",
+      "pending": "暂无待处理任务。",
+      "due_today": "今天没有到期任务。",
+      "overdue": "暂无逾期任务。",
+      "completed": "暂无已完成任务。"
+    },
+    "detail": {
+      "contact": "联系人",
+      "deal": "交易",
+      "due": "截止日期",
+      "close": "关闭",
+      "edit": "编辑",
+      "markIncomplete": "标记为未完成",
+      "markComplete": "标记为已完成"
+    },
+    "errors": {
+      "updateTask": "更新任务失败。"
+    }
+  },
+  "crmContactForm": {
+    "newTitle": "新建联系人",
+    "editTitle": "编辑联系人",
+    "fields": {
+      "name": "姓名",
+      "email": "邮箱",
+      "phone": "电话",
+      "company": "公司",
+      "jobTitle": "职位",
+      "source": "来源",
+      "status": "状态",
+      "tags": "标签（逗号分隔）",
+      "notes": "备注"
+    },
+    "source": {
+      "select": "请选择...",
+      "referral": "转介绍",
+      "website": "网站",
+      "coldCall": "陌生电话",
+      "socialMedia": "社交媒体",
+      "event": "活动",
+      "other": "其他"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "非活跃",
+      "archived": "已归档"
+    },
+    "cancel": "取消",
+    "saving": "保存中...",
+    "update": "更新",
+    "create": "创建",
+    "errors": {
+      "nameRequired": "姓名为必填项",
+      "saveFailed": "保存失败"
+    }
+  },
+  "crmDealForm": {
+    "newTitle": "新建交易",
+    "editTitle": "编辑交易",
+    "fields": {
+      "title": "标题",
+      "contact": "联系人",
+      "stage": "阶段",
+      "value": "金额（$）",
+      "probability": "成交概率（%）",
+      "expectedClose": "预计关闭日期",
+      "notes": "备注"
+    },
+    "noContact": "无联系人",
+    "stages": {
+      "lead": "潜在线索",
+      "qualified": "已确认",
+      "proposal": "方案阶段",
+      "negotiation": "谈判阶段",
+      "won": "已赢单",
+      "lost": "已丢单"
+    },
+    "cancel": "取消",
+    "saving": "保存中...",
+    "update": "更新",
+    "create": "创建",
+    "errors": {
+      "titleRequired": "标题为必填项",
+      "saveFailed": "保存失败"
+    }
+  },
+  "crmDealDetail": {
+    "stage": "阶段",
+    "contact": "联系人",
+    "probability": "成交概率",
+    "expectedClose": "预计关闭日期",
+    "close": "关闭",
+    "edit": "编辑",
+    "markWon": "标记为赢单",
+    "markLost": "标记为丢单",
+    "stages": {
+      "lead": "潜在线索",
+      "qualified": "已确认",
+      "proposal": "方案阶段",
+      "negotiation": "谈判阶段",
+      "won": "已赢单",
+      "lost": "已丢单"
+    }
+  },
+  "crmTaskForm": {
+    "newTitle": "新建任务",
+    "editTitle": "编辑任务",
+    "fields": {
+      "title": "需要完成什么？",
+      "description": "描述",
+      "contact": "联系人",
+      "dueDate": "截止日期",
+      "priority": "优先级"
+    },
+    "noContact": "无联系人",
+    "priority": {
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "cancel": "取消",
+    "saving": "保存中...",
+    "saveChanges": "保存更改",
+    "createTask": "创建任务",
+    "errors": {
+      "titleRequired": "任务标题为必填项",
+      "saveFailed": "保存失败"
+    }
+  },
+  "crmActivityTimeline": {
+    "empty": "暂无活动记录。",
+    "editTitle": "编辑活动",
+    "fields": {
+      "activity": "活动",
+      "note": "备注"
+    },
+    "notePlaceholder": "添加备注...",
+    "meta": {
+      "contact": "联系人",
+      "deal": "交易",
+      "logged": "记录时间"
+    },
+    "activityTypes": {
+      "call": "电话",
+      "email": "邮件",
+      "meeting": "会议",
+      "note": "备注",
+      "follow_up": "跟进"
+    },
+    "cancel": "取消",
+    "delete": "删除",
+    "saving": "保存中...",
+    "save": "保存",
+    "deleteDialog": {
+      "title": "删除活动",
+      "message": "这条活动记录将被永久删除。",
+      "confirm": "删除"
+    },
+    "errors": {
+      "save": "保存活动失败。",
+      "delete": "删除活动失败。"
+    }
+  },
+  "crmBadges": {
+    "priority": {
+      "urgent": "紧急",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "非活跃",
+      "archived": "已归档"
+    }
+  },
+  "crmCsvImport": {
+    "title": "导入联系人",
+    "description": "上传包含以下列的 CSV 文件：name、email、phone、company、title、source、tags、notes。只有 name 为必填项。",
+    "selectFile": "点击选择 CSV 文件",
+    "close": "关闭",
+    "cancel": "取消",
+    "importing": "正在导入...",
+    "import": "导入",
+    "result": {
+      "imported_one": "已导入 {{count}} 个联系人",
+      "imported_other": "已导入 {{count}} 个联系人",
+      "skipped_one": "已跳过 {{count}} 行（缺少姓名）",
+      "skipped_other": "已跳过 {{count}} 行（缺少姓名）",
+      "errors_one": "{{count}} 个错误：",
+      "errors_other": "{{count}} 个错误："
+    },
+    "errors": {
+      "importFailed": "导入失败",
+      "importFailedWithStatus": "导入失败（{{status}}）"
+    }
+  },
+  "crmSmartImport": {
+    "title": "导入联系人",
+    "description": "上传任意联系人文件——CSV、vCard（.vcf）、JSON 或纯文本。AI 可以从这些格式中提取联系人信息。",
+    "selectFile": "点击选择文件",
+    "cancel": "取消",
+    "close": "关闭",
+    "parseContacts": "解析联系人",
+    "analyzing": "正在分析联系人...",
+    "aiParsedWarning": "已使用 AI 解析——导入前请确认解析结果。",
+    "selectAll": "全选（{{count}}）",
+    "selected": "已选择 {{count}} 个",
+    "importSelected": "导入所选联系人（{{count}}）",
+    "columns": {
+      "name": "姓名",
+      "email": "邮箱",
+      "phone": "电话",
+      "company": "公司"
+    },
+    "result": {
+      "imported_one": "已导入 {{count}} 个联系人",
+      "imported_other": "已导入 {{count}} 个联系人",
+      "skipped_one": "已跳过 {{count}} 个（缺少姓名）",
+      "skipped_other": "已跳过 {{count}} 个（缺少姓名）",
+      "errors_one": "{{count}} 个错误：",
+      "errors_other": "{{count}} 个错误："
+    },
+    "errors": {
+      "parseFailed": "解析失败",
+      "parseFailedWithStatus": "解析失败（{{status}}）",
+      "noContactsFound": "文件中未找到联系人",
+      "noContactsSelected": "未选择联系人",
+      "importFailed": "导入失败",
+      "importFailedWithStatus": "导入失败（{{status}}）"
+    }
+  },
+  "usagePage": {
+    "loadFailed": "无法加载用量数据",
+    "eyebrow": "用量与费用",
+    "title": "用量",
+    "empty": "暂无用量记录。",
+    "ranges": {
+      "sevenDays": "7 天",
+      "thirtyDays": "30 天",
+      "allTime": "全部时间"
+    },
+    "cards": {
+      "estimatedCost": "预估费用",
+      "totalTokens": "Token 总量",
+      "events": "事件数",
+      "tokenBreakdown": "输入 {{input}} / 输出 {{output}}"
+    },
+    "chart": {
+      "dailyCost": "每日费用",
+      "dailyTokens": "每日 Token",
+      "cost": "费用",
+      "tokens": "Token",
+      "chat": "聊天",
+      "background": "后台"
+    },
+    "table": {
+      "agent": "Agent",
+      "model": "模型",
+      "tokens": "Token",
+      "events": "事件数",
+      "estimatedCost": "预估费用"
+    },
+    "pricingUnknown": "价格未知",
+    "pricingUnknownTitle": "以下模型暂无公开价格：{{models}}。运行 price-check skill 后可将价格补充到 pricing.py。",
+    "disclaimer": "费用根据公开 API 价格估算。本地模型（Ollama）费用为 $0.00。“价格未知”表示某个付费模型尚未记录在 pricing.py 中；可运行 price-check skill 刷新价格。在补充价格前，该模型费用显示为 $0.00，但不会计入费用准确性评估。"
+  },
+  "webbyPage": {
+    "loadFailed": "无法加载 Webby 状态",
+    "setup": {
+      "title": "认识 Webby",
+      "description": "Webby 可以通过 GitHub 管理你的网站。你只需要用自然语言描述想要修改的内容，无需编写代码。",
+      "phaseTitle": "第一阶段 — 预览",
+      "phaseDescription": "当前版本中的 GitHub 编辑工具仍为占位实现。Webby 可以完成初始化并进行聊天，但文件编辑和 Pull Request 功能需要在第二阶段实现。",
+      "backToDashboard": "返回首页",
+      "settingUp": "正在设置...",
+      "setUpWebby": "设置 Webby"
+    },
+    "badges": {
+      "phase1Stub": "第一阶段占位版",
+      "onboarding": "初始化中"
+    },
+    "tabs": {
+      "chat": "聊天",
+      "knowledge": "知识",
+      "preview": "预览"
+    },
+    "deleteDialog": {
+      "title": "删除对话",
+      "message": "该对话及其中的消息将被永久删除。",
+      "confirm": "删除"
+    },
+    "errors": {
+      "createAgent": "创建 Agent 失败。",
+      "deleteConversation": "删除对话失败。"
+    }
+  },
+  "webbyPreview": {
+    "emptyTitle": "暂无预览",
+    "emptyDescription": "让 Webby 进行修改后，预览会显示在这里，方便你查看修改后的效果。",
+    "phpWarning": "这是 PHP 文件——动态内容（例如商品列表）不会在预览中渲染。",
+    "iframeTitle": "{{file}} 的预览"
+  },
+  "loginPage": {
+    "marketing": {
+      "titleLine1": "组建你的 Agent 团队，",
+      "titleLine2": "而不只是使用一个聊天机器人。",
+      "description": "创建个人助理、应付账款专员或销售代表。它们会逐渐了解你的业务，处理繁琐工作，并持续为你提供支持。"
+    },
+    "signIn": {
+      "eyebrow": "登录",
+      "title": "欢迎回来。",
+      "password": "密码",
+      "passwordPlaceholder": "请输入密码",
+      "signingIn": "正在登录...",
+      "continue": "继续"
+    },
+    "twoFactor": {
+      "eyebrow": "双重身份验证",
+      "title": "验证你的身份。",
+      "backupDescription": "请输入一个备用验证码。",
+      "authenticatorDescription": "请输入身份验证器应用中的 6 位验证码。",
+      "backupCode": "备用验证码",
+      "code": "验证码",
+      "trustBrowser": "信任此浏览器 30 天",
+      "verifying": "正在验证...",
+      "verify": "验证",
+      "back": "返回",
+      "useAuthenticatorCode": "使用身份验证器验证码",
+      "useBackupCode": "使用备用验证码"
+    },
+    "errors": {
+      "loginFailed": "登录失败",
+      "verificationFailed": "验证失败"
+    }
+  },
+  "setupWizard": {
+    "welcome": {
+      "title": "欢迎来到你的 AI 工作区",
+      "description": "我们先完成基础设置：连接一个 AI Provider，并自定义你的平台。之后你可以随时修改这些设置。",
+      "getStarted": "开始设置",
+      "skipSetup": "跳过设置 — 稍后再完成"
+    },
+    "providers": {
+      "title": "连接 AI Provider",
+      "description": "你的 Agent 至少需要连接一个 AI Provider 才能工作。你可以在下方连接一个或多个 Provider。",
+      "continue": "继续",
+      "skip": "跳过"
+    },
+    "branding": {
+      "title": "自定义你的平台",
+      "description": "为工作区设置名称、颜色和 Logo，所有项目均为可选。",
+      "platformName": "平台名称",
+      "platformNamePlaceholder": "我的公司",
+      "accentColor": "强调色",
+      "logo": "Logo",
+      "logoUploaded": "Logo 已上传",
+      "saving": "正在保存...",
+      "finishSetup": "完成设置",
+      "skip": "跳过"
+    },
+    "errors": {
+      "finishFailed": "完成设置失败。"
+    }
+  },
+  "common": {
+    "loadError": {
+      "couldntLoad": "无法加载",
+      "error": "错误",
+      "retry": "重试"
+    },
+    "mobileMenu": {
+      "menu": "菜单",
+      "agents": "Agents",
+      "usage": "使用情况",
+      "settings": "设置"
+    },
+    "errorBoundary": {
+      "detailsLogged": "错误详情已记录到浏览器控制台。",
+      "errorDetail": "错误详情",
+      "rootTitle": "出现了一些问题",
+      "rootDescription": "发生了意外错误，重新加载页面通常可以解决。",
+      "reload": "重新加载",
+      "routeTitle": "此页面发生错误",
+      "routeDescription": "应用的其他部分仍在正常运行。你可以返回仪表盘或重新加载页面。",
+      "backToDashboard": "返回仪表盘"
+    },
+    "toast": {
+      "error": "错误",
+      "success": "成功",
+      "notice": "提示",
+      "dismiss": "关闭"
+    },
+    "mobileNav": {
+      "agents": "Agents",
+      "usage": "使用情况",
+      "knowledge": "知识库",
+      "settings": "设置"
+    },
+    "status": {
+      "live": "运行中",
+      "ready": "就绪",
+      "asleep": "休眠"
+    }
+  },
+  "deleteAgent": {
+    "title": "删除 Agent",
+    "descriptionBefore": "这将永久删除",
+    "descriptionAfter": "以及该 Agent 的全部知识、对话和记忆。此操作无法撤销。",
+    "confirmInstructionBefore": "如需确认，请在下方输入",
+    "confirmInstructionAfter": "。",
+    "confirmPhrase": "删除 {{name}}",
+    "cancel": "取消",
+    "deleting": "正在删除...",
+    "deletePermanently": "永久删除",
+    "errors": {
+      "deleteFailed": "删除 Agent 失败"
+    }
+  },
+  "avatarPicker": {
+    "title": "为 {{name}} 设置头像",
+    "descriptionGenerate": "我们会根据 {{name}} 的个性生成几个头像选项，选择你最喜欢的一个。",
+    "descriptionUpload": "为 {{name}} 上传头像，或暂时跳过。",
+    "generateAvatars": "生成头像",
+    "uploadYourOwn": "上传自己的头像",
+    "uploadYourOwnLower": "上传自己的头像",
+    "skipForNow": "暂时跳过",
+    "uploading": "正在上传头像...",
+    "generating": "正在生成头像...大约需要 30 秒",
+    "retry": "重试",
+    "or": "或",
+    "avatarOption": "头像选项 {{number}}",
+    "choose": "选择",
+    "saving": "正在保存头像...",
+    "errors": {
+      "generationTimedOut": "生成超时，请尝试上传自己的头像",
+      "generationFailed": "头像生成失败",
+      "saveFailed": "保存头像失败",
+      "uploadFailed": "上传失败"
+    }
+  },
+  "reports": {
+    "exportCsv": "导出 CSV"
+  },
+  "conversations": {
+    "loadFailed": "加载对话失败。"
+  },
+  "heartbeat": {
+    "alreadyRunning": "Heartbeat 已经在运行。",
+    "runFailed": "运行 Heartbeat 失败。"
+  },
+  "onboardingWizard": {
+    "steps": {
+      "provider": "AI Provider",
+      "messaging": "消息平台",
+      "integrations": "业务工具",
+      "done": "完成"
+    }
+  }
+}

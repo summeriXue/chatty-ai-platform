@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
 }
 
 export function ModelSelector({ provider, currentModel, onChanged }: Props) {
+  const { t } = useTranslation();
+
   const [models, setModels] = useState<string[]>([]);
   const [selected, setSelected] = useState(currentModel);
   const [saving, setSaving] = useState(false);
@@ -43,7 +46,9 @@ export function ModelSelector({ provider, currentModel, onChanged }: Props) {
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
         fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
         color: 'rgba(237,240,244,0.38)', marginBottom: 6,
-      }}>Model</label>
+      }}>
+        {t('providers.model')}
+      </label>
       <select
         value={selected}
         onChange={e => save(e.target.value)}

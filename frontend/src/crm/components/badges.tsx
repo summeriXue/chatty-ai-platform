@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { FONT_MONO, CORAL, GOLD, SAGE, INK_SOFT, INK_DIM } from '../../shared/styles';
 
 const badgeBase: React.CSSProperties = {
@@ -14,8 +15,14 @@ const PRIORITY_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export function PriorityBadge({ priority }: { priority: string }) {
+  const { t } = useTranslation();
   const c = PRIORITY_COLORS[priority] || PRIORITY_COLORS.medium;
-  return <span style={{ ...badgeBase, background: c.bg, color: c.color }}>{priority}</span>;
+
+  return (
+    <span style={{ ...badgeBase, background: c.bg, color: c.color }}>
+      {t(`crmBadges.priority.${priority}`, { defaultValue: priority })}
+    </span>
+  );
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -25,6 +32,12 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const c = STATUS_COLORS[status] || STATUS_COLORS.inactive;
-  return <span style={{ ...badgeBase, background: c.bg, color: c.color }}>{status}</span>;
+
+  return (
+    <span style={{ ...badgeBase, background: c.bg, color: c.color }}>
+      {t(`crmBadges.status.${status}`, { defaultValue: status })}
+    </span>
+  );
 }

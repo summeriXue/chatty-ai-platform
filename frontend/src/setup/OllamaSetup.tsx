@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 interface Props {
@@ -11,12 +12,14 @@ interface OllamaStatus {
 }
 
 const RECOMMENDED_MODELS = [
-  { name: 'qwen3.5:4b', desc: 'Lightweight (3.4 GB) — works on any computer' },
-  { name: 'qwen3.5:9b', desc: 'Balanced (6 GB) — best quality for the size' },
-  { name: 'llama3.1:8b', desc: 'Quality (5 GB) — needs 16 GB RAM' },
+  'qwen3.5:4b',
+  'qwen3.5:9b',
+  'llama3.1:8b',
 ];
 
 export function OllamaSetup({ onConnected }: Props) {
+  const { t } = useTranslation();
+
   const [status, setStatus] = useState<OllamaStatus | null>(null);
   const [checking, setChecking] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -54,7 +57,11 @@ export function OllamaSetup({ onConnected }: Props) {
       });
       onConnected();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to connect to Ollama');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('providers.ollamaConnectFailed')
+      );
     } finally {
       setConnecting(false);
     }
@@ -64,7 +71,9 @@ export function OllamaSetup({ onConnected }: Props) {
     return (
       <div className="flex items-center gap-2 py-4">
         <div className="w-4 h-4 border-2 border-ch-accent border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-ch-ink-mute">Detecting Ollama...</span>
+        <span className="text-sm text-ch-ink-mute">
+          {t('providers.ollamaDetecting')}
+        </span>
       </div>
     );
   }
@@ -75,11 +84,13 @@ export function OllamaSetup({ onConnected }: Props) {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-green-400 rounded-full" />
-          <span className="text-sm text-green-400">Ollama detected</span>
+          <span className="text-sm text-green-400">
+            {t('providers.ollamaDetected')}
+          </span>
         </div>
 
         <div>
-          <label className="block text-xs text-ch-ink-mute mb-1.5">Select a model</label>
+          <label className="block text-xs text-ch-ink-mute mb-1.5">{t('providers.selectModel')}</label>
           <select
             value={selectedModel}
             onChange={e => setSelectedModel(e.target.value)}
@@ -98,7 +109,9 @@ export function OllamaSetup({ onConnected }: Props) {
           disabled={connecting || !selectedModel}
           className="w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-lg hover:opacity-90 transition disabled:opacity-50"
         >
-          {connecting ? 'Connecting...' : 'Connect'}
+          {connecting
+            ? t('providers.connecting')
+            : t('providers.connect')}
         </button>
       </div>
     );
@@ -110,18 +123,27 @@ export function OllamaSetup({ onConnected }: Props) {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-yellow-400 rounded-full" />
-          <span className="text-sm text-yellow-400">Ollama is running but no models are installed</span>
+          <span className="text-sm text-yellow-400">
+            {t('providers.ollamaNoModels')}
+          </span>
         </div>
 
         <p className="text-xs text-ch-ink-mute">
-          Pull a model in your terminal, then click "Refresh":
+          {t('providers.ollamaPullHint')}
         </p>
 
         <div className="space-y-2">
-          {RECOMMENDED_MODELS.map(m => (
-            <div key={m.name} className="bg-ch-bg-card rounded-lg px-3 py-2">
-              <code className="text-xs text-ch-gold">ollama pull {m.name}</code>
-              <p className="text-xs text-ch-ink-dim mt-0.5">{m.desc}</p>
+          {RECOMMENDED_MODELS.map(model => (
+            <div key={model} className="bg-ch-bg-card rounded-lg px-3 py-2">
+              <code className="text-xs text-ch-gold">
+                ollama pull {model}
+              </code>
+
+              <p className="text-xs text-ch-ink-dim mt-0.5">
+                {model === 'qwen3.5:4b' && t('providers.ollamaModelLight')}
+                {model === 'qwen3.5:9b' && t('providers.ollamaModelBalanced')}
+                {model === 'llama3.1:8b' && t('providers.ollamaModelQuality')}
+              </p>
             </div>
           ))}
         </div>
@@ -130,7 +152,7 @@ export function OllamaSetup({ onConnected }: Props) {
           onClick={checkStatus}
           className="w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-lg hover:opacity-90 transition"
         >
-          Refresh
+          {t('providers.refresh')}
         </button>
       </div>
     );
@@ -141,20 +163,42 @@ export function OllamaSetup({ onConnected }: Props) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <span className="w-2 h-2 bg-red-400 rounded-full" />
-        <span className="text-sm text-red-400">Ollama not detected</span>
+        <span className="text-sm text-red-400">
+          {t('providers.ollamaNotDetected')}
+        </span>
       </div>
 
       <div className="bg-ch-bg-card rounded-lg px-4 py-3 space-y-2">
-        <p className="text-sm text-ch-ink-mute">Run AI models locally for free:</p>
+        <p className="text-sm text-ch-ink-mute">
+          {t('providers.ollamaLocalIntro')}
+        </p>
         <ol className="text-xs text-ch-ink-mute space-y-1 list-decimal list-inside">
           <li>
-            Install Ollama from{' '}
-            <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" className="text-ch-gold hover:text-ch-gold">
+            {t('providers.ollamaInstallStep')}{' '}
+            <a
+              href="https://ollama.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ch-gold hover:text-ch-gold"
+            >
               ollama.com
             </a>
           </li>
-          <li>Run <code className="text-ch-gold">ollama pull qwen3.5:4b</code> in your terminal</li>
-          <li>Come back here and click "Refresh"</li>
+          <li>
+            {t('providers.ollamaRunStepPrefix')}{' '}
+            <code className="text-ch-gold">
+              ollama pull qwen3.5:4b
+            </code>
+            {t('providers.ollamaRunStepSuffix') && (
+              <>
+                {' '}
+                {t('providers.ollamaRunStepSuffix')}
+              </>
+            )}
+          </li>
+          <li>
+            {t('providers.ollamaReturnStep')}
+          </li>
         </ol>
       </div>
 
@@ -162,14 +206,17 @@ export function OllamaSetup({ onConnected }: Props) {
         onClick={checkStatus}
         className="w-full py-2 text-sm rounded-lg border border-ch-gold/50 text-ch-gold hover:bg-ch-gold/10 transition"
       >
-        Refresh
+        {t('providers.refresh')}
       </button>
 
       <button
         onClick={() => setShowAdvanced(!showAdvanced)}
         className="w-full text-xs text-ch-ink-dim hover:text-ch-ink-mute transition"
       >
-        {showAdvanced ? 'Hide' : 'Advanced'}: Custom Ollama URL
+        {showAdvanced
+          ? t('providers.hide')
+          : t('providers.advanced')}
+        : {t('providers.customOllamaUrl')}
       </button>
 
       {showAdvanced && (
@@ -187,7 +234,9 @@ export function OllamaSetup({ onConnected }: Props) {
             disabled={connecting || !customUrl.trim()}
             className="w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-lg hover:opacity-90 transition disabled:opacity-50"
           >
-            {connecting ? 'Connecting...' : 'Connect'}
+            {connecting
+              ? t('providers.connecting')
+              : t('providers.connect')}
           </button>
         </div>
       )}

@@ -4,6 +4,7 @@
  */
 
 import { INK, INK_MUTE, INK_DIM, LINE_STRONG, BG_ELEV, ACCENT_SOFT, CORAL, FONT_SANS, mono } from '../../shared/styles';
+import { useTranslation } from 'react-i18next';
 import type { PlaybookSummary } from './types';
 import { integrationLabel } from './types';
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function SlashCommandMenu({ matches, highlightIndex, onHighlight, onSelect, onManage }: Props) {
+  const { t } = useTranslation();
   return (
     <div style={{
       position: 'absolute', bottom: '100%', left: 0, right: 0, marginBottom: 8,
@@ -23,10 +25,10 @@ export function SlashCommandMenu({ matches, highlightIndex, onHighlight, onSelec
       background: BG_ELEV, border: `1px solid ${LINE_STRONG}`,
       borderRadius: 6, boxShadow: '0 8px 40px rgba(0,0,0,0.5)', zIndex: 30,
     }}>
-      <div style={{ ...mono(9, INK_DIM), padding: '8px 14px 4px' }}>Playbooks</div>
+      <div style={{ ...mono(9, INK_DIM), padding: '8px 14px 4px' }}>{t('slashCommandMenu.playbooks')}</div>
       {matches.length === 0 && (
         <div style={{ padding: '8px 14px', fontSize: 13, color: INK_DIM, fontFamily: FONT_SANS }}>
-          No playbooks match
+          {t('slashCommandMenu.noMatches')}
         </div>
       )}
       {matches.map((p, i) => (
@@ -45,7 +47,9 @@ export function SlashCommandMenu({ matches, highlightIndex, onHighlight, onSelec
             <span style={{ fontSize: 13, color: INK, fontFamily: FONT_SANS }}>{p.name}</span>
             {!p.available && (
               <span style={mono(9, CORAL)}>
-                Needs {p.missing_integrations.map(integrationLabel).join(', ')}
+                {t('slashCommandMenu.needs', {
+                  integrations: p.missing_integrations.map(integrationLabel).join(', '),
+                })}
               </span>
             )}
           </div>
@@ -64,7 +68,7 @@ export function SlashCommandMenu({ matches, highlightIndex, onHighlight, onSelec
           fontSize: 12, color: INK_DIM, fontFamily: FONT_SANS, cursor: 'pointer',
         }}
       >
-        Manage playbooks →
+        {t('slashCommandMenu.manage')} →
       </div>
     </div>
   );

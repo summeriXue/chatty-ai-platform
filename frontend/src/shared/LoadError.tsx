@@ -4,6 +4,7 @@
  * user is looking); toasts are reserved for failed mutations.
  */
 
+import { useTranslation } from 'react-i18next';
 import { INK_MUTE, CORAL, GOLD, FONT_SANS, mono } from './styles';
 
 interface Props {
@@ -12,7 +13,10 @@ interface Props {
   compact?: boolean;
 }
 
-export function LoadError({ label = "Couldn't load", onRetry, compact }: Props) {
+export function LoadError({ label, onRetry, compact }: Props) {
+  const { t } = useTranslation();
+  const displayLabel = label ?? t('common.loadError.couldntLoad');
+
   return (
     <div
       style={{
@@ -26,10 +30,22 @@ export function LoadError({ label = "Couldn't load", onRetry, compact }: Props) 
         margin: compact ? '8px 12px' : '12px 16px',
       }}
     >
-      <span style={{ ...mono(9, CORAL), flexShrink: 0 }}>Error</span>
-      <span style={{ fontFamily: FONT_SANS, fontSize: compact ? 12 : 13, color: INK_MUTE, flex: 1, minWidth: 0 }}>
-        {label}
+      <span style={{ ...mono(9, CORAL), flexShrink: 0 }}>
+        {t('common.loadError.error')}
       </span>
+
+      <span
+        style={{
+          fontFamily: FONT_SANS,
+          fontSize: compact ? 12 : 13,
+          color: INK_MUTE,
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        {displayLabel}
+      </span>
+
       <button
         onClick={onRetry}
         style={{
@@ -43,7 +59,7 @@ export function LoadError({ label = "Couldn't load", onRetry, compact }: Props) 
           flexShrink: 0,
         }}
       >
-        Retry
+        {t('common.loadError.retry')}
       </button>
     </div>
   );

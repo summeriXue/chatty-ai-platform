@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../core/api/client';
 import { AgentCard } from './AgentCard';
@@ -12,19 +13,19 @@ import { useIsMobile } from '../shared/useIsMobile';
 import type { Agent, BrandingConfig, ProviderStatus } from '../core/types';
 
 const SUGGESTED_ROLES = [
-  { role: 'Personal Assistant', desc: 'Scheduling, email drafts, meeting prep' },
-  { role: 'AP Clerk', desc: 'Invoice review, vendor payments, expense tracking' },
-  { role: 'AR Clerk', desc: 'Collections, payment tracking, customer billing' },
-  { role: 'Customer Service', desc: 'Ticket triage, inquiries, escalations' },
-  { role: 'Purchasing', desc: 'Vendor sourcing, purchase orders, cost analysis' },
-  { role: 'Sales Rep', desc: 'Lead qualification, outreach, deal closing' },
-  { role: 'Sales Support', desc: 'Proposals, follow-ups, CRM updates' },
-  { role: 'Research Analyst', desc: 'Market research, competitive analysis, reports' },
-  { role: 'Bookkeeper', desc: 'Reconciliation, journal entries, financial reports' },
-  { role: 'HR Coordinator', desc: 'Onboarding, time-off requests, policy questions' },
-  { role: 'Marketing Assistant', desc: 'Content ideas, social posts, campaign tracking' },
-  { role: 'Operations Manager', desc: 'Process optimization, vendor coordination, logistics' },
-];
+  'personalAssistant',
+  'apClerk',
+  'arClerk',
+  'customerService',
+  'purchasing',
+  'salesRep',
+  'salesSupport',
+  'researchAnalyst',
+  'bookkeeper',
+  'hrCoordinator',
+  'marketingAssistant',
+  'operationsManager',
+] as const;
 
 const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
@@ -33,6 +34,7 @@ const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
 });
 
 export function DashboardPage() {
+  const { t, i18n } = useTranslation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -66,12 +68,22 @@ export function DashboardPage() {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
-
   const isMobile = useIsMobile();
   const [showMenu, setShowMenu] = useState(false);
   const companyName = branding?.company_name || 'Chatty';
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = hour < 12
+    ? t('dashboard.goodMorning')
+    : hour < 17
+      ? t('dashboard.goodAfternoon')
+      : t('dashboard.goodEvening');
+
+  const dateLocale = i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const formattedDate = new Date().toLocaleDateString(dateLocale, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
 
   return (
     <div style={{ height: '100%', overflow: 'auto', position: 'relative' }}>
@@ -91,7 +103,7 @@ export function DashboardPage() {
             >&#9776;</div>
           )}
           <div style={mono(10, 'rgba(237,240,244,0.62)')}>
-            {companyName} · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {companyName} · {formattedDate}
           </div>
         </div>
         {!isMobile && (
@@ -102,7 +114,7 @@ export function DashboardPage() {
             fontSize: 11, color: 'rgba(237,240,244,0.62)',
             display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer',
           }}>
-            <IconSearch size={13} strokeWidth={1.85} /> Ask Chatty, or jump to…
+            <IconSearch size={13} strokeWidth={1.85} /> {t('dashboard.searchPlaceholder')}
             <span style={{ color: 'rgba(237,240,244,0.38)', marginLeft: 20, letterSpacing: '0.1em' }}>⌘K</span>
           </div>
         )}
@@ -130,10 +142,16 @@ export function DashboardPage() {
           color: 'rgba(237,240,244,0.62)', marginTop: 10,
           letterSpacing: '-0.01em', lineHeight: 1.35,
         }}>
-          {loading ? 'Loading your agents...' : agents.length === 0 ? (
-            'No agents yet — commission your first one below.'
+          {loading ? t('dashboard.loadingAgents') : agents.length === 0 ? (
+            t('dashboard.noAgentsHero')
           ) : (
-            <>You have <span style={{ color: '#D4A85A', fontStyle: 'normal' }}>{agents.length} agent{agents.length !== 1 ? 's' : ''}</span> ready to work.</>
+            <>
+              {t('dashboard.youHave')}{' '}
+              <span style={{ color: '#D4A85A', fontStyle: 'normal' }}>
+                {t('dashboard.agentCount', { count: agents.length })}
+              </span>{' '}
+              {t('dashboard.readyToWork')}
+            </>
           )}
         </div>
 
@@ -144,7 +162,7 @@ export function DashboardPage() {
             borderTop: '1px dashed rgba(230,235,242,0.07)',
           }}>
             {[
-              ['Agents', String(agents.length), null],
+              [t('dashboard.agents'), String(agents.length), null],
             ].map(([label, value, sub]) => (
               <div key={label as string}>
                 <div style={mono(9, 'rgba(237,240,244,0.38)')}>{label}</div>
@@ -164,7 +182,7 @@ export function DashboardPage() {
       <div style={{ padding: isMobile ? '16px 20px 32px' : '22px 44px 40px', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={mono(10, 'rgba(237,240,244,0.38)')}>
-            Your agents · {agents.length}
+            {t('dashboard.yourAgents')} · {agents.length}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -177,7 +195,7 @@ export function DashboardPage() {
                 cursor: 'pointer', fontFamily: "'Inter Tight', system-ui, sans-serif",
               }}
             >
-              <IconDownload size={13} strokeWidth={2.25} /> Import agent
+              <IconDownload size={13} strokeWidth={2.25} /> {t('dashboard.importAgent')}
             </button>
             <button
               onClick={() => setShowCreate(true)}
@@ -189,7 +207,7 @@ export function DashboardPage() {
                 cursor: 'pointer', fontFamily: "'Inter Tight', system-ui, sans-serif",
               }}
             >
-              <IconPlus size={13} strokeWidth={2.25} /> Commission agent
+              <IconPlus size={13} strokeWidth={2.25} /> {t('dashboard.commissionAgent')}
             </button>
           </div>
         </div>
@@ -199,7 +217,7 @@ export function DashboardPage() {
             <div className="w-8 h-8 border-2 border-ch-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : loadFailed ? (
-          <LoadError label="Couldn't load your agents" onRetry={() => { setLoading(true); setLoadFailed(false); loadDashboard(); }} />
+          <LoadError label={t('dashboard.loadAgentsFailed')} onRetry={() => { setLoading(true); setLoadFailed(false); loadDashboard(); }} />
         ) : agents.length === 0 ? (
           <div>
             <div style={{
@@ -207,13 +225,16 @@ export function DashboardPage() {
               fontSize: 22, fontWeight: 400, letterSpacing: '-0.01em',
               color: 'rgba(237,240,244,0.62)', marginBottom: 16,
             }}>
-              Build your team
+              {t('dashboard.buildTeam')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 8 }}>
-              {SUGGESTED_ROLES.map(s => (
+              {SUGGESTED_ROLES.map(key => (
                 <div
-                  key={s.role}
-                  onClick={() => { setSuggestedTitle(s.role); setShowCreate(true); }}
+                  key={key}
+                  onClick={() => {
+                    setSuggestedTitle(t(`dashboard.roles.${key}.role`));
+                    setShowCreate(true);
+                  }}
                   style={{
                     background: 'rgba(20,24,30,0.78)',
                     border: '1px dashed rgba(230,235,242,0.14)',
@@ -231,10 +252,14 @@ export function DashboardPage() {
                     fontSize: isMobile ? 15 : 17, letterSpacing: '-0.01em', color: '#EDF0F4',
                     marginBottom: isMobile ? 0 : 4,
                     flexShrink: 0,
-                  }}>{s.role}</div>
+                  }}>
+                    {t(`dashboard.roles.${key}.role`)}
+                  </div>
                   <div style={{
                     fontSize: 12, color: 'rgba(237,240,244,0.38)', lineHeight: 1.4,
-                  }}>{s.desc}</div>
+                  }}>
+                    {t(`dashboard.roles.${key}.desc`)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -255,13 +280,16 @@ export function DashboardPage() {
               fontSize: 18, fontWeight: 400, letterSpacing: '-0.01em',
               color: 'rgba(237,240,244,0.5)', marginBottom: 14,
             }}>
-              Ideas for your team
+              {t('dashboard.teamIdeas')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 8 }}>
-              {SUGGESTED_ROLES.map(s => (
+              {SUGGESTED_ROLES.map(key => (
                 <div
-                  key={s.role}
-                  onClick={() => { setSuggestedTitle(s.role); setShowCreate(true); }}
+                  key={key}
+                  onClick={() => {
+                    setSuggestedTitle(t(`dashboard.roles.${key}.role`));
+                    setShowCreate(true);
+                  }}
                   style={{
                     background: 'transparent',
                     border: '1px dashed rgba(230,235,242,0.08)',
@@ -273,16 +301,19 @@ export function DashboardPage() {
                 >
                   <div style={{
                     fontSize: 14, color: 'rgba(237,240,244,0.5)', letterSpacing: '-0.01em',
-                  }}>{s.role}</div>
+                  }}>
+                    {t(`dashboard.roles.${key}.role`)}
+                  </div>
                   <div style={{
                     fontSize: 11, color: 'rgba(237,240,244,0.25)', marginTop: 3, lineHeight: 1.3,
-                  }}>{s.desc}</div>
+                  }}>
+                    {t(`dashboard.roles.${key}.desc`)}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
-
       </div>
 
       {showCreate && (
@@ -300,7 +331,6 @@ export function DashboardPage() {
       {showImport && (
         <ImportAgentModal onClose={() => setShowImport(false)} />
       )}
-
     </div>
   );
 }

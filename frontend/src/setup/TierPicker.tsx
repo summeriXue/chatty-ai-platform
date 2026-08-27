@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 interface Props {
@@ -6,10 +7,10 @@ interface Props {
   onChanged?: () => void;
 }
 
-const TIERS: Array<{ key: 'top' | 'mid' | 'light'; label: string }> = [
-  { key: 'top', label: 'Top' },
-  { key: 'mid', label: 'Mid' },
-  { key: 'light', label: 'Light' },
+const TIERS: Array<'top' | 'mid' | 'light'> = [
+  'top',
+  'mid',
+  'light',
 ];
 
 const selectStyle: React.CSSProperties = {
@@ -30,6 +31,8 @@ const captionStyle: React.CSSProperties = {
  * values returned by /api/providers/tiers. Saving PUTs a single-tier override.
  */
 export function TierPicker({ provider, onChanged }: Props) {
+  const { t } = useTranslation();
+
   const [models, setModels] = useState<string[]>([]);
   const [tiers, setTiers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -61,6 +64,16 @@ export function TierPicker({ provider, onChanged }: Props) {
     }
   }
 
+  function getTierLabel(tier: 'top' | 'mid' | 'light'): string {
+    const labels = {
+      top: t('providers.tierTop'),
+      mid: t('providers.tierMid'),
+      light: t('providers.tierLight'),
+    };
+
+    return labels[tier];
+  }
+
   if (!models.length) return null;
 
   // Keep the current resolved value selectable even if it's not in the live list.
@@ -70,21 +83,28 @@ export function TierPicker({ provider, onChanged }: Props) {
   return (
     <div>
       <label style={{ ...captionStyle, display: 'block', marginBottom: 6 }}>
-        Tiers (used by auto-triage &amp; per-agent top/mid/light)
+        {t('providers.tiers')}
       </label>
       <div style={{ display: 'flex', gap: 8 }}>
-        {TIERS.map(t => (
-          <div key={t.key} style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ ...captionStyle, display: 'block', marginBottom: 4 }}>{t.label}</span>
+        {TIERS.map(tier => (
+          <div key={tier} style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ ...captionStyle, display: 'block', marginBottom: 4 }}>
+              {getTierLabel(tier)}
+            </span>
             <select
-              value={tiers[t.key] || ''}
-              onChange={e => save(t.key, e.target.value)}
+              value={tiers[tier] || ''}
+              onChange={e => save(tier, e.target.value)}
               disabled={saving}
               style={{ ...selectStyle, opacity: saving ? 0.5 : 1 }}
             >
-              <option value="">Use inferred default</option>
-              {optionsFor(tiers[t.key] || '').map(m => (
-                <option key={m} value={m}>{m}</option>
+              <option value="">
+                {t('providers.useInferredDefault')}
+              </option>
+
+              {optionsFor(tiers[tier] || '').map(m => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
             </select>
           </div>

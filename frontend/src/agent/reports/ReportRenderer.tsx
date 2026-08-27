@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ReportSection, ChartData, TableData, MetricData } from './types';
 import BarChartSection from './components/BarChartSection';
 import LineChartSection from './components/LineChartSection';
@@ -11,7 +12,10 @@ interface Props {
   compact?: boolean;
 }
 
-function renderSection(section: ReportSection) {
+function renderSection(
+  section: ReportSection,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
   switch (section.chart_type) {
     case 'bar':
       return <BarChartSection data={section.data as ChartData} options={section.options} variant="vertical" />;
@@ -34,11 +38,19 @@ function renderSection(section: ReportSection) {
     case 'metric':
       return <MetricSection data={section.data as MetricData} options={section.options} />;
     default:
-      return <p className="text-sm text-gray-500">Unsupported chart type: {section.chart_type}</p>;
+      return (
+        <p className="text-sm text-gray-500">
+          {t('reportRenderer.unsupportedChartType', {
+            type: section.chart_type,
+          })}
+        </p>
+      );
   }
 }
 
 export default function ReportRenderer({ report, compact }: Props) {
+  const { t } = useTranslation();
+
   const reportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -78,7 +90,7 @@ export default function ReportRenderer({ report, compact }: Props) {
           onClick={handleDownloadPdf}
           disabled={downloading}
           className="ml-2 p-1.5 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-gray-800 disabled:opacity-50"
-          title="Download PDF"
+          title={t('reportRenderer.downloadPdf')}
         >
           {downloading ? (
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -100,7 +112,7 @@ export default function ReportRenderer({ report, compact }: Props) {
                 {section.title}
               </h4>
             )}
-            {renderSection(section)}
+            {renderSection(section, t)}
           </div>
         ))}
       </div>

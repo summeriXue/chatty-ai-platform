@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import type { ProviderStatus } from '../core/types';
 import { ApiKeyEntry } from './ApiKeyEntry';
@@ -28,6 +29,8 @@ const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
 });
 
 export function ProviderSetup() {
+  const { t } = useTranslation();
+
   const [status, setStatus] = useState<ProviderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [authTab, setAuthTab] = useState<Record<string, AuthTab>>({});
@@ -48,13 +51,50 @@ export function ProviderSetup() {
   );
 
   const providers = [
-    { id: 'anthropic', name: 'Anthropic (Claude)', tabs: [{ id: 'api-key' as AuthTab, label: 'API Key' }], defaultTab: 'api-key' as AuthTab },
-    { id: 'openai', name: 'OpenAI (GPT)', tabs: [{ id: 'api-key' as AuthTab, label: 'API Key' }], defaultTab: 'api-key' as AuthTab },
-    { id: 'deepseek', name: 'DeepSeek', tabs: [{ id: 'api-key' as AuthTab, label: 'API Key' }], defaultTab: 'api-key' as AuthTab },
-    { id: 'kimi', name: 'Kimi', tabs: [{ id: 'api-key' as AuthTab, label: 'API Key' }], defaultTab: 'api-key' as AuthTab },
-    { id: 'google', name: 'Google (Gemini)', tabs: [{ id: 'api-key' as AuthTab, label: 'API Key' }], defaultTab: 'api-key' as AuthTab },
-    { id: 'together', name: 'Together AI', tabs: [{ id: 'together-setup' as AuthTab, label: 'API Key' }], defaultTab: 'together-setup' as AuthTab },
-    ...(!status?.is_railway ? [{ id: 'ollama', name: 'Ollama (Local)', tabs: [{ id: 'ollama-setup' as AuthTab, label: 'Local Setup' }], defaultTab: 'ollama-setup' as AuthTab }] : []),
+    {
+      id: 'anthropic',
+      name: 'Anthropic (Claude)',
+      tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'api-key' as AuthTab,
+    },
+    {
+      id: 'openai',
+      name: 'OpenAI (GPT)',
+      tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'api-key' as AuthTab,
+    },
+    {
+      id: 'deepseek',
+      name: 'DeepSeek',
+      tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'api-key' as AuthTab,
+    },
+    {
+      id: 'kimi',
+      name: 'Kimi',
+      tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'api-key' as AuthTab,
+    },
+    {
+      id: 'google',
+      name: 'Google (Gemini)',
+      tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'api-key' as AuthTab,
+    },
+    {
+      id: 'together',
+      name: 'Together AI',
+      tabs: [{ id: 'together-setup' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'together-setup' as AuthTab,
+    },
+    ...(!status?.is_railway
+      ? [{
+          id: 'ollama',
+          name: 'Ollama (Local)',
+          tabs: [{ id: 'ollama-setup' as AuthTab, label: t('providers.localSetup') }],
+          defaultTab: 'ollama-setup' as AuthTab,
+        }]
+      : []),
   ];
 
   function getTab(providerId: string): AuthTab {
@@ -118,17 +158,25 @@ export function ProviderSetup() {
                   fontFamily: "'Fraunces', Georgia, serif",
                   fontSize: 16, letterSpacing: '-0.01em', color: '#EDF0F4', margin: 0,
                 }}>{p.name}</p>
-                {isActive && <span style={{ ...mono(9, '#D4A85A'), marginTop: 2, display: 'inline-block' }}>Active</span>}
+                {isActive && (
+                  <span style={{ ...mono(9, '#D4A85A'), marginTop: 2, display: 'inline-block' }}>
+                    {t('providers.active')}
+                  </span>
+                )}
                 </div>
               </div>
 
               {isConnected && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {profile?.expired && (
-                    <span style={{ fontSize: 11, color: '#D4A85A', border: '1px solid rgba(212,168,90,0.3)', borderRadius: 4, padding: '2px 6px' }}>Expired</span>
+                    <span style={{ fontSize: 11, color: '#D4A85A', border: '1px solid rgba(212,168,90,0.3)', borderRadius: 4, padding: '2px 6px' }}>
+                      {t('providers.expired')}
+                    </span>
                   )}
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8EA589' }} />
-                  <span style={{ ...mono(10, '#8EA589') }}>Connected</span>
+                  <span style={{ ...mono(10, '#8EA589') }}>
+                    {t('providers.connected')}
+                  </span>
                 </div>
               )}
             </div>
@@ -145,7 +193,9 @@ export function ProviderSetup() {
                     width: '100%', padding: '8px 16px', fontSize: 13, borderRadius: 4,
                     border: '1px solid rgba(200,209,217,0.3)', color: 'var(--color-ch-accent, #C8D1D9)',
                     background: 'transparent', cursor: 'pointer',
-                  }}>Set as active</button>
+                  }}>
+                    {t('providers.setAsActive')}
+                  </button>
                 )}
                 <button onClick={async () => {
                   await api(`/api/providers/${p.id}/disconnect`, { method: 'POST' });
@@ -154,7 +204,9 @@ export function ProviderSetup() {
                   width: '100%', padding: '8px 16px', fontSize: 13, borderRadius: 4,
                   border: '1px solid rgba(217,119,87,0.3)', color: '#D97757',
                   background: 'transparent', cursor: 'pointer',
-                }}>Disconnect</button>
+                }}>
+                  {t('providers.disconnect')}
+                </button>
               </div>
             )}
           </div>

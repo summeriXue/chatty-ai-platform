@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 interface Props {
@@ -6,27 +7,12 @@ interface Props {
   onConnected: () => void;
 }
 
-const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
-  anthropic: {
-    url: 'https://console.anthropic.com/settings/keys',
-    label: 'Get your API key at console.anthropic.com',
-  },
-  openai: {
-    url: 'https://platform.openai.com/api-keys',
-    label: 'Get your API key at platform.openai.com',
-  },
-  google: {
-    url: 'https://aistudio.google.com/apikey',
-    label: 'Get your API key at aistudio.google.com',
-  },
-  deepseek: {
-    url: 'https://platform.deepseek.com/api_keys',
-    label: 'Get your API key at platform.deepseek.com',
-  },
-  kimi: {
-    url: 'https://platform.moonshot.ai/console/api-keys',
-    label: 'Get your API key at Kimi API Platform',
-  },
+const API_KEY_LINKS: Record<string, string> = {
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  openai: 'https://platform.openai.com/api-keys',
+  google: 'https://aistudio.google.com/apikey',
+  deepseek: 'https://platform.deepseek.com/api_keys',
+  kimi: 'https://platform.moonshot.ai/console/api-keys',
 };
 
 const inputStyle: React.CSSProperties = {
@@ -36,6 +22,8 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function ApiKeyEntry({ provider, onConnected }: Props) {
+  const { t } = useTranslation();
+
   const [key, setKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,10 +41,26 @@ export function ApiKeyEntry({ provider, onConnected }: Props) {
       });
       onConnected();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid API key');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('providers.invalidApiKey')
+      );
     } finally {
       setLoading(false);
     }
+  }
+
+  function getApiKeyLinkLabel(providerId: string): string {
+    const labels: Record<string, string> = {
+      anthropic: t('providers.getAnthropicApiKey'),
+      openai: t('providers.getOpenAIApiKey'),
+      google: t('providers.getGoogleApiKey'),
+      deepseek: t('providers.getDeepSeekApiKey'),
+      kimi: t('providers.getKimiApiKey'),
+    };
+
+    return labels[providerId] || '';
   }
 
   return (
@@ -78,12 +82,16 @@ export function ApiKeyEntry({ provider, onConnected }: Props) {
       {error && <p style={{ color: '#D97757', fontSize: 12 }}>{error}</p>}
       {API_KEY_LINKS[provider] && (
         <a
-          href={API_KEY_LINKS[provider].url}
+          href={API_KEY_LINKS[provider]}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontSize: 12, color: 'var(--color-ch-accent, #C8D1D9)', textDecoration: 'none' }}
+          style={{
+            fontSize: 12,
+            color: 'var(--color-ch-accent, #C8D1D9)',
+            textDecoration: 'none',
+          }}
         >
-          {API_KEY_LINKS[provider].label} &rarr;
+          {getApiKeyLinkLabel(provider)} &rarr;
         </a>
       )}
       <button
@@ -96,7 +104,9 @@ export function ApiKeyEntry({ provider, onConnected }: Props) {
           cursor: 'pointer', opacity: (loading || !key.trim()) ? 0.5 : 1,
         }}
       >
-        {loading ? 'Validating...' : 'Connect'}
+        {loading
+          ? t('providers.validating')
+          : t('providers.connect')}
       </button>
     </div>
   );

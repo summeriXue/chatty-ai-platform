@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 interface Props {
@@ -12,6 +13,8 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function SetupTokenEntry({ onConnected }: Props) {
+  const { t } = useTranslation();
+
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +29,11 @@ export function SetupTokenEntry({ onConnected }: Props) {
       });
       onConnected();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid setup token');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('providers.invalidSetupToken')
+      );
     } finally {
       setLoading(false);
     }
@@ -35,17 +42,24 @@ export function SetupTokenEntry({ onConnected }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)', margin: 0 }}>
-        Run <code style={{
+        {t('providers.setupTokenPrefix')}{' '}
+        <code style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 12, color: 'var(--color-ch-accent, #C8D1D9)',
-          background: 'rgba(34,40,48,0.55)', padding: '2px 6px', borderRadius: 3,
-        }}>claude setup-token</code> in your terminal, then paste below.
+          fontSize: 12,
+          color: 'var(--color-ch-accent, #C8D1D9)',
+          background: 'rgba(34,40,48,0.55)',
+          padding: '2px 6px',
+          borderRadius: 3,
+        }}>
+          claude setup-token
+        </code>{' '}
+        {t('providers.setupTokenSuffix')}
       </p>
       <input
         type="password"
         value={token}
         onChange={e => setToken(e.target.value)}
-        placeholder="Paste your setup token"
+        placeholder={t('providers.setupTokenPlaceholder')}
         onKeyDown={e => e.key === 'Enter' && connect()}
         style={inputStyle}
       />
@@ -60,7 +74,9 @@ export function SetupTokenEntry({ onConnected }: Props) {
           cursor: 'pointer', opacity: (loading || !token.trim()) ? 0.5 : 1,
         }}
       >
-        {loading ? 'Validating...' : 'Connect'}
+        {loading
+          ? t('providers.validating')
+          : t('providers.connect')}
       </button>
     </div>
   );

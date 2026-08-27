@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import type { Integration } from '../../core/types';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function MessagingPickerStep({ onComplete, onSkip }: Props) {
+  const { t } = useTranslation();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -46,22 +48,19 @@ export function MessagingPickerStep({ onComplete, onSkip }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-white mb-2">Connect a Messaging Platform</h2>
+      <h2 className="text-xl font-bold text-white mb-2">{t('onboarding.messaging.title')}</h2>
       <p className="text-gray-400 text-sm mb-6">
-        We strongly encourage you to set up a messaging connection for your agent.
-        Telegram is the recommended choice and by far the easiest. No separate number
-        needed for Telegram. Use your existing telephone number and set up a Telegram
-        bot for your agent easily and quickly.
+        {t('onboarding.messaging.intro')}
       </p>
 
       {integrations.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-400">Messaging integrations are already configured!</p>
+          <p className="text-gray-400">{t('onboarding.messaging.alreadyConfigured')}</p>
           <button
             onClick={onSkip}
             className="mt-4 w-full py-3 bg-brand text-white font-semibold rounded-xl hover:opacity-90 transition"
           >
-            Continue
+            {t('onboarding.messaging.continue')}
           </button>
         </div>
       ) : (
@@ -95,11 +94,13 @@ export function MessagingPickerStep({ onComplete, onSkip }: Props) {
                       <p className="text-white font-medium">{integration.name}</p>
                       {isRecommended && (
                         <span className="text-xs bg-green-900/40 text-green-400 border border-green-700/40 rounded-full px-2 py-0.5">
-                          Recommended
+                          {t('onboarding.messaging.recommended')}
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-400 text-xs mt-0.5">{integration.description}</p>
+                    <p className="text-gray-400 text-xs mt-0.5">
+                      {t(`integrations.descriptions.${integration.id}`, { defaultValue: integration.description })}
+                    </p>
                   </div>
                 </button>
               );
@@ -107,8 +108,7 @@ export function MessagingPickerStep({ onComplete, onSkip }: Props) {
           </div>
 
           <p className="text-gray-500 text-xs text-center mb-4">
-            If you skip this step, you'll need to be logged in to a browser to chat with your agent.
-            Setting up a messaging platform lets you talk to your agent anytime from your phone.
+            {t('onboarding.messaging.footnote')}
           </p>
 
           <div className="flex gap-3">
@@ -116,14 +116,14 @@ export function MessagingPickerStep({ onComplete, onSkip }: Props) {
               onClick={onSkip}
               className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 transition font-medium"
             >
-              Skip for Now
+              {t('onboarding.messaging.skipForNow')}
             </button>
             <button
               onClick={() => onComplete(Array.from(selected))}
               disabled={selected.size === 0}
               className="flex-1 py-3 bg-brand text-white font-semibold rounded-xl hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Continue
+              {t('onboarding.messaging.continue')}
             </button>
           </div>
         </>

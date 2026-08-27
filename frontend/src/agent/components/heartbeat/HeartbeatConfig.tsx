@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ScheduledAction } from '../../hooks/useHeartbeat';
 import { FONT_SANS, FONT_MONO, INK, INK_DIM, ACCENT, ACCENT_INK, BG_RAISED, LINE_STRONG, SAGE } from '../../../shared/styles';
 import { labelStyle, inputStyle } from '../../../shared/styles';
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
+  const { t } = useTranslation();
+
   const [interval, setInterval_] = useState(action.interval_minutes || 30);
   const [triage, setTriage] = useState(action.triage_enabled);
   const [alwaysOn, setAlwaysOn] = useState(action.always_on);
@@ -74,12 +77,12 @@ export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
 
   return (
     <div style={{ padding: '16px 24px' }}>
-      <span style={{ ...labelStyle, marginBottom: 16, display: 'block' }}>CONFIGURATION</span>
+      <span style={{ ...labelStyle, marginBottom: 16, display: 'block' }}>{t('heartbeatConfig.title')}</span>
 
       {/* Essential fields */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <label style={labelStyle}>Interval (minutes)</label>
+          <label style={labelStyle}>{t('heartbeatConfig.interval')}</label>
           <input
             type="number" min={5} max={1440} value={interval}
             onChange={e => { setInterval_(Math.max(5, Math.min(1440, Number(e.target.value) || 5))); markDirty(); }}
@@ -87,7 +90,11 @@ export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
           />
         </div>
 
-        <Toggle on={triage} onChange={setTriage} label="Triage (quick check before full run)" />
+        <Toggle
+          on={triage}
+          onChange={setTriage}
+          label={t('heartbeatConfig.triage')}
+        />
       </div>
 
       {/* Advanced disclosure */}
@@ -107,17 +114,21 @@ export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
         >
           <path d="M3 1l4 4-4 4" />
         </svg>
-        Advanced
+        {t('heartbeatConfig.advanced')}
       </button>
 
       {showAdvanced && (
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12, paddingLeft: 16, borderLeft: `1px solid ${LINE_STRONG}` }}>
-          <Toggle on={alwaysOn} onChange={setAlwaysOn} label="Always On (ignore active hours)" />
+          <Toggle
+            on={alwaysOn}
+            onChange={setAlwaysOn}
+            label={t('heartbeatConfig.alwaysOn')}
+          />
 
           {!alwaysOn && (
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <div>
-                <label style={labelStyle}>Active Start</label>
+                <label style={labelStyle}>{t('heartbeatConfig.activeStart')}</label>
                 <input
                   type="time" value={hoursStart}
                   onChange={e => { setHoursStart(e.target.value); markDirty(); }}
@@ -125,7 +136,7 @@ export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Active End</label>
+                <label style={labelStyle}>{t('heartbeatConfig.activeEnd')}</label>
                 <input
                   type="time" value={hoursEnd}
                   onChange={e => { setHoursEnd(e.target.value); markDirty(); }}
@@ -139,17 +150,17 @@ export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
           )}
 
           <div>
-            <label style={labelStyle}>Model Override</label>
+            <label style={labelStyle}>{t('heartbeatConfig.modelOverride')}</label>
             <input
               value={modelOverride}
               onChange={e => { setModelOverride(e.target.value); markDirty(); }}
-              placeholder="Default"
+              placeholder={t('heartbeatConfig.defaultModel')}
               style={{ ...inputStyle, width: 200 }}
             />
           </div>
 
           <div>
-            <label style={labelStyle}>Max Tool Iterations</label>
+            <label style={labelStyle}>{t('heartbeatConfig.maxToolIterations')}</label>
             <input
               type="number" min={1} max={10} value={maxIterations}
               onChange={e => { setMaxIterations(Math.max(1, Math.min(10, Number(e.target.value) || 1))); markDirty(); }}
@@ -170,7 +181,9 @@ export function HeartbeatConfig({ action, onUpdateConfig }: Props) {
             opacity: saving ? 0.5 : 1,
           }}
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving
+            ? t('heartbeatConfig.saving')
+            : t('heartbeatConfig.saveChanges')}
         </button>
       )}
     </div>

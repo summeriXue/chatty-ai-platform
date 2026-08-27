@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { confirmDialog } from '../../shared/confirm';
 import { toast } from '../../shared/toast';
@@ -15,12 +16,12 @@ import type { LearningEvent } from './types';
 
 const PAGE_SIZE = 50;
 
-const KIND_LABELS: Record<LearningEvent['event_type'], string> = {
-  playbook_created: 'New playbook',
-  playbook_updated: 'Playbook updated',
-  playbook_archived: 'Playbook archived',
-  fact_added: 'Memory updated',
-  blocked_injection: 'Blocked unsafe learning',
+const KIND_LABEL_KEYS: Record<LearningEvent['event_type'], string> = {
+  playbook_created: 'learningFeed.kinds.playbookCreated',
+  playbook_updated: 'learningFeed.kinds.playbookUpdated',
+  playbook_archived: 'learningFeed.kinds.playbookArchived',
+  fact_added: 'learningFeed.kinds.memoryUpdated',
+  blocked_injection: 'learningFeed.kinds.blockedUnsafeLearning',
 };
 
 function kindIcon(kind: LearningEvent['event_type']) {
@@ -36,6 +37,8 @@ interface Props {
 }
 
 export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
+  const { t, i18n } = useTranslation();
+
   const [events, setEvents] = useState<LearningEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -52,7 +55,7 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
       setLoadFailed(false);
     } catch {
       if (offset === 0) setLoadFailed(true);
-      else toast.error('Failed to load more events.');
+      else toast.error(t('learningFeed.errors.loadMore'));
     } finally {
       setLoading(false);
     }
@@ -66,9 +69,12 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
 
   async function handleRevert(ev: LearningEvent) {
     const ok = await confirmDialog({
-      title: 'Revert this change?',
-      message: `“${ev.title}” will be restored to how it was before ${agentName} changed it.`,
-      confirmLabel: 'Revert',
+      title: t('learningFeed.revertDialog.title'),
+      message: t('learningFeed.revertDialog.message', {
+        title: ev.title,
+        name: agentName,
+      }),
+      confirmLabel: t('learningFeed.revert'),
       danger: true,
     });
     if (!ok) return;
@@ -78,10 +84,10 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
       setEvents(prev => prev.map(e =>
         e.id === ev.id ? { ...e, reverted_at: new Date().toISOString() } : e,
       ));
-      toast.success('Reverted.');
+      toast.success(t('learningFeed.toasts.reverted'));
       onAfterRevert();
     } catch {
-      toast.error('Failed to revert.');
+      toast.error(t('learningFeed.errors.revert'));
     } finally {
       setReverting(null);
     }
@@ -90,20 +96,19 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
   if (loading) {
     return (
       <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 13, color: INK_DIM, fontFamily: FONT_SANS }}>
-        Loading…
+        {t('learningFeed.loading')}
       </div>
     );
   }
 
   if (loadFailed) {
-    return <LoadError label="Couldn't load learning events" compact onRetry={() => { setLoading(true); load(0); }} />;
+    return <LoadError label={t('learningFeed.loadFailed')} compact onRetry={() => { setLoading(true); load(0); }} />;
   }
 
   if (events.length === 0) {
     return (
       <div style={{ padding: '20px 4px', fontSize: 13, color: INK_DIM, fontFamily: FONT_SANS, lineHeight: 1.5 }}>
-        Nothing learned yet. As {agentName} works with you, new playbooks and memory
-        updates will appear here — and you can undo any of them with one click.
+        {t('learningFeed.empty', { name: agentName })}
       </div>
     );
   }
@@ -131,10 +136,10 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                 <span style={mono(9, ev.event_type === 'blocked_injection' ? CORAL : SAGE)}>
-                  {KIND_LABELS[ev.event_type]}
+                  {t(KIND_LABEL_KEYS[ev.event_type])}
                 </span>
                 <span style={{ fontSize: 11, color: INK_DIM, fontFamily: FONT_SANS }}>
-                  {timeAgo(ev.created_at)}
+                  {timeAgo(ev.created_at, i18n.language)}
                 </span>
               </div>
               <div style={{
@@ -146,7 +151,7 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
               </div>
             </div>
             {reverted ? (
-              <span style={{ ...mono(9, INK_DIM), flexShrink: 0 }}>Reverted</span>
+              <span style={{ ...mono(9, INK_DIM), flexShrink: 0 }}>{t('learningFeed.reverted')}</span>
             ) : revertible ? (
               <button
                 onClick={() => handleRevert(ev)}
@@ -159,7 +164,7 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
                   flexShrink: 0, padding: '2px 6px',
                   opacity: reverting === ev.id ? 0.5 : 1,
                 }}
-              >Revert</button>
+              >{t('learningFeed.revert')}</button>
             ) : null}
           </div>
         );
@@ -172,7 +177,7 @@ export function LearningFeed({ apiPrefix, agentName, onAfterRevert }: Props) {
             borderRadius: 4, padding: '6px 0', fontSize: 12, cursor: 'pointer',
             fontFamily: FONT_SANS,
           }}
-        >Show more</button>
+        >{t('learningFeed.showMore')}</button>
       )}
     </div>
   );

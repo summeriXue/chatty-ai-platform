@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import type { Integration } from '../../core/types';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function IntegrationPickerStep({ onComplete, onSkip }: Props) {
+  const { t } = useTranslation();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -47,20 +49,19 @@ export function IntegrationPickerStep({ onComplete, onSkip }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-white mb-2">Connect Business Tools</h2>
+      <h2 className="text-xl font-bold text-white mb-2">{t('onboarding.integrations.title')}</h2>
       <p className="text-gray-400 text-sm mb-6">
-        Connect your business tools so your agents can help with accounting, HR, CRM, and more.
-        You can always set these up later in Settings.
+        {t('onboarding.integrations.intro')}
       </p>
 
       {integrations.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-400">All integrations are already configured!</p>
+          <p className="text-gray-400">{t('onboarding.integrations.alreadyConfigured')}</p>
           <button
             onClick={onSkip}
             className="mt-4 w-full py-3 bg-brand text-white font-semibold rounded-xl hover:opacity-90 transition"
           >
-            Continue to Chatty
+            {t('onboarding.integrations.continueToChatty')}
           </button>
         </div>
       ) : (
@@ -90,7 +91,9 @@ export function IntegrationPickerStep({ onComplete, onSkip }: Props) {
                   <span className="text-2xl">{integration.icon}</span>
                   <div>
                     <p className="text-white font-medium">{integration.name}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">{integration.description}</p>
+                    <p className="text-gray-400 text-xs mt-0.5">
+                      {t(`integrations.descriptions.${integration.id}`, { defaultValue: integration.description })}
+                    </p>
                   </div>
                 </button>
               );
@@ -102,14 +105,14 @@ export function IntegrationPickerStep({ onComplete, onSkip }: Props) {
               onClick={onSkip}
               className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 transition font-medium"
             >
-              Skip
+              {t('onboarding.integrations.skip')}
             </button>
             <button
               onClick={() => onComplete(Array.from(selected))}
               disabled={selected.size === 0}
               className="flex-1 py-3 bg-brand text-white font-semibold rounded-xl hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Continue
+              {t('onboarding.integrations.continue')}
             </button>
           </div>
         </>

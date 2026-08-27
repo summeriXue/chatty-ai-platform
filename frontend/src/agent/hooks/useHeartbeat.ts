@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { toast } from '../../shared/toast';
 
@@ -151,6 +152,7 @@ interface UseHeartbeatResult {
 }
 
 export function useHeartbeat(agentSlug: string, apiPrefix: string): UseHeartbeatResult {
+  const { t } = useTranslation();
   const [action, setAction] = useState<ScheduledAction | null>(null);
   const [parsedLines, setParsedLines] = useState<ParsedLine[]>([]);
   const [canEditCards, setCanEditCards] = useState(true);
@@ -249,24 +251,28 @@ export function useHeartbeat(agentSlug: string, apiPrefix: string): UseHeartbeat
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [action?.next_run, action?.enabled, running]);
+    }, [action?.next_run, action?.enabled, running]);
 
-  const runNow = useCallback(async () => {
-    if (!action) return;
-    setRunning(true);
-    try {
-      await api(`/api/scheduled-actions/${action.id}/run-now`, { method: 'POST' });
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('409')) {
-        toast.info('Heartbeat is already running.');
-      } else {
-        toast.error('Failed to run heartbeat.');
+    const runNow = useCallback(async () => {
+      if (!action) return;
+
+      setRunning(true);
+
+      try {
+        await api(`/api/scheduled-actions/${action.id}/run-now`, {
+          method: 'POST',
+        });
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('409')) {
+          toast.info(t('heartbeat.alreadyRunning'));
+        } else {
+          toast.error(t('heartbeat.runFailed'));
+        }
+      } finally {
+        setRunning(false);
+        await Promise.all([fetchAction(), fetchHistory()]);
       }
-    } finally {
-      setRunning(false);
-      await Promise.all([fetchAction(), fetchHistory()]);
-    }
-  }, [action, fetchAction, fetchHistory]);
+    }, [action, fetchAction, fetchHistory, t]);
 
   const toggleEnabled = useCallback(async () => {
     if (!action) return;

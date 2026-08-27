@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from '../../../shared/toast';
 import type { ParsedLine } from '../../hooks/useHeartbeat';
 import { FONT_SANS, FONT_MONO, INK, INK_DIM, INK_MUTE, BG_ELEV, BG_RAISED, LINE_STRONG, ACCENT, ACCENT_INK, SAGE } from '../../../shared/styles';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onSave, onSaveRaw }: Props) {
+  const { t } = useTranslation();
   const [localLines, setLocalLines] = useState<ParsedLine[]>(parsedLines);
   const [rawText, setRawText] = useState(rawMarkdown);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
     try {
       await onSave(localLines);
       setDirty(false);
-    } catch { toast.error('Failed to save checklist.'); }
+    } catch { toast.error(t('heartbeatChecklist.saveFailed')); }
     finally { setSaving(false); }
   }
 
@@ -77,7 +79,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
     try {
       await onSaveRaw(rawText);
       setRawDirty(false);
-    } catch { toast.error('Failed to save checklist.'); }
+    } catch { toast.error(t('heartbeatChecklist.saveFailed')); }
     finally { setSaving(false); }
   }
 
@@ -87,7 +89,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
       <div style={{ padding: '16px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <span style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: INK_DIM }}>
-            CHECKLIST
+            {t('heartbeatChecklist.title')}
           </span>
           {rawDirty && (
             <button onClick={handleSaveRaw} disabled={saving} style={{
@@ -96,7 +98,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
               background: ACCENT, color: ACCENT_INK, border: 'none',
               opacity: saving ? 0.5 : 1,
             }}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('heartbeatChecklist.saving') : t('heartbeatChecklist.save')}
             </button>
           )}
         </div>
@@ -119,7 +121,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
     <div style={{ padding: '16px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: INK_DIM }}>
-          CHECKLIST
+          {t('heartbeatChecklist.title')}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {dirty && (
@@ -129,7 +131,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
               background: ACCENT, color: ACCENT_INK, border: 'none',
               opacity: saving ? 0.5 : 1,
             }}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('heartbeatChecklist.saving') : t('heartbeatChecklist.save')}
             </button>
           )}
           {!addingNew && (
@@ -138,7 +140,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
               background: 'none', border: `1px solid ${LINE_STRONG}`,
               borderRadius: 4, padding: '4px 12px', cursor: 'pointer',
             }}>
-              + Add Item
+              + {t('heartbeatChecklist.addItem')}
             </button>
           )}
         </div>
@@ -146,14 +148,14 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
 
       {items.length === 0 && !addingNew ? (
         <div style={{ textAlign: 'center', padding: '32px 0' }}>
-          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>No checklist items yet.</p>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>{t('heartbeatChecklist.empty')}</p>
           <button
             onClick={() => setAddingNew(true)}
             style={{
               marginTop: 8, fontFamily: FONT_SANS, fontSize: 13, color: ACCENT,
               background: 'none', border: 'none', cursor: 'pointer',
             }}
-          >Add your first task</button>
+          >{t('heartbeatChecklist.addFirstTask')}</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -222,7 +224,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
                 <button
                   onClick={() => startEdit(item)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: INK_DIM, padding: 2 }}
-                  title="Edit"
+                  title={t('heartbeatChecklist.edit')}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
@@ -231,7 +233,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
                 <button
                   onClick={() => deleteItem(item.id!)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: INK_DIM, padding: 2 }}
-                  title="Delete"
+                  title={t('heartbeatChecklist.delete')}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -251,7 +253,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
             value={newText}
             onChange={e => setNewText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') addItem(); if (e.key === 'Escape') { setAddingNew(false); setNewText(''); } }}
-            placeholder="Describe a task for the agent to check..."
+            placeholder={t('heartbeatChecklist.placeholder')}
             style={{
               flex: 1, fontFamily: FONT_SANS, fontSize: 13, color: INK,
               background: BG_RAISED, border: `1px solid ${LINE_STRONG}`,
@@ -262,7 +264,7 @@ export function HeartbeatChecklist({ parsedLines, canEditCards, rawMarkdown, onS
             fontFamily: FONT_SANS, fontSize: 12, fontWeight: 500,
             padding: '6px 14px', borderRadius: 4, cursor: 'pointer',
             background: ACCENT, color: ACCENT_INK, border: 'none',
-          }}>Add</button>
+          }}>{t('heartbeatChecklist.add')}</button>
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { CrmDeal } from '../../core/types';
 import { STAGE_COLORS } from '../constants';
 import { mono, INK, INK_MUTE, INK_DIM, LINE_STRONG, ACCENT_INK, GOLD, SAGE, FONT_DISPLAY } from '../../shared/styles';
@@ -12,6 +13,8 @@ interface DealDetailSheetProps {
 }
 
 export function DealDetailSheet({ deal, isMobile, onClose, onEdit, onStageChange }: DealDetailSheetProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       onClick={onClose}
@@ -41,9 +44,11 @@ export function DealDetailSheet({ deal, isMobile, onClose, onEdit, onStageChange
 
         <div style={{
           fontSize: 12, color: INK_MUTE, marginBottom: 16,
-          textTransform: 'capitalize',
         }}>
-          Stage: <span style={{ color: STAGE_COLORS[deal.stage]?.color || INK }}>{deal.stage}</span>
+          {t('crmDealDetail.stage')}: {' '}
+          <span style={{ color: STAGE_COLORS[deal.stage]?.color || INK }}>
+            {t(`crmDealDetail.stages.${deal.stage}`, { defaultValue: deal.stage })}
+          </span>
         </div>
 
         {deal.notes && (
@@ -55,19 +60,19 @@ export function DealDetailSheet({ deal, isMobile, onClose, onEdit, onStageChange
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
           {deal.contact_name && (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ ...mono(10), color: INK_DIM }}>Contact</span>
+              <span style={{ ...mono(10), color: INK_DIM }}>{t('crmDealDetail.contact')}</span>
               <span style={{ fontSize: 13, color: INK }}>{deal.contact_name}</span>
             </div>
           )}
           {deal.probability > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ ...mono(10), color: INK_DIM }}>Probability</span>
+              <span style={{ ...mono(10), color: INK_DIM }}>{t('crmDealDetail.probability')}</span>
               <span style={{ fontSize: 13, color: INK }}>{deal.probability}%</span>
             </div>
           )}
           {deal.expected_close_date && (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ ...mono(10), color: INK_DIM }}>Expected Close</span>
+              <span style={{ ...mono(10), color: INK_DIM }}>{t('crmDealDetail.expectedClose')}</span>
               <span style={{ fontSize: 13, color: INK }}>{deal.expected_close_date}</span>
             </div>
           )}
@@ -78,12 +83,12 @@ export function DealDetailSheet({ deal, isMobile, onClose, onEdit, onStageChange
             padding: '10px 16px', borderRadius: 6,
             border: `1px solid ${LINE_STRONG}`, background: 'transparent',
             color: INK_MUTE, fontSize: 13, cursor: 'pointer',
-          }}>Close</button>
+          }}>{t('crmDealDetail.close')}</button>
           <button onClick={() => onEdit(deal)} style={{
             padding: '10px 16px', borderRadius: 6,
             border: `1px solid ${LINE_STRONG}`, background: 'transparent',
             color: INK, fontSize: 13, cursor: 'pointer',
-          }}>Edit</button>
+          }}>{t('crmDealDetail.edit')}</button>
           {deal.stage !== 'won' && deal.stage !== 'lost' && (
             <>
               <button onClick={() => onStageChange(deal, 'won')} style={{
@@ -91,11 +96,11 @@ export function DealDetailSheet({ deal, isMobile, onClose, onEdit, onStageChange
                 background: SAGE, color: ACCENT_INK,
                 border: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                 flex: 1,
-              }}>Mark Won</button>
+              }}>{t('crmDealDetail.markWon')}</button>
               <button onClick={() => onStageChange(deal, 'lost')} style={{
                 ...btnDanger,
                 padding: '10px 16px', borderRadius: 6, fontSize: 13,
-              }}>Mark Lost</button>
+              }}>{t('crmDealDetail.markLost')}</button>
             </>
           )}
         </div>

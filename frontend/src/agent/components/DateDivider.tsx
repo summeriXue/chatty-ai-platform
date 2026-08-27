@@ -1,7 +1,9 @@
 import { formatDateDivider } from '../utils/dateFormat';
+import { useTranslation } from 'react-i18next';
 
 export function DateDivider({ timestamp }: { timestamp: number }) {
-  const label = formatDateDivider(timestamp);
+  const { i18n } = useTranslation();
+  const label = formatDateDivider(timestamp, i18n.language);
   if (!label) return null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>

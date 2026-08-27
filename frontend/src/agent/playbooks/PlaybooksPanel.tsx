@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { confirmDialog } from '../../shared/confirm';
 import { toast } from '../../shared/toast';
 import { LoadError } from '../../shared/LoadError';
@@ -36,6 +37,7 @@ export function PlaybooksPanel({
   apiPrefix, agentName, playbooks, loading, loadFailed,
   onReload, onGetDetail, onSave, onDelete, onToggleChip, onRestore,
 }: Props) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detail, setDetail] = useState<PlaybookDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -66,7 +68,7 @@ export function PlaybooksPanel({
     } catch {
       if (seq === expandSeqRef.current) {
         setExpanded(null);
-        toast.error('Failed to load playbook.');
+        toast.error(t('playbooksPanel.errors.load'));
       }
     } finally {
       if (seq === expandSeqRef.current) setDetailLoading(false);
@@ -78,24 +80,24 @@ export function PlaybooksPanel({
       const d = await onGetDetail(slug);
       setEditor({ mode: 'edit', initial: d });
     } catch {
-      toast.error('Failed to load playbook.');
+      toast.error(t('playbooksPanel.errors.load'));
     }
   }
 
   async function handleDelete(pb: PlaybookSummary) {
     const ok = await confirmDialog({
-      title: 'Delete playbook',
-      message: `“${pb.name}” will be permanently deleted.`,
-      confirmLabel: 'Delete',
+      title: t('playbooksPanel.deleteDialog.title'),
+      message: t('playbooksPanel.deleteDialog.message', { name: pb.name }),
+      confirmLabel: t('playbooksPanel.deleteDialog.confirm'),
       danger: true,
     });
     if (!ok) return;
     try {
       await onDelete(pb.slug);
       if (expanded === pb.slug) { setExpanded(null); setDetail(null); }
-      toast.success('Playbook deleted.');
+      toast.success(t('playbooksPanel.toasts.deleted'));
     } catch {
-      toast.error('Failed to delete playbook.');
+      toast.error(t('playbooksPanel.errors.delete'));
     }
   }
 
@@ -103,36 +105,36 @@ export function PlaybooksPanel({
     try {
       await onToggleChip(pb.slug, !pb.chip);
     } catch {
-      toast.error('Failed to update quick action.');
+      toast.error(t('playbooksPanel.errors.quickAction'));
     }
   }
 
   async function handleRestore(pb: PlaybookSummary) {
     try {
       await onRestore(pb.slug);
-      toast.success('Playbook restored.');
+      toast.success(t('playbooksPanel.toasts.restored'));
     } catch {
-      toast.error('Failed to restore playbook.');
+      toast.error(t('playbooksPanel.errors.restore'));
     }
   }
 
   if (loading) {
     return (
       <div style={{ padding: '48px 0', textAlign: 'center', fontSize: 13, color: INK_DIM, fontFamily: FONT_SANS }}>
-        Loading playbooks...
+        {t('playbooksPanel.loading')}
       </div>
     );
   }
 
   if (loadFailed && playbooks.length === 0) {
-    return <LoadError label="Couldn't load playbooks" onRetry={onReload} />;
+    return <LoadError label={t('playbooksPanel.loadFailed')} onRetry={onReload} />;
   }
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 20px 60px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <span style={mono(10)}>Playbooks ({active.length})</span>
+        <span style={mono(10)}>{t('playbooksPanel.title', { count: active.length })}</span>
         <button
           onClick={() => setEditor({ mode: 'create' })}
           style={{
@@ -140,7 +142,7 @@ export function PlaybooksPanel({
             borderRadius: 4, padding: '7px 14px', fontSize: 13,
             cursor: 'pointer', fontFamily: FONT_SANS,
           }}
-        >New playbook</button>
+        >{t('playbooksPanel.newPlaybook')}</button>
       </div>
 
       {/* Empty state */}
@@ -151,11 +153,10 @@ export function PlaybooksPanel({
           marginBottom: 24,
         }}>
           <div style={{ fontSize: 14, color: INK_MUTE, fontFamily: FONT_SANS, marginBottom: 6 }}>
-            No playbooks yet.
+            {t('playbooksPanel.empty.title')}
           </div>
           <div style={{ fontSize: 13, color: INK_DIM, fontFamily: FONT_SANS, lineHeight: 1.5, maxWidth: 440, margin: '0 auto' }}>
-            Playbooks are step-by-step procedures {agentName} can run on demand.
-            Create one, or {agentName} will write its own as it learns your routines.
+            {t('playbooksPanel.empty.description', { name: agentName })}
           </div>
         </div>
       )}
@@ -188,20 +189,20 @@ export function PlaybooksPanel({
                   padding: '2px 7px', borderRadius: 999,
                   background: pb.created_by === 'user' ? BG_RAISED : 'rgba(142,165,137,0.12)',
                 }}>
-                  {pb.created_by === 'user' ? 'You' : agentName}
+                  {pb.created_by === 'user' ? t('playbooksPanel.you') : agentName}
                 </span>
                 {pb.missing_integrations.map(mi => (
                   <span key={mi} style={{
                     ...mono(9, CORAL), padding: '2px 7px', borderRadius: 999,
                     background: 'rgba(217,119,87,0.1)',
                   }}>
-                    Needs {integrationLabel(mi)}
+                    {t('playbooksPanel.needsIntegration', { integration: integrationLabel(mi) })}
                   </span>
                 ))}
                 <span style={{ flex: 1 }} />
                 {pb.use_count > 0 && (
                   <span style={mono(9, INK_DIM)}>
-                    {pb.use_count} {pb.use_count === 1 ? 'run' : 'runs'}
+                    {t('playbooksPanel.runCount', { count: pb.use_count })}
                   </span>
                 )}
               </div>
@@ -215,7 +216,7 @@ export function PlaybooksPanel({
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, marginLeft: 22 }}>
                 <button
                   onClick={e => { e.stopPropagation(); handleChipToggle(pb); }}
-                  title="Show as a quick-action button above the chat input"
+                  title={t('playbooksPanel.quickActionTitle')}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
                     background: pb.chip ? ACCENT : 'transparent',
@@ -226,7 +227,7 @@ export function PlaybooksPanel({
                   }}
                 >
                   <IconZap size={11} strokeWidth={2} />
-                  Quick action
+                  {t('playbooksPanel.quickAction')}
                 </button>
                 <span style={{ flex: 1 }} />
                 <button
@@ -235,7 +236,7 @@ export function PlaybooksPanel({
                     background: 'none', border: 'none', color: INK_MUTE,
                     fontSize: 12, cursor: 'pointer', fontFamily: FONT_SANS,
                   }}
-                >Edit</button>
+                >{t('playbooksPanel.edit')}</button>
                 <button
                   onClick={e => { e.stopPropagation(); handleDelete(pb); }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#D97757'; }}
@@ -244,13 +245,13 @@ export function PlaybooksPanel({
                     background: 'none', border: 'none', color: INK_MUTE,
                     fontSize: 12, cursor: 'pointer', fontFamily: FONT_SANS,
                   }}
-                >Delete</button>
+                >{t('playbooksPanel.delete')}</button>
               </div>
             </div>
             {expanded === pb.slug && (
               <div style={{ borderTop: `1px solid ${LINE}`, padding: '14px 16px 16px 38px' }}>
                 {detailLoading ? (
-                  <div style={{ fontSize: 12, color: INK_DIM, fontFamily: FONT_SANS }}>Loading…</div>
+                  <div style={{ fontSize: 12, color: INK_DIM, fontFamily: FONT_SANS }}>{t('playbooksPanel.loadingDetail')}</div>
                 ) : detail ? (
                   <MarkdownContent content={detail.body} />
                 ) : null}
@@ -278,7 +279,7 @@ export function PlaybooksPanel({
             }}>
               <IconChevron size={12} strokeWidth={2} />
             </span>
-            <span style={mono(10)}>Archived ({archived.length})</span>
+            <span style={mono(10)}>{t('playbooksPanel.archived', { count: archived.length })}</span>
           </button>
           {showArchived && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -304,7 +305,7 @@ export function PlaybooksPanel({
                       borderRadius: 4, padding: '3px 10px', fontSize: 11,
                       cursor: 'pointer', fontFamily: FONT_SANS, flexShrink: 0,
                     }}
-                  >Restore</button>
+                  >{t('playbooksPanel.restore')}</button>
                 </div>
               ))}
             </div>
@@ -329,7 +330,7 @@ export function PlaybooksPanel({
           }}>
             <IconChevron size={12} strokeWidth={2} />
           </span>
-          <span style={mono(10)}>What {agentName} learned</span>
+          <span style={mono(10)}>{t('playbooksPanel.learned', { name: agentName })}</span>
         </button>
         {!feedCollapsed && (
           <LearningFeed apiPrefix={apiPrefix} agentName={agentName} onAfterRevert={onReload} />
@@ -344,7 +345,7 @@ export function PlaybooksPanel({
           existingSlugs={playbooks.map(p => p.slug)}
           onSave={async (slug, data) => {
             await onSave(slug, data);
-            toast.success(editor.mode === 'create' ? 'Playbook created.' : 'Playbook saved.');
+            toast.success(editor.mode === 'create' ? t('playbooksPanel.toasts.created') : t('playbooksPanel.toasts.saved'));
             if (expanded === slug) { setExpanded(null); setDetail(null); }
           }}
           onClose={() => setEditor(null)}

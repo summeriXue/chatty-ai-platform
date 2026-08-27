@@ -1,4 +1,5 @@
 import type { ScheduledAction } from '../../hooks/useHeartbeat';
+import { useTranslation } from 'react-i18next';
 import { FONT_MONO, FONT_SANS, INK_DIM, INK_MUTE, ACCENT, ACCENT_INK, BG_RAISED, LINE_STRONG, SAGE, GOLD, CORAL } from '../../../shared/styles';
 
 const statusColors: Record<string, string> = {
@@ -6,13 +7,6 @@ const statusColors: Record<string, string> = {
   action_taken: GOLD,
   error: CORAL,
   skipped: INK_DIM,
-};
-
-const statusLabels: Record<string, string> = {
-  ok: 'All clear',
-  action_taken: 'Action taken',
-  error: 'Error',
-  skipped: 'Skipped',
 };
 
 interface Props {
@@ -24,7 +18,15 @@ interface Props {
   onToggleEnabled: () => void;
 }
 
-export function HeartbeatStatusBar({ action, countdown, running, actionError, onRunNow, onToggleEnabled }: Props) {
+export function HeartbeatStatusBar({
+  action,
+  countdown,
+  running,
+  actionError,
+  onRunNow,
+  onToggleEnabled,
+}: Props) {
+  const { t } = useTranslation();
   if (!action) {
     return (
       <div style={{
@@ -33,12 +35,12 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
       }}>
         {actionError ? (
           <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: CORAL }}>
-            Could not load heartbeat configuration. Check that the backend is running.
+            {t('heartbeatStatus.loadError')}
           </span>
         ) : (
           <>
             <div className="animate-spin w-4 h-4 border-2 border-ch-accent border-t-transparent rounded-full" />
-            <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>Initializing heartbeat...</span>
+            <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>{t('heartbeatStatus.initializing')}</span>
           </>
         )}
       </div>
@@ -48,13 +50,19 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
   const disabled = !action.enabled;
   const lastStatus = action.last_status || 'ok';
   const color = statusColors[lastStatus] || INK_DIM;
-  const label = statusLabels[lastStatus] || lastStatus;
+  const label = t(`heartbeatStatus.status.${lastStatus}`, {
+    defaultValue: lastStatus,
+  });
 
   const interval = action.interval_minutes
     ? action.interval_minutes >= 60
-      ? `Every ${action.interval_minutes / 60}h`
-      : `Every ${action.interval_minutes}m`
-    : action.cron_expression || 'Custom';
+      ? t('heartbeatStatus.interval.hours', {
+          count: action.interval_minutes / 60,
+        })
+      : t('heartbeatStatus.interval.minutes', {
+          count: action.interval_minutes,
+        })
+    : action.cron_expression || t('heartbeatStatus.interval.custom');
 
   return (
     <div style={{ borderBottom: `1px solid ${LINE_STRONG}` }}>
@@ -66,12 +74,12 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <span style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: CORAL }}>
-            PAUSED
+            {t('heartbeatStatus.paused')}
           </span>
           <span style={{ fontSize: 12, color: INK_MUTE }}>
             {action.consecutive_errors >= 5
-              ? 'Heartbeat paused due to repeated errors.'
-              : 'Heartbeat is disabled.'}
+              ? t('heartbeatStatus.pausedRepeatedErrors')
+              : t('heartbeatStatus.disabled')}
           </span>
           <button
             onClick={onToggleEnabled}
@@ -79,7 +87,7 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
               marginLeft: 'auto', fontSize: 11, fontWeight: 500,
               color: CORAL, background: 'none', border: 'none', cursor: 'pointer',
             }}
-          >Re-enable</button>
+          >{t('heartbeatStatus.reEnable')}</button>
         </div>
       )}
 
@@ -87,7 +95,7 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
         {/* Countdown hero */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12 }}>
           <span style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: INK_DIM }}>
-            NEXT RUN
+            {t('heartbeatStatus.nextRun')}
           </span>
           <span style={{
             fontFamily: FONT_MONO, fontSize: 28, fontWeight: 300,
@@ -116,7 +124,9 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
 
           {action.total_runs > 0 && (
             <span style={{ fontFamily: FONT_SANS, fontSize: 12, color: INK_DIM }}>
-              {action.total_runs} total runs
+              {t('heartbeatStatus.totalRuns', {
+                count: action.total_runs,
+              })}
             </span>
           )}
 
@@ -132,7 +142,9 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
                 border: 'none', opacity: running || disabled ? 0.5 : 1,
               }}
             >
-              {running ? 'Running...' : 'Run Now'}
+              {running
+                ? t('heartbeatStatus.running')
+                : t('heartbeatStatus.runNow')}
             </button>
 
             {/* Enable/disable toggle */}
@@ -143,7 +155,11 @@ export function HeartbeatStatusBar({ action, countdown, running, actionError, on
                 background: action.enabled ? SAGE : BG_RAISED,
                 position: 'relative', transition: 'background 0.2s',
               }}
-              title={action.enabled ? 'Disable heartbeat' : 'Enable heartbeat'}
+              title={
+                action.enabled
+                  ? t('heartbeatStatus.disable')
+                  : t('heartbeatStatus.enable')
+              }
             >
               <div style={{
                 width: 14, height: 14, borderRadius: '50%',

@@ -5,6 +5,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../core/api/client';
 import { LoadError } from '../../shared/LoadError';
@@ -15,50 +17,80 @@ function toUTC(iso: string): Date {
   return new Date(iso.replace(' ', 'T') + 'Z');
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: TFunction): string {
   const d = toUTC(iso);
   const diff = Date.now() - d.getTime();
-  if (diff < 0) return formatFuture(-diff);
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
+  if (diff < 0) return formatFuture(-diff, t);
+  if (diff < 60000) return t('remindersPanel.time.justNow');
+  if (diff < 3600000) return t('remindersPanel.time.minutesAgo', { count: Math.floor(diff / 60000) });
+  if (diff < 86400000) return t('remindersPanel.time.hoursAgo', { count: Math.floor(diff / 3600000) });
+  return t('remindersPanel.time.daysAgo', { count: Math.floor(diff / 86400000) });
 }
 
-function formatFuture(diff: number): string {
-  if (diff < 60000) return 'In <1m';
-  if (diff < 3600000) return `In ${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `In ${Math.floor(diff / 3600000)}h`;
-  return `In ${Math.floor(diff / 86400000)}d`;
+function formatFuture(diff: number, t: TFunction): string {
+  if (diff < 60000) return t('remindersPanel.time.inLessThanMinute');
+  if (diff < 3600000) return t('remindersPanel.time.inMinutes', { count: Math.floor(diff / 60000) });
+  if (diff < 86400000) return t('remindersPanel.time.inHours', { count: Math.floor(diff / 3600000) });
+  return t('remindersPanel.time.inDays', { count: Math.floor(diff / 86400000) });
 }
 
-function formatDate(iso: string): string {
-  return toUTC(iso).toLocaleString(undefined, {
+function formatDate(iso: string, locale: string): string {
+  return toUTC(iso).toLocaleString(locale, {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });
 }
 
-function describeRecurrence(ruleJson: string | null): string | null {
+function describeRecurrence(ruleJson: string | null, t: TFunction): string | null {
   if (!ruleJson) return null;
   try {
     const rule = JSON.parse(ruleJson);
-    const dayNames: Record<number, string> = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' };
+    const dayNames: Record<number, string> = {
+      1: t('remindersPanel.days.mon'),
+      2: t('remindersPanel.days.tue'),
+      3: t('remindersPanel.days.wed'),
+      4: t('remindersPanel.days.thu'),
+      5: t('remindersPanel.days.fri'),
+      6: t('remindersPanel.days.sat'),
+      7: t('remindersPanel.days.sun'),
+    };
     switch (rule.type) {
-      case 'daily': return 'Daily';
+      case 'daily':
+        return t('remindersPanel.recurrence.daily');
       case 'weekly': {
         const days = (rule.days || []).map((d: number) => dayNames[d] || d).join(', ');
-        return `Weekly: ${days}`;
+        return t('remindersPanel.recurrence.weekly', { days });
       }
-      case 'monthly': return `Monthly: day ${rule.day ?? '?'}`;
+      case 'monthly':
+        return t('remindersPanel.recurrence.monthly', { day: rule.day ?? '?' });
       case 'interval': {
-        if (rule.hours && !rule.minutes) return `Every ${rule.hours}h`;
-        if (rule.minutes && !rule.hours) return `Every ${rule.minutes}m`;
-        return `Every ${rule.hours || 0}h ${rule.minutes || 0}m`;
+        if (rule.hours && !rule.minutes) {
+          return t('remindersPanel.recurrence.everyHours', { count: rule.hours });
+        }
+        if (rule.minutes && !rule.hours) {
+          return t('remindersPanel.recurrence.everyMinutes', { count: rule.minutes });
+        }
+        return t('remindersPanel.recurrence.everyHoursMinutes', {
+          hours: rule.hours || 0,
+          minutes: rule.minutes || 0,
+        });
       }
-      case 'cron': return `Cron: ${rule.expression || '?'}`;
-      default: return null;
+      case 'cron':
+        return t('remindersPanel.recurrence.cron', { expression: rule.expression || '?' });
+      default:
+        return null;
     }
-  } catch { return null; }
+  } catch {
+    return null;
+  }
+}
+
+function statusLabel(status: string, t: TFunction): string {
+  switch (status) {
+    case 'pending': return t('remindersPanel.status.pending');
+    case 'fired': return t('remindersPanel.status.fired');
+    case 'cancelled': return t('remindersPanel.status.cancelled');
+    default: return status;
+  }
 }
 
 const statusColors: Record<string, string> = {
@@ -72,6 +104,7 @@ interface SeriesCache {
 }
 
 export default function AgentRemindersPanel({ agentSlug, agentId }: { agentSlug: string; agentId: string }) {
+  const { t, i18n } = useTranslation();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -118,7 +151,7 @@ export default function AgentRemindersPanel({ agentSlug, agentId }: { agentSlug:
     return (
       <div className="flex items-center gap-2 text-sm text-ch-ink-dim py-8 justify-center">
         <div className="animate-spin w-4 h-4 border-2 border-ch-accent border-t-transparent rounded-full" />
-        Loading reminders...
+        {t('remindersPanel.loading')}
       </div>
     );
   }
@@ -129,20 +162,35 @@ export default function AgentRemindersPanel({ agentSlug, agentId }: { agentSlug:
   const cancelled = reminders.filter(r => r.status === 'cancelled').slice(0, 10);
 
   const sections: { key: string; label: string; items: Reminder[]; emptyText: string }[] = [
-    { key: 'upcoming', label: `Upcoming (${pending.length})`, items: pending, emptyText: 'No pending reminders.' },
-    { key: 'completed', label: `Completed (${fired.length})`, items: fired, emptyText: 'No fired reminders yet.' },
-    { key: 'cancelled', label: `Cancelled (${cancelled.length})`, items: cancelled, emptyText: '' },
+    {
+      key: 'upcoming',
+      label: t('remindersPanel.sections.upcoming', { count: pending.length }),
+      items: pending,
+      emptyText: t('remindersPanel.sections.noPending'),
+    },
+    {
+      key: 'completed',
+      label: t('remindersPanel.sections.completed', { count: fired.length }),
+      items: fired,
+      emptyText: t('remindersPanel.sections.noCompleted'),
+    },
+    {
+      key: 'cancelled',
+      label: t('remindersPanel.sections.cancelled', { count: cancelled.length }),
+      items: cancelled,
+      emptyText: '',
+    },
   ];
 
   const remindersContent = loadFailed && reminders.length === 0 ? (
     <LoadError
-      label="Couldn't load reminders"
+      label={t('remindersPanel.loadFailed')}
       onRetry={() => { setLoading(true); setRetryKey(k => k + 1); }}
     />
   ) : reminders.length === 0 ? (
     <div className="text-center py-12">
-      <p className="text-sm text-ch-ink-dim">No reminders yet.</p>
-      <p className="text-xs text-ch-ink-dim mt-1">Ask your agent to set a reminder and it will appear here.</p>
+      <p className="text-sm text-ch-ink-dim">{t('remindersPanel.empty.title')}</p>
+      <p className="text-xs text-ch-ink-dim mt-1">{t('remindersPanel.empty.description')}</p>
     </div>
   ) : (
     <>
@@ -178,6 +226,8 @@ export default function AgentRemindersPanel({ agentSlug, agentId }: { agentSlug:
                       seriesHistory={rem.series_id ? seriesCache[rem.series_id] : undefined}
                       loadingSeries={loadingSeries === rem.series_id}
                       onLoadSeries={() => rem.series_id && loadSeries(rem.series_id)}
+                      t={t}
+                      locale={i18n.language}
                     />
                   ))}
                 </div>
@@ -197,13 +247,14 @@ export default function AgentRemindersPanel({ agentSlug, agentId }: { agentSlug:
   );
 }
 
-function formatDueDate(isoDate: string): string {
-  return new Date(isoDate + 'T00:00:00').toLocaleDateString(undefined, {
+function formatDueDate(isoDate: string, locale: string): string {
+  return new Date(isoDate + 'T00:00:00').toLocaleDateString(locale, {
     month: 'short', day: 'numeric',
   });
 }
 
 function CommitmentsSection({ agentId }: { agentId: string }) {
+  const { t, i18n } = useTranslation();
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -228,9 +279,9 @@ function CommitmentsSection({ agentId }: { agentId: string }) {
     try {
       await api(`/api/agents/${agentId}/commitments/${c.id}/${action}`, { method: 'POST' });
       setCommitments(prev => prev.filter(x => x.id !== c.id));
-      toast.success(action === 'complete' ? 'Follow-up marked done.' : 'Follow-up dismissed.');
+      toast.success(action === 'complete' ? t('remindersPanel.followUps.toasts.completed') : t('remindersPanel.followUps.toasts.dismissed'));
     } catch {
-      toast.error(`Couldn't ${action === 'complete' ? 'complete' : 'dismiss'} the follow-up.`);
+      toast.error(action === 'complete' ? t('remindersPanel.followUps.errors.complete') : t('remindersPanel.followUps.errors.dismiss'));
     }
   }
 
@@ -239,12 +290,12 @@ function CommitmentsSection({ agentId }: { agentId: string }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-ch-ink">
-        Inferred follow-ups{commitments.length > 0 ? ` (${commitments.length})` : ''}
+        {t('remindersPanel.followUps.title')}{commitments.length > 0 ? ` (${commitments.length})` : ''}
       </div>
       {loadFailed ? (
-        <p className="text-xs text-ch-ink-dim pl-5">Couldn't load inferred follow-ups.</p>
+        <p className="text-xs text-ch-ink-dim pl-5">{t('remindersPanel.followUps.loadFailed')}</p>
       ) : commitments.length === 0 ? (
-        <p className="text-xs text-ch-ink-dim pl-5">None right now — these appear automatically when conversations mention things worth checking back on.</p>
+        <p className="text-xs text-ch-ink-dim pl-5">{t('remindersPanel.followUps.empty')}</p>
       ) : (
         <div className="space-y-2">
           {commitments.map(c => (
@@ -253,20 +304,24 @@ function CommitmentsSection({ agentId }: { agentId: string }) {
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium text-ch-ink">{c.text}</div>
                 <div className="flex items-center gap-2 mt-0.5 text-xs text-ch-ink-dim">
-                  <span>{c.due_at ? `Due ${formatDueDate(c.due_at)}` : `Noticed ${timeAgo(c.created_at)}`}</span>
+                  <span>
+                      {c.due_at
+                        ? t('remindersPanel.followUps.due', { date: formatDueDate(c.due_at, i18n.language) })
+                        : t('remindersPanel.followUps.noticed', { time: timeAgo(c.created_at, t) })}
+                    </span>
                   {c.source_conversation_id && (
                     <button
                       onClick={() => navigate(`/agent/${agentId}?tab=chat&conversation=${c.source_conversation_id}`)}
                       className="text-ch-accent hover:underline"
                     >
-                      View conversation
+                      {t('remindersPanel.followUps.viewConversation')}
                     </button>
                   )}
                 </div>
               </div>
               <button
                 onClick={() => act(c, 'complete')}
-                title="Mark done"
+                title={t('remindersPanel.followUps.markDone')}
                 className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-ch-ink-dim hover:text-[#6DBF5B] hover:bg-ch-bg-raised/50 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -275,7 +330,7 @@ function CommitmentsSection({ agentId }: { agentId: string }) {
               </button>
               <button
                 onClick={() => act(c, 'dismiss')}
-                title="Dismiss"
+                title={t('remindersPanel.followUps.dismiss')}
                 className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-ch-ink-dim hover:text-[#D97757] hover:bg-ch-bg-raised/50 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -297,6 +352,8 @@ function ReminderRow({
   seriesHistory,
   loadingSeries,
   onLoadSeries,
+  t,
+  locale,
 }: {
   reminder: Reminder;
   isExpanded: boolean;
@@ -304,8 +361,10 @@ function ReminderRow({
   seriesHistory?: Reminder[];
   loadingSeries: boolean;
   onLoadSeries: () => void;
+  t: TFunction;
+  locale: string;
 }) {
-  const recurrenceDesc = describeRecurrence(rem.recurrence_rule);
+  const recurrenceDesc = describeRecurrence(rem.recurrence_rule, t);
 
   return (
     <div className="border border-ch-line-strong rounded-lg bg-ch-bg-elev">
@@ -332,11 +391,11 @@ function ReminderRow({
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-ch-ink-dim">
-              {rem.status === 'pending' ? timeAgo(rem.due_at) : timeAgo(rem.fired_at || rem.due_at)}
+              {rem.status === 'pending' ? timeAgo(rem.due_at, t) : timeAgo(rem.fired_at || rem.due_at, t)}
             </span>
             {rem.status === 'pending' && (
               <span className="text-xs text-ch-ink-dim">
-                ({formatDate(rem.due_at)})
+                ({formatDate(rem.due_at, locale)})
               </span>
             )}
           </div>
@@ -353,23 +412,23 @@ function ReminderRow({
         <div className="px-4 pb-4 border-t border-ch-line-strong/50">
           <div className="mt-3 space-y-2">
             <div className="text-xs text-ch-ink">
-              <span className="text-ch-ink-dim">Message: </span>{rem.message}
+              <span className="text-ch-ink-dim">{t('remindersPanel.details.message')}: </span>{rem.message}
             </div>
             {rem.context && (
               <div className="text-xs text-ch-ink">
-                <span className="text-ch-ink-dim">Context: </span>{rem.context}
+                <span className="text-ch-ink-dim">{t('remindersPanel.details.context')}: </span>{rem.context}
               </div>
             )}
             <div className="flex flex-wrap gap-3 text-xs text-ch-ink-dim">
-              <span>Due: {formatDate(rem.due_at)}</span>
-              <span>Created: {formatDate(rem.created_at)}</span>
-              {rem.fired_at && <span>Fired: {formatDate(rem.fired_at)}</span>}
-              <span className="capitalize">Status: {rem.status}</span>
+              <span>{t('remindersPanel.details.due')}: {formatDate(rem.due_at, locale)}</span>
+              <span>{t('remindersPanel.details.created')}: {formatDate(rem.created_at, locale)}</span>
+              {rem.fired_at && <span>{t('remindersPanel.details.fired')}: {formatDate(rem.fired_at, locale)}</span>}
+              <span>{t('remindersPanel.details.status')}: {statusLabel(rem.status, t)}</span>
             </div>
 
             {rem.result && (
               <div className="mt-2">
-                <div className="text-xs text-ch-ink-dim mb-1">Result:</div>
+                <div className="text-xs text-ch-ink-dim mb-1">{t('remindersPanel.details.result')}:</div>
                 <div className="text-xs text-ch-ink-mute bg-ch-bg-raised/50 px-3 py-2 rounded max-h-32 overflow-auto whitespace-pre-wrap">
                   {rem.result}
                 </div>
@@ -380,7 +439,7 @@ function ReminderRow({
               <div className="mt-2">
                 {seriesHistory ? (
                   <div>
-                    <div className="text-xs text-ch-ink-dim mb-1">Series History ({seriesHistory.length})</div>
+                    <div className="text-xs text-ch-ink-dim mb-1">{t('remindersPanel.details.seriesHistory', { count: seriesHistory.length })}</div>
                     <div className="space-y-1 max-h-32 overflow-auto">
                       {seriesHistory.map(h => (
                         <div key={h.id} className="flex items-center gap-2 text-xs">
@@ -388,8 +447,8 @@ function ReminderRow({
                             className="w-1.5 h-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: statusColors[h.status] || '#8B8F96' }}
                           />
-                          <span className="text-ch-ink-dim">{formatDate(h.due_at)}</span>
-                          <span className="text-ch-ink-dim capitalize">{h.status}</span>
+                          <span className="text-ch-ink-dim">{formatDate(h.due_at, locale)}</span>
+                          <span className="text-ch-ink-dim">{statusLabel(h.status, t)}</span>
                           {h.result && (
                             <span className="text-ch-ink-mute truncate">{h.result.slice(0, 60)}</span>
                           )}
@@ -403,7 +462,7 @@ function ReminderRow({
                     disabled={loadingSeries}
                     className="text-xs text-ch-accent hover:underline"
                   >
-                    {loadingSeries ? 'Loading...' : 'View series history'}
+                    {loadingSeries ? t('remindersPanel.details.loading') : t('remindersPanel.details.viewSeriesHistory')}
                   </button>
                 )}
               </div>

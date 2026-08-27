@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ParsedContact {
   name: string;
@@ -31,6 +32,7 @@ interface Props {
 type Step = 'upload' | 'parsing' | 'preview' | 'result';
 
 export function SmartImportModal({ onClose, onImported }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
@@ -57,7 +59,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
 
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
-        throw new Error(data.detail || `Parse failed (${resp.status})`);
+        throw new Error(data.detail || t('crmSmartImport.errors.parseFailedWithStatus', { status: resp.status }));
       }
 
       const data: ParseResult = await resp.json();
@@ -68,11 +70,11 @@ export function SmartImportModal({ onClose, onImported }: Props) {
         setStep('preview');
       } else {
         setStep('upload');
-        setError(data.warnings.join(' ') || 'No contacts found in file');
+        setError(data.warnings.join(' ') || t('crmSmartImport.errors.noContactsFound'));
       }
     } catch (err: unknown) {
       setStep('upload');
-      setError(err instanceof Error ? err.message : 'Parse failed');
+      setError(err instanceof Error ? err.message : t('crmSmartImport.errors.parseFailed'));
     }
   }
 
@@ -82,7 +84,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
 
     const contacts = parseResult.contacts.filter((_, i) => selected.has(i));
     if (contacts.length === 0) {
-      setError('No contacts selected');
+      setError(t('crmSmartImport.errors.noContactsSelected'));
       return;
     }
 
@@ -99,7 +101,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
 
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
-        throw new Error(data.detail || `Import failed (${resp.status})`);
+        throw new Error(data.detail || t('crmSmartImport.errors.importFailedWithStatus', { status: resp.status }));
       }
 
       const data: ImportResult = await resp.json();
@@ -110,7 +112,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
         setTimeout(onImported, 1500);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      setError(err instanceof Error ? err.message : t('crmSmartImport.errors.importFailed'));
     }
   }
 
@@ -138,7 +140,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
           step === 'preview' ? 'max-w-3xl' : 'max-w-md'
         }`}
       >
-        <h2 className="text-white font-bold text-lg mb-2">Import Contacts</h2>
+        <h2 className="text-white font-bold text-lg mb-2">{t('crmSmartImport.title')}</h2>
 
         {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
 
@@ -146,7 +148,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
         {step === 'upload' && (
           <>
             <p className="text-gray-400 text-xs mb-4">
-              Drop any file — CSV, vCard (.vcf), JSON, or plain text. AI will extract contacts from any format.
+              {t('crmSmartImport.description')}
             </p>
             <div
               onClick={() => inputRef.current?.click()}
@@ -162,19 +164,19 @@ export function SmartImportModal({ onClose, onImported }: Props) {
               {file ? (
                 <p className="text-white text-sm">{file.name} ({(file.size / 1024).toFixed(1)} KB)</p>
               ) : (
-                <p className="text-gray-500 text-sm">Click to select a file</p>
+                <p className="text-gray-500 text-sm">{t('crmSmartImport.selectFile')}</p>
               )}
             </div>
             <div className="flex gap-2">
               <button onClick={onClose} className="flex-1 py-2 text-sm rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-800 transition">
-                Cancel
+                {t('crmSmartImport.cancel')}
               </button>
               <button
                 onClick={handleParse}
                 disabled={!file}
                 className="flex-1 py-2 text-sm rounded-lg bg-brand text-white font-medium disabled:opacity-50"
               >
-                Parse Contacts
+                {t('crmSmartImport.parseContacts')}
               </button>
             </div>
           </>
@@ -184,7 +186,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
         {step === 'parsing' && (
           <div className="py-8 text-center">
             <div className="animate-spin h-8 w-8 border-2 border-gray-600 border-t-brand rounded-full mx-auto mb-4" />
-            <p className="text-gray-400 text-sm">Analyzing contacts...</p>
+            <p className="text-gray-400 text-sm">{t('crmSmartImport.analyzing')}</p>
           </div>
         )}
 
@@ -193,7 +195,7 @@ export function SmartImportModal({ onClose, onImported }: Props) {
           <>
             {parseResult.ai_used && (
               <p className="text-amber-400 text-xs mb-2">
-                Parsed with AI — please verify the results before importing.
+                {t('crmSmartImport.aiParsedWarning')}
               </p>
             )}
             {parseResult.warnings.map((w, i) => (
@@ -208,9 +210,9 @@ export function SmartImportModal({ onClose, onImported }: Props) {
                   onChange={toggleAll}
                   className="accent-brand"
                 />
-                Select all ({parseResult.contacts.length})
+                {t('crmSmartImport.selectAll', { count: parseResult.contacts.length })}
               </label>
-              <span className="text-xs text-gray-500">{selected.size} selected</span>
+              <span className="text-xs text-gray-500">{t('crmSmartImport.selected', { count: selected.size })}</span>
             </div>
 
             <div className="max-h-80 overflow-y-auto border border-gray-800 rounded-xl mb-4">
@@ -218,10 +220,10 @@ export function SmartImportModal({ onClose, onImported }: Props) {
                 <thead className="sticky top-0 bg-gray-800 text-gray-400">
                   <tr>
                     <th className="p-2 w-8" />
-                    <th className="p-2 text-left">Name</th>
-                    <th className="p-2 text-left">Email</th>
-                    <th className="p-2 text-left">Phone</th>
-                    <th className="p-2 text-left">Company</th>
+                    <th className="p-2 text-left">{t('crmSmartImport.columns.name')}</th>
+                    <th className="p-2 text-left">{t('crmSmartImport.columns.email')}</th>
+                    <th className="p-2 text-left">{t('crmSmartImport.columns.phone')}</th>
+                    <th className="p-2 text-left">{t('crmSmartImport.columns.company')}</th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-300">
@@ -257,14 +259,14 @@ export function SmartImportModal({ onClose, onImported }: Props) {
 
             <div className="flex gap-2">
               <button onClick={onClose} className="flex-1 py-2 text-sm rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-800 transition">
-                Cancel
+                {t('crmSmartImport.cancel')}
               </button>
               <button
                 onClick={handleImport}
                 disabled={selected.size === 0}
                 className="flex-1 py-2 text-sm rounded-lg bg-brand text-white font-medium disabled:opacity-50"
               >
-                Import Selected ({selected.size})
+                {t('crmSmartImport.importSelected', { count: selected.size })}
               </button>
             </div>
           </>
@@ -274,17 +276,17 @@ export function SmartImportModal({ onClose, onImported }: Props) {
         {step === 'result' && importResult && (
           <>
             <div className="bg-gray-800 rounded-xl p-4 mb-4">
-              <p className="text-green-400 text-sm font-medium">{importResult.imported} contacts imported</p>
-              {importResult.skipped > 0 && <p className="text-gray-400 text-xs mt-1">{importResult.skipped} skipped (no name)</p>}
+              <p className="text-green-400 text-sm font-medium">{t('crmSmartImport.result.imported', { count: importResult.imported })}</p>
+              {importResult.skipped > 0 && <p className="text-gray-400 text-xs mt-1">{t('crmSmartImport.result.skipped', { count: importResult.skipped })}</p>}
               {importResult.errors.length > 0 && (
                 <div className="mt-2">
-                  <p className="text-red-400 text-xs">{importResult.errors.length} errors:</p>
+                  <p className="text-red-400 text-xs">{t('crmSmartImport.result.errors', { count: importResult.errors.length })}</p>
                   {importResult.errors.slice(0, 5).map((e, i) => <p key={i} className="text-gray-500 text-xs">{e}</p>)}
                 </div>
               )}
             </div>
             <button onClick={onClose} className="w-full py-2 text-sm rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-800 transition">
-              Close
+              {t('crmSmartImport.close')}
             </button>
           </>
         )}

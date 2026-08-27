@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../core/api/client';
 import type { CrmDeal } from '../core/types';
@@ -27,6 +28,7 @@ interface PipelineData {
 }
 
 export function PipelinePage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<PipelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -68,7 +70,7 @@ export function PipelinePage() {
       load();
     } catch (err) {
       console.error('Failed to update deal stage:', err);
-      toast.error('Failed to move deal.');
+      toast.error(t('crmPipeline.errors.moveDeal'));
     }
   }
 
@@ -80,9 +82,9 @@ export function PipelinePage() {
     );
   }
 
-  if (!data) return <LoadError label="Couldn't load pipeline" onRetry={load} />;
+  if (!data) return <LoadError label={t('crmPipeline.loadFailed')} onRetry={load} />;
 
-  const deals = data?.deals || [];
+  const deals = data.deals || [];
   const grouped = STAGES.reduce<Record<string, CrmDeal[]>>((acc, stage) => {
     acc[stage] = deals.filter(d => d.stage === stage);
     return acc;
@@ -94,29 +96,33 @@ export function PipelinePage() {
     <div style={{ padding: isMobile ? '20px 16px' : '32px 44px', maxWidth: 1000 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 24 }}>
         <div>
-          <h1 style={pageHeading(isMobile)}>Pipeline</h1>
-          {data && (
-            <p style={{ fontSize: isMobile ? 14 : 20, color: INK_MUTE, marginTop: 6 }}>
-              ${formatNumber(data.total_pipeline_value)} total · {deals.filter(d => !['won', 'lost'].includes(d.stage)).length} open deals
-            </p>
-          )}
+          <h1 style={pageHeading(isMobile)}>{t('crmPipeline.title')}</h1>
+          <p style={{ fontSize: isMobile ? 14 : 20, color: INK_MUTE, marginTop: 6 }}>
+            {t('crmPipeline.summary', {
+              value: `$${formatNumber(data.total_pipeline_value)}`,
+              count: deals.filter(d => !['won', 'lost'].includes(d.stage)).length,
+            })}
+          </p>
         </div>
         <button onClick={() => setShowCreate(true)} style={{
           ...btnPrimary,
           padding: '7px 14px', fontSize: 13,
           flexShrink: 0, marginTop: 8,
         }}>
-          <IconPlus size={13} strokeWidth={2.25} /> {isMobile ? 'Add' : 'Add Deal'}
+          <IconPlus size={13} strokeWidth={2.25} /> {isMobile ? t('crmPipeline.addShort') : t('crmPipeline.addDeal')}
         </button>
       </div>
 
       {/* Stage filter */}
       <div style={filterBar(isMobile)}>
-        {[{ stage: '', label: 'All' }, ...STAGE_ORDER.map(s => ({ stage: s, label: s }))].map(({ stage, label }) => {
+        {[{ stage: '', label: t('crmPipeline.all') }, ...STAGE_ORDER.map(s => ({
+          stage: s,
+          label: t(`crmPipeline.stages.${s}`, { defaultValue: s }),
+        }))].map(({ stage, label }) => {
           const isActive = stageFilter === stage;
           const stageColor = stage ? (STAGE_COLORS[stage]?.color || INK_DIM) : undefined;
           return (
-            <button key={label} onClick={() => setStageFilter(stage === stageFilter ? '' : stage)} style={filterTab(isMobile, isActive, stageColor)}>
+            <button key={stage || 'all'} onClick={() => setStageFilter(stage === stageFilter ? '' : stage)} style={filterTab(isMobile, isActive, stageColor)}>
               <span style={{ color: isActive ? (stageColor || INK) : INK_MUTE }}>{label}</span>
               {stage && (
                 <span style={{ marginLeft: 6, fontSize: 12, color: isActive ? INK_MUTE : INK_DIM }}>
@@ -145,16 +151,23 @@ export function PipelinePage() {
               }} />
               <span style={{
                 fontFamily: FONT_DISPLAY,
-                fontSize: isMobile ? 16 : 18, letterSpacing: '-0.01em', textTransform: 'capitalize',
+                fontSize: isMobile ? 16 : 18, letterSpacing: '-0.01em',
                 color: INK,
-              }}>{stage}</span>
+              }}>
+                {t(`crmPipeline.stages.${stage}`, { defaultValue: stage })}
+              </span>
               <span style={{ ...mono(10, INK_DIM) }}>
-                {stageDeals.length} deal{stageDeals.length !== 1 ? 's' : ''} · ${formatNumber(stageDeals.reduce((s, d) => s + d.value, 0))}
+                {t('crmPipeline.stageSummary', {
+                  count: stageDeals.length,
+                  value: `$${formatNumber(stageDeals.reduce((s, d) => s + d.value, 0))}`,
+                })}
               </span>
             </div>
 
             {stageDeals.length === 0 ? (
-              <p style={{ color: INK_DIM, fontSize: 12, marginLeft: 8, marginBottom: 16 }}>No deals</p>
+              <p style={{ color: INK_DIM, fontSize: 12, marginLeft: 8, marginBottom: 16 }}>
+                {t('crmPipeline.noDeals')}
+              </p>
             ) : isMobile ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                 {stageDeals.map(deal => (
@@ -182,8 +195,11 @@ export function PipelinePage() {
             ) : (
               <div style={{ borderTop: `1px solid ${LINE}`, marginBottom: 8 }}>
                 <div style={tableHeader('2fr 1.5fr 1fr 80px 1fr')}>
-                  <span>Deal</span><span>Contact</span><span style={{ textAlign: 'right' }}>Value</span>
-                  <span style={{ textAlign: 'right' }}>Prob.</span><span>Close Date</span>
+                  <span>{t('crmPipeline.columns.deal')}</span>
+                  <span>{t('crmPipeline.columns.contact')}</span>
+                  <span style={{ textAlign: 'right' }}>{t('crmPipeline.columns.value')}</span>
+                  <span style={{ textAlign: 'right' }}>{t('crmPipeline.columns.probability')}</span>
+                  <span>{t('crmPipeline.columns.closeDate')}</span>
                 </div>
                 {stageDeals.map(deal => (
                   <div key={deal.id} onClick={() => setSelectedDeal(deal)}

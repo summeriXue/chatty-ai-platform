@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { confirmDialog } from '../../shared/confirm';
 import {
   INK, INK_MUTE, INK_DIM, LINE_STRONG, BG_ELEV, ACCENT, ACCENT_INK, CORAL,
@@ -29,6 +30,8 @@ interface Props {
 }
 
 export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onClose }: Props) {
+  const { t } = useTranslation();
+
   const [name, setName] = useState(initial?.meta.name || '');
   const [description, setDescription] = useState(initial?.meta.description || '');
   const [body, setBody] = useState(initial?.body || '');
@@ -49,9 +52,9 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
   async function handleClose() {
     if (dirty && !saving) {
       const ok = await confirmDialog({
-        title: 'Discard changes',
-        message: 'Your edits to this playbook will be lost.',
-        confirmLabel: 'Discard',
+        title: t('playbookEditor.discard.title'),
+        message: t('playbookEditor.discard.message'),
+        confirmLabel: t('playbookEditor.discard.confirm'),
         danger: true,
       });
       if (!ok) return;
@@ -73,8 +76,11 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save playbook.');
-      setSaving(false);
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('playbookEditor.errors.saveFailed')
+      );
     }
   }
 
@@ -102,7 +108,9 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
           padding: '16px 20px', borderBottom: `1px solid ${LINE_STRONG}`,
         }}>
           <h3 style={{ margin: 0, fontSize: 16, color: INK, fontWeight: 500, fontFamily: FONT_SANS }}>
-            {mode === 'create' ? 'New playbook' : 'Edit playbook'}
+            {mode === 'create'
+              ? t('playbookEditor.newPlaybook')
+              : t('playbookEditor.editPlaybook')}
           </h3>
           <button
             onClick={handleClose}
@@ -111,38 +119,38 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
         </div>
 
         <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
-          <label style={labelStyle}>Name</label>
+          <label style={labelStyle}>{t('playbookEditor.name')}</label>
           <input
             value={name}
             onChange={e => setName(e.target.value)}
             maxLength={80}
             autoFocus
-            placeholder="e.g. Chase overdue invoices"
+            placeholder={t('playbookEditor.namePlaceholder')}
             style={{ ...inputStyle, marginBottom: slugCollision ? 4 : 16 }}
           />
           {slugCollision && (
             <div style={{ fontSize: 12, color: CORAL, marginBottom: 12, fontFamily: FONT_SANS }}>
-              A playbook with this name already exists.
+              {t('playbookEditor.nameExists')}
             </div>
           )}
 
-          <label style={labelStyle}>Description</label>
+          <label style={labelStyle}>{t('playbookEditor.description')}</label>
           <input
             value={description}
             onChange={e => setDescription(e.target.value)}
             maxLength={200}
-            placeholder="One sentence: when does this apply?"
+            placeholder={t('playbookEditor.descriptionPlaceholder')}
             style={{ ...inputStyle, marginBottom: 4 }}
           />
           <div style={{ fontSize: 11, color: INK_DIM, marginBottom: 16, fontFamily: FONT_SANS }}>
-            Shown in the / menu and on quick-action chips.
+            {t('playbookEditor.descriptionHint')}
           </div>
 
-          <label style={labelStyle}>Steps</label>
+          <label style={labelStyle}>{t('playbookEditor.steps')}</label>
           <textarea
             value={body}
             onChange={e => setBody(e.target.value)}
-            placeholder={'Write the steps in plain language, one per line. e.g.\n1. Search Gmail for unpaid invoices\n2. Draft a friendly reminder for each…'}
+            placeholder={t('playbookEditor.stepsPlaceholder')}
             style={{
               ...inputStyle,
               minHeight: 240, resize: 'vertical', lineHeight: 1.5,
@@ -160,7 +168,7 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
               onChange={e => setChip(e.target.checked)}
               style={{ accentColor: '#C8D1D9' }}
             />
-            Show as a quick action above chat
+            {t('playbookEditor.quickAction')}
           </label>
 
           {error && (
@@ -181,7 +189,7 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
               color: INK_MUTE, borderRadius: 4, padding: '7px 16px',
               fontSize: 13, cursor: 'pointer', fontFamily: FONT_SANS,
             }}
-          >Cancel</button>
+          >{t('playbookEditor.cancel')}</button>
           <button
             onClick={handleSave}
             disabled={!valid || saving}
@@ -191,7 +199,11 @@ export function PlaybookEditorModal({ mode, initial, existingSlugs, onSave, onCl
               cursor: !valid || saving ? 'default' : 'pointer',
               opacity: !valid || saving ? 0.5 : 1, fontFamily: FONT_SANS,
             }}
-          >{saving ? 'Saving…' : mode === 'create' ? 'Create' : 'Save'}</button>
+          >{saving
+            ? t('playbookEditor.saving')
+            : mode === 'create'
+              ? t('playbookEditor.create')
+              : t('playbookEditor.save')}</button>
         </div>
       </div>
     </div>

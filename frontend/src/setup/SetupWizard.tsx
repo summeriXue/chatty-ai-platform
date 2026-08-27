@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import { toast } from '../shared/toast';
 import { ProviderSetup } from './ProviderSetup';
@@ -17,6 +18,7 @@ type Step = 'welcome' | 'providers' | 'branding';
 const STEPS: Step[] = ['welcome', 'providers', 'branding'];
 
 export function SetupWizard() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>('welcome');
   const navigate = useNavigate();
 
@@ -62,9 +64,10 @@ export function SetupWizard() {
         });
         document.documentElement.style.setProperty('--brand-color', updated.accent_color);
       }
+
       await finish();
     } catch {
-      toast.error('Failed to finish setup.');
+      toast.error(t('setupWizard.errors.finishFailed'));
     } finally {
       setSaving(false);
     }
@@ -73,11 +76,15 @@ export function SetupWizard() {
   async function uploadLogo(file: File) {
     const form = new FormData();
     form.append('file', file);
+
     const res = await fetch('/api/branding/logo', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('chatty_token')}` },
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem('chatty_token')}`,
+      },
       body: form,
     });
+
     if (res.ok) setLogoUploaded(true);
   }
 
@@ -101,23 +108,28 @@ export function SetupWizard() {
           {step === 'welcome' && (
             <div className="text-center space-y-6">
               <div className="text-5xl">&#x1f680;</div>
-              <h1 className="text-2xl font-bold text-white">Welcome to your AI workspace</h1>
+
+              <h1 className="text-2xl font-bold text-white">
+                {t('setupWizard.welcome.title')}
+              </h1>
+
               <p className="text-ch-ink-mute">
-                Let's get you set up. We'll connect an AI provider and customize your platform.
-                You can always change these settings later.
+                {t('setupWizard.welcome.description')}
               </p>
+
               <div className="space-y-3 pt-2">
                 <button
                   onClick={nextStep}
                   className="w-full py-3 bg-brand text-white font-semibold rounded-md hover:opacity-90 transition"
                 >
-                  Get Started
+                  {t('setupWizard.welcome.getStarted')}
                 </button>
+
                 <button
                   onClick={skipAll}
                   className="w-full py-3 text-ch-ink-mute hover:text-white text-sm transition"
                 >
-                  Skip setup — I'll do this later
+                  {t('setupWizard.welcome.skipSetup')}
                 </button>
               </div>
             </div>
@@ -127,9 +139,12 @@ export function SetupWizard() {
           {step === 'providers' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-white">Connect an AI provider</h2>
+                <h2 className="text-xl font-bold text-white">
+                  {t('setupWizard.providers.title')}
+                </h2>
+
                 <p className="text-ch-ink-mute text-sm mt-1">
-                  Your agents need at least one AI provider to work. Connect one or more below.
+                  {t('setupWizard.providers.description')}
                 </p>
               </div>
 
@@ -140,13 +155,14 @@ export function SetupWizard() {
                   onClick={nextStep}
                   className="flex-1 py-3 bg-brand text-white font-semibold rounded-md hover:opacity-90 transition"
                 >
-                  Continue
+                  {t('setupWizard.providers.continue')}
                 </button>
+
                 <button
                   onClick={nextStep}
                   className="py-3 px-5 text-ch-ink-mute hover:text-white text-sm rounded-md hover:bg-ch-bg-raised transition"
                 >
-                  Skip
+                  {t('setupWizard.providers.skip')}
                 </button>
               </div>
             </div>
@@ -156,24 +172,33 @@ export function SetupWizard() {
           {step === 'branding' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-white">Customize your platform</h2>
+                <h2 className="text-xl font-bold text-white">
+                  {t('setupWizard.branding.title')}
+                </h2>
+
                 <p className="text-ch-ink-mute text-sm mt-1">
-                  Give your workspace a name, color, and logo. All optional.
+                  {t('setupWizard.branding.description')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm text-ch-ink-mute mb-2">Platform name</label>
+                <label className="block text-sm text-ch-ink-mute mb-2">
+                  {t('setupWizard.branding.platformName')}
+                </label>
+
                 <input
                   value={companyName}
                   onChange={e => setCompanyName(e.target.value)}
-                  placeholder="My Company"
+                  placeholder={t('setupWizard.branding.platformNamePlaceholder')}
                   className="w-full bg-ch-bg-raised border border-ch-line-strong text-white rounded-lg px-4 py-3 focus:outline-none focus:border-brand placeholder-gray-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-ch-ink-mute mb-2">Accent color</label>
+                <label className="block text-sm text-ch-ink-mute mb-2">
+                  {t('setupWizard.branding.accentColor')}
+                </label>
+
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
@@ -181,15 +206,24 @@ export function SetupWizard() {
                     onChange={e => setAccentColor(e.target.value)}
                     className="w-12 h-12 rounded-lg border-0 cursor-pointer bg-transparent"
                   />
-                  <span className="text-ch-ink-mute font-mono text-sm">{accentColor}</span>
+
+                  <span className="text-ch-ink-mute font-mono text-sm">
+                    {accentColor}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm text-ch-ink-mute mb-2">Logo</label>
+                <label className="block text-sm text-ch-ink-mute mb-2">
+                  {t('setupWizard.branding.logo')}
+                </label>
+
                 {logoUploaded && (
-                  <p className="text-green-400 text-sm mb-2">Logo uploaded</p>
+                  <p className="text-green-400 text-sm mb-2">
+                    {t('setupWizard.branding.logoUploaded')}
+                  </p>
                 )}
+
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
@@ -207,13 +241,16 @@ export function SetupWizard() {
                   disabled={saving}
                   className="flex-1 py-3 bg-brand text-white font-semibold rounded-md hover:opacity-90 transition disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : 'Finish Setup'}
+                  {saving
+                    ? t('setupWizard.branding.saving')
+                    : t('setupWizard.branding.finishSetup')}
                 </button>
+
                 <button
                   onClick={skipAll}
                   className="py-3 px-5 text-ch-ink-mute hover:text-white text-sm rounded-md hover:bg-ch-bg-raised transition"
                 >
-                  Skip
+                  {t('setupWizard.branding.skip')}
                 </button>
               </div>
             </div>

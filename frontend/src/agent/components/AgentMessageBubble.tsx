@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ChatMessage, ToolCallInfo, PendingConfirmation, PendingPlan } from '../hooks/useAgentChat';
 import MarkdownContent from './MarkdownContent';
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
@@ -85,6 +86,7 @@ function _formatResult(result: unknown): string {
 }
 
 function CopyButton({ copied, onClick }: { copied: boolean; onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onClick}
@@ -93,7 +95,7 @@ function CopyButton({ copied, onClick }: { copied: boolean; onClick: () => void 
         color: copied ? '#8EA589' : 'rgba(237,240,244,0.38)',
         cursor: 'pointer',
       }}
-      title={copied ? 'Copied!' : 'Copy message'}
+      title={copied ? t('agentMessage.copied') : t('agentMessage.copyMessage')}
     >
       {copied ? (
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
@@ -114,6 +116,7 @@ function ToolCallBubble({ tc, isExpanded, onToggle }: {
   isExpanded: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useTranslation();
   const isRunning = tc.status === 'running';
   const [elapsed, setElapsed] = useState<number | null>(null);
   useEffect(() => {
@@ -146,7 +149,7 @@ function ToolCallBubble({ tc, isExpanded, onToggle }: {
           animation: isRunning ? 'pulse 2s infinite' : 'none',
         }} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#EDF0F4' }}>
-          {_toolLabel(tc.tool)}
+          {t(`agentMessage.tools.${tc.tool}`, { defaultValue: _toolLabel(tc.tool) })}
         </span>
         {isRunning && elapsed !== null && elapsed > 2 && (
           <span style={{
@@ -194,7 +197,7 @@ function ToolCallBubble({ tc, isExpanded, onToggle }: {
           )}
           {tc.args && Object.keys(tc.args).length > 0 && (
             <div style={{ marginTop: 6 }}>
-              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(237,240,244,0.38)' }}>Input</div>
+              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(237,240,244,0.38)' }}>{t('agentMessage.input')}</div>
               <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.4, maxHeight: 128, overflowY: 'auto', color: 'rgba(237,240,244,0.62)', marginTop: 4 }}>
                 {_formatArgs(tc.args)}
               </pre>
@@ -202,7 +205,7 @@ function ToolCallBubble({ tc, isExpanded, onToggle }: {
           )}
           {tc.result !== undefined && tc.status === 'done' && (
             <div style={{ marginTop: 6 }}>
-              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(237,240,244,0.38)' }}>Output</div>
+              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(237,240,244,0.38)' }}>{t('agentMessage.output')}</div>
               <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.4, maxHeight: 192, overflowY: 'auto', color: 'rgba(237,240,244,0.62)', marginTop: 4 }}>
                 {_formatResult(tc.result)}
               </pre>
@@ -210,7 +213,7 @@ function ToolCallBubble({ tc, isExpanded, onToggle }: {
           )}
           {isRunning && !tc.result && (
             <p style={{ fontSize: 10, fontStyle: 'italic', marginTop: 6, color: isHung ? '#D97757' : 'rgba(237,240,244,0.38)' }}>
-              {isHung ? 'Tool may be stuck...' : 'Waiting for result...'}
+              {isHung ? t('agentMessage.toolMayBeStuck') : t('agentMessage.waitingForResult')}
             </p>
           )}
         </div>
@@ -224,10 +227,11 @@ function ConfirmationCard({ confirm, onApprove, onDeny }: {
   onApprove?: () => void;
   onDeny?: () => void;
 }) {
+  const { t } = useTranslation();
   const bg = confirm.status === 'approved' ? 'rgba(142,165,137,0.08)' : confirm.status === 'denied' ? 'rgba(217,119,87,0.08)' : 'rgba(212,168,90,0.06)';
   const border = confirm.status === 'approved' ? 'rgba(142,165,137,0.2)' : confirm.status === 'denied' ? 'rgba(217,119,87,0.2)' : 'rgba(212,168,90,0.15)';
   const dotColor = confirm.status === 'approved' ? '#8EA589' : confirm.status === 'denied' ? '#D97757' : '#D4A85A';
-  const statusLabel = confirm.status === 'approved' ? 'Approved' : confirm.status === 'denied' ? 'Denied' : 'Awaiting approval';
+  const statusLabel = confirm.status === 'approved' ? t('agentMessage.approved') : confirm.status === 'denied' ? t('agentMessage.denied') : t('agentMessage.awaitingApproval');
 
   return (
     <div style={{ marginTop: 12, borderRadius: 6, border: `1px solid ${border}`, background: bg, padding: 12 }}>
@@ -236,7 +240,7 @@ function ConfirmationCard({ confirm, onApprove, onDeny }: {
         <span style={{ fontSize: 12, fontWeight: 600, color: '#EDF0F4' }}>{statusLabel}</span>
       </div>
       <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)', marginBottom: 8 }}>
-        {confirm.description || `Execute ${confirm.tool}`}
+        {confirm.description || t('agentMessage.executeTool', { tool: confirm.tool })}
       </p>
       {confirm.status === 'pending' && (
         <div style={{ display: 'flex', gap: 8 }}>
@@ -244,12 +248,12 @@ function ConfirmationCard({ confirm, onApprove, onDeny }: {
             padding: '5px 12px', fontSize: 12, fontWeight: 500, borderRadius: 4,
             background: 'rgba(142,165,137,0.2)', color: '#8EA589',
             border: 'none', cursor: 'pointer',
-          }}>Approve</button>
+          }}>{t('agentMessage.approve')}</button>
           <button onClick={onDeny} style={{
             padding: '5px 12px', fontSize: 12, fontWeight: 500, borderRadius: 4,
             background: 'rgba(217,119,87,0.15)', color: '#D97757',
             border: 'none', cursor: 'pointer',
-          }}>Deny</button>
+          }}>{t('agentMessage.deny')}</button>
         </div>
       )}
     </div>
@@ -261,6 +265,7 @@ function PlanCard({ plan, onApprove, onIterate }: {
   onApprove?: () => void;
   onIterate?: () => void;
 }) {
+  const { t } = useTranslation();
   const bg = plan.status === 'approved' ? 'rgba(142,165,137,0.06)' : plan.status === 'iterating' ? 'rgba(34,40,48,0.55)' : 'rgba(212,168,90,0.06)';
   const border = plan.status === 'approved' ? 'rgba(142,165,137,0.15)' : plan.status === 'iterating' ? 'rgba(230,235,242,0.07)' : 'rgba(212,168,90,0.15)';
 
@@ -271,9 +276,9 @@ function PlanCard({ plan, onApprove, onIterate }: {
           fontSize: 11, fontWeight: 600,
           color: plan.status === 'approved' ? '#8EA589' : plan.status === 'iterating' ? 'rgba(237,240,244,0.38)' : '#D4A85A',
         }}>
-          {plan.status === 'pending' && 'Proposed Plan'}
-          {plan.status === 'approved' && 'Plan Approved'}
-          {plan.status === 'iterating' && 'Refining Plan...'}
+          {plan.status === 'pending' && t('agentMessage.proposedPlan')}
+          {plan.status === 'approved' && t('agentMessage.planApproved')}
+          {plan.status === 'iterating' && t('agentMessage.refiningPlan')}
         </span>
       </div>
       <div style={{ fontSize: 14, color: '#EDF0F4' }}>
@@ -285,12 +290,12 @@ function PlanCard({ plan, onApprove, onIterate }: {
             padding: '7px 14px', fontSize: 12, fontWeight: 500, borderRadius: 4,
             background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013',
             border: 'none', cursor: 'pointer',
-          }}>Approve & Execute</button>
+          }}>{t('agentMessage.approveExecute')}</button>
           <button onClick={onIterate} style={{
             padding: '7px 14px', fontSize: 12, fontWeight: 500, borderRadius: 4,
             background: 'transparent', color: '#EDF0F4',
             border: '1px solid rgba(230,235,242,0.14)', cursor: 'pointer',
-          }}>Keep Iterating</button>
+          }}>{t('agentMessage.keepIterating')}</button>
         </div>
       )}
     </div>
@@ -315,6 +320,7 @@ function TypingDots() {
 }
 
 function AgentMessageBubbleInner({ message, onApprove, onDeny, onApprovePlan, onIteratePlan, agentName, showModelBadge }: Props) {
+  const { t, i18n } = useTranslation();
   const isUser = message.role === 'user';
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
   const { copied, copy } = useCopyToClipboard();
@@ -380,11 +386,11 @@ function AgentMessageBubbleInner({ message, onApprove, onDeny, onApprovePlan, on
               whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             }}>
               {message.playbook && !message.content.trim()
-                ? <span style={{ fontStyle: 'italic', color: 'rgba(237,240,244,0.62)' }}>Run “{message.playbook.name}”</span>
+                ? <span style={{ fontStyle: 'italic', color: 'rgba(237,240,244,0.62)' }}>{t('agentMessage.runPlaybook', { name: message.playbook.name })}</span>
                 : message.content}
               {message.timestamp ? (
                 <div style={{ fontSize: 10, color: 'rgba(237,240,244,0.38)', textAlign: 'right', marginTop: 4 }}>
-                  {formatBubbleTime(message.timestamp)}
+                  {formatBubbleTime(message.timestamp, i18n.language)}
                 </div>
               ) : null}
             </div>
@@ -410,14 +416,14 @@ function AgentMessageBubbleInner({ message, onApprove, onDeny, onApprovePlan, on
           <div style={{
             fontFamily: "'Fraunces', Georgia, serif",
             fontSize: 14, color: '#D4A85A',
-          }}>{agentName || 'Agent'}</div>
+          }}>{agentName || t('agentMessage.agent')}</div>
           {message.model && showModelBadge && (
             <span style={{
               fontFamily: "'JetBrains Mono', ui-monospace, monospace",
               fontSize: 9, letterSpacing: '0.1em',
               color: 'rgba(237,240,244,0.3)',
             }}>
-              via {friendlyModelName(message.model)}
+              {t('agentMessage.viaModel', { model: friendlyModelName(message.model) })}
             </span>
           )}
         </div>
@@ -433,7 +439,7 @@ function AgentMessageBubbleInner({ message, onApprove, onDeny, onApprovePlan, on
               {message.transcription.stage === 'saved' ? '✓' : '🎙️'}
             </span>
             <span style={{ fontSize: 12.5, color: 'rgba(237,240,244,0.75)', flex: 1 }}>
-              {message.transcription.message || `Transcribing ${message.transcription.filename}…`}
+              {message.transcription.message || t('agentMessage.transcribing', { filename: message.transcription.filename })}
             </span>
             {message.transcription.percent != null && message.transcription.stage !== 'saved' && (
               <span style={{
@@ -502,7 +508,7 @@ function AgentMessageBubbleInner({ message, onApprove, onDeny, onApprovePlan, on
             <CopyButton copied={copied} onClick={() => copy(message.content)} />
             {message.timestamp ? (
               <span style={{ fontSize: 10, color: 'rgba(237,240,244,0.38)' }}>
-                {formatBubbleTime(message.timestamp)}
+                {formatBubbleTime(message.timestamp, i18n.language)}
               </span>
             ) : null}
           </div>

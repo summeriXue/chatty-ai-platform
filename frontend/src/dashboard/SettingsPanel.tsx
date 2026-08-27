@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import { toast } from '../shared/toast';
 import type { Agent, BrandingConfig } from '../core/types';
@@ -17,9 +18,11 @@ interface Props {
   onClose: () => void;
 }
 
-type Tab = 'providers' | 'branding' | 'integrations' | 'chat' | 'data' | 'logs' | 'security' | 'danger';
+type Tab = 'providers' | 'branding' | 'integrations' | 'chat' | 'language' | 'data' | 'logs' | 'security' | 'danger';
 
 export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
+  const { t, i18n } = useTranslation();
+  const clearCrmPhrase = t('settings.danger.clearCrmPhrase');
   const [tab, setTab] = useState<Tab>('providers');
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null);
   const [dangerAgents, setDangerAgents] = useState<Agent[]>([]);
@@ -97,7 +100,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
       onBrandingUpdate(updated);
       document.documentElement.style.setProperty('--brand-color', updated.accent_color);
     } catch {
-      toast.error('Failed to save branding.');
+      toast.error(t('settings.branding.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -116,14 +119,15 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'providers', label: 'Providers' },
-    { id: 'branding', label: 'Branding' },
-    { id: 'integrations', label: 'Integrations' },
-    { id: 'chat', label: 'Chat' },
-    { id: 'data', label: 'Data' },
-    { id: 'logs', label: 'Logs' },
-    { id: 'security', label: 'Security' },
-    { id: 'danger', label: 'Danger' },
+    { id: 'providers', label: t('settings.tabs.providers') },
+    { id: 'branding', label: t('settings.tabs.branding') },
+    { id: 'integrations', label: t('settings.tabs.integrations') },
+    { id: 'chat', label: t('settings.tabs.chat') },
+    { id: 'language', label: t('settings.tabs.language') },
+    { id: 'data', label: t('settings.tabs.data') },
+    { id: 'logs', label: t('settings.tabs.logs') },
+    { id: 'security', label: t('settings.tabs.security') },
+    { id: 'danger', label: t('settings.tabs.danger') },
   ];
 
   return (
@@ -147,11 +151,20 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
             fontFamily: "'Fraunces', Georgia, serif",
             fontSize: 16, fontWeight: 400, letterSpacing: '-0.01em',
             color: '#EDF0F4', margin: 0,
-          }}>Settings</h2>
+          }}>
+            {t('settings.title')}
+          </h2>
+
           <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: 'rgba(237,240,244,0.62)',
-            fontSize: 20, cursor: 'pointer', padding: 4,
-          }}>×</button>
+            background: 'none',
+            border: 'none',
+            color: 'rgba(237,240,244,0.62)',
+            fontSize: 20,
+            cursor: 'pointer',
+            padding: 4,
+          }}>
+            ×
+          </button>
         </div>
 
         {/* Tabs */}
@@ -193,7 +206,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                   fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
                   color: 'rgba(237,240,244,0.38)', marginBottom: 6,
-                }}>Company name</label>
+                }}>{t('settings.branding.companyName')}</label>
                 <input
                   value={companyName}
                   onChange={e => setCompanyName(e.target.value)}
@@ -213,7 +226,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                   fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
                   color: 'rgba(237,240,244,0.38)', marginBottom: 6,
-                }}>Accent color</label>
+                }}>{t('settings.branding.accentColor')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <input
                     type="color"
@@ -234,7 +247,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                   fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
                   color: 'rgba(237,240,244,0.38)', marginBottom: 6,
-                }}>Logo</label>
+                }}>{t('settings.branding.logo')}</label>
                 {branding?.has_logo && (
                   <div style={{ marginBottom: 12 }}>
                     <img src="/api/branding/logo" alt="Logo" style={{ height: 48, borderRadius: 4 }} />
@@ -261,8 +274,87 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                   cursor: 'pointer', opacity: saving ? 0.5 : 1,
                 }}
               >
-                {saving ? 'Saving...' : 'Save Branding'}
+                {saving
+                  ? t('settings.branding.saving')
+                  : t('settings.branding.save')}
               </button>
+            </div>
+          )}
+
+          {tab === 'language' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div>
+                <p style={{
+                  fontSize: 14,
+                  color: '#EDF0F4',
+                  margin: 0,
+                }}>
+                  {t('settings.language.title')}
+                </p>
+
+                <p style={{
+                  fontSize: 12,
+                  color: 'rgba(237,240,244,0.38)',
+                  marginTop: 4,
+                  marginBottom: 16,
+                }}>
+                  {t('settings.language.description')}
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}>
+                  <button
+                    onClick={() => {
+                      i18n.changeLanguage('en');
+                      localStorage.setItem('chatty_language', 'en');
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      textAlign: 'left',
+                      background: i18n.language === 'en'
+                        ? 'rgba(200,209,217,0.12)'
+                        : 'rgba(20,24,30,0.78)',
+                      border: i18n.language === 'en'
+                        ? '1px solid var(--color-ch-accent, #C8D1D9)'
+                        : '1px solid rgba(230,235,242,0.14)',
+                      color: '#EDF0F4',
+                      borderRadius: 4,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t('settings.language.english')}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      i18n.changeLanguage('zh-CN');
+                      localStorage.setItem('chatty_language', 'zh-CN');
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      textAlign: 'left',
+                      background: i18n.language === 'zh-CN'
+                        ? 'rgba(200,209,217,0.12)'
+                        : 'rgba(20,24,30,0.78)',
+                      border: i18n.language === 'zh-CN'
+                        ? '1px solid var(--color-ch-accent, #C8D1D9)'
+                        : '1px solid rgba(230,235,242,0.14)',
+                      color: '#EDF0F4',
+                      borderRadius: 4,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t('settings.language.chinese')}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -272,8 +364,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Show tool calls</p>
-                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Display tool call details in chat</p>
+                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                    {t('settings.chat.showToolCalls')}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                    {t('settings.chat.showToolCallsDescription')}
+                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -299,8 +395,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Always power mode</p>
-                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Skip write-tool confirmations for all agents</p>
+                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                    {t('settings.chat.alwaysPowerMode')}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                    {t('settings.chat.alwaysPowerModeDescription')}
+                  </p>
                 </div>
                 <button
                   onClick={async () => {
@@ -329,8 +429,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Limit bot replies</p>
-                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Cap consecutive bot-to-bot replies in Telegram groups</p>
+                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                    {t('settings.chat.limitBotReplies')}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                    {t('settings.chat.limitBotRepliesDescription')}
+                  </p>
                 </div>
                 <button
                   onClick={async () => {
@@ -359,8 +463,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
               {botReplyLimitEnabled && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Max replies</p>
-                    <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Maximum consecutive bot replies before suppressing</p>
+                    <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                      {t('settings.chat.maxReplies')}
+                    </p>
+                    <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                      {t('settings.chat.maxRepliesDescription')}
+                    </p>
                   </div>
                   <input
                     type="number"
@@ -394,8 +502,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Inferred follow-ups</p>
-                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Agents notice follow-ups in conversations and check in via their heartbeat</p>
+                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                    {t('settings.chat.dailyFollowUpCap')}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                    {t('settings.chat.dailyFollowUpCapDescription')}
+                  </p>
                 </div>
                 <button
                   onClick={async () => {
@@ -424,8 +536,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
               {commitmentsEnabled && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Daily follow-up cap</p>
-                    <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Maximum follow-ups surfaced per agent per day</p>
+                    <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                      {t('settings.chat.dailyFollowUpCap')}
+                    </p>
+                    <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                      {t('settings.chat.dailyFollowUpCapDescription')}
+                    </p>
                   </div>
                   <input
                     type="number"
@@ -459,8 +575,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Default model</p>
-                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Auto selects the best model per message. Pin one to always use it.</p>
+                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                    {t('settings.chat.defaultModel')}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                    {t('settings.chat.defaultModelDescription')}
+                  </p>
                 </div>
                 <select
                   value={defaultModelTier}
@@ -488,7 +608,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     cursor: 'pointer',
                   }}
                 >
-                  <option value="auto">Auto (smart routing)</option>
+                  <option value="auto">{t('settings.chat.autoSmartRouting')}</option>
                   {(['top', 'mid', 'light'] as const).map(tier => (
                     <option key={tier} value={tier}>{tierLabels[tier] || tier}</option>
                   ))}
@@ -497,11 +617,13 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Heartbeat triage</p>
+                  <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                    {t('settings.chat.heartbeatTriage')}
+                  </p>
                   <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
-                    {triageMode === 'standard' && 'Uses agent model for triage'}
-                    {triageMode === 'cheap' && 'Uses cheaper triage model when supported'}
-                    {triageMode === 'always_cheap' && 'Forces triage on with cheapest model (supported providers)'}
+                    {triageMode === 'standard' && t('settings.chat.triageStandardDescription')}
+                    {triageMode === 'cheap' && t('settings.chat.triageCheapDescription')}
+                    {triageMode === 'always_cheap' && t('settings.chat.triageAlwaysCheapDescription')}
                   </p>
                 </div>
                 <select
@@ -530,14 +652,14 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     cursor: 'pointer',
                   }}
                 >
-                  <option value="standard">Standard</option>
-                  <option value="cheap">Cheap</option>
-                  <option value="always_cheap">Always Cheap</option>
+                  <option value="standard">{t('settings.chat.triageStandard')}</option>
+                  <option value="cheap">{t('settings.chat.triageCheap')}</option>
+                  <option value="always_cheap">{t('settings.chat.triageAlwaysCheap')}</option>
                 </select>
               </div>
               {triageMode !== 'standard' && (
                 <p style={{ fontSize: 11, color: 'rgba(237,240,244,0.32)', margin: '4px 0 0' }}>
-                  Tip: Add an OpenAI API key for the best triage model (GPT-4.1 Nano)
+                  {t('settings.chat.triageTip')}
                 </p>
               )}
               <NotificationSettings />
@@ -555,7 +677,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                     fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase' as const,
                     color: 'rgba(237,240,244,0.38)',
-                  }}>Security</span>
+                  }}>{t('settings.chat.securitySection')}</span>
                   <span style={{
                     fontSize: 10, color: 'rgba(237,240,244,0.25)',
                     transform: securityExpanded ? 'rotate(90deg)' : 'none',
@@ -570,8 +692,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                          <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Import scanning</p>
-                          <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Scan imported content for prompt injection patterns</p>
+                          <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                            {t('settings.chat.importScanning')}
+                          </p>
+                          <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                            {t('settings.chat.importScanningDescription')}
+                          </p>
                         </div>
                         <div style={{ display: 'flex', gap: 2 }}>
                           {(['off', 'flag', 'block'] as const).map(mode => (
@@ -589,7 +715,11 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                                 fontWeight: injectionScanning === mode ? 600 : 400,
                                 textTransform: 'capitalize' as const,
                               }}
-                            >{mode}</button>
+                            >
+                              {mode === 'off' && t('settings.chat.scanOff')}
+                              {mode === 'flag' && t('settings.chat.scanFlag')}
+                              {mode === 'block' && t('settings.chat.scanBlock')}
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -600,13 +730,17 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                       fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                       fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase' as const,
                       color: 'rgba(237,240,244,0.25)', margin: 0,
-                    }}>Write Budgets</p>
+                    }}>{t('settings.chat.writeBudgets')}</p>
 
                     {/* Heartbeat write budget */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Heartbeat write budget</p>
-                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Max write operations per background turn</p>
+                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                          {t('settings.chat.heartbeatWriteBudget')}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                          {t('settings.chat.heartbeatWriteBudgetDescription')}
+                        </p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button
@@ -642,8 +776,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     {/* Interactive write budget */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Chat write budget</p>
-                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Max write operations per chat turn</p>
+                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                          {t('settings.chat.chatWriteBudget')}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                          {t('settings.chat.chatWriteBudgetDescription')}
+                        </p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button
@@ -679,8 +817,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     {/* Hourly write rate limit */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Hourly write limit</p>
-                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>Global cap on write operations per hour (all agents)</p>
+                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                          {t('settings.chat.hourlyWriteLimit')}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                          {t('settings.chat.hourlyWriteLimitDescription')}
+                        </p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button
@@ -716,8 +858,12 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                     {/* Event log retention */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Event log retention</p>
-                        <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>How long to keep event log entries</p>
+                       <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>
+                        {t('settings.chat.eventLogRetention')}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
+                        {t('settings.chat.eventLogRetentionDescription')}
+                      </p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <input
@@ -732,7 +878,9 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                             color: '#EDF0F4', borderRadius: 4, outline: 'none',
                           }}
                         />
-                        <span style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)' }}>days</span>
+                        <span style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)' }}>
+                          {t('settings.chat.days')}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -755,7 +903,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                 borderRadius: 6, padding: '14px 16px',
               }}>
                 <p style={{ fontSize: 13, color: '#D97757', margin: 0, lineHeight: 1.5 }}>
-                  Actions here are permanent and cannot be undone. Deleted agents lose all knowledge, conversations, and memory.
+                  {t('settings.danger.warning')}
                 </p>
               </div>
 
@@ -764,10 +912,14 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                   fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
                   color: 'rgba(237,240,244,0.38)', marginBottom: 12,
-                }}>Delete agents</h3>
+                }}>
+                  {t('settings.danger.deleteAgents')}
+                </h3>
 
                 {dangerAgents.length === 0 ? (
-                  <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.38)' }}>No agents to delete.</p>
+                  <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.38)' }}>
+                    {t('settings.danger.noAgents')}
+                  </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {dangerAgents.map(agent => (
@@ -797,7 +949,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                             fontFamily: "'Inter Tight', system-ui, sans-serif",
                           }}
                         >
-                          Delete
+                          {t('settings.danger.delete')}
                         </button>
                       </div>
                     ))}
@@ -811,36 +963,40 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                   fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
                   color: 'rgba(237,240,244,0.38)', marginBottom: 12,
-                }}>Clear CRM data</h3>
+                }}>{t('settings.danger.clearCrmData')}</h3>
 
                 {crmCleared ? (
                   <p style={{ fontSize: 13, color: 'rgba(142,165,137,0.9)', margin: 0 }}>
-                    All CRM data has been cleared.
+                    {t('settings.danger.crmCleared')}
                   </p>
                 ) : (
                   <>
                     <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.52)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                      Delete all contacts, deals, tasks, and activity from the CRM. This cannot be undone.
+                      {t('settings.danger.clearCrmDescription')}
                     </p>
                     <div style={{
                       background: 'rgba(217,119,87,0.08)',
                       border: '1px solid rgba(217,119,87,0.2)',
                       borderRadius: 6, padding: '10px 14px', marginBottom: 12,
                     }}>
-                      <p style={{ fontSize: 12, color: '#D97757', margin: 0, lineHeight: 1.5 }}>
-                        Type <strong style={{
-                          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                          background: 'rgba(217,119,87,0.12)',
-                          padding: '1px 6px', borderRadius: 3,
-                        }}>clear crm</strong> to confirm.
-                      </p>
+                     <p style={{ fontSize: 12, color: '#D97757', margin: 0, lineHeight: 1.5 }}>
+                      {t('settings.danger.confirmClearCrmPrefix')}{' '}
+                      <strong style={{
+                        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                        background: 'rgba(217,119,87,0.12)',
+                        padding: '1px 6px', borderRadius: 3,
+                      }}>
+                        {clearCrmPhrase}
+                      </strong>{' '}
+                      {t('settings.danger.confirmClearCrmSuffix')}
+                    </p>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input
                         type="text"
                         value={crmConfirm}
                         onChange={e => setCrmConfirm(e.target.value)}
-                        placeholder="clear crm"
+                        placeholder={clearCrmPhrase}
                         autoComplete="off"
                         style={{
                           flex: 1, boxSizing: 'border-box',
@@ -852,7 +1008,7 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                         }}
                       />
                       <button
-                        disabled={crmClearing || crmConfirm.toLowerCase() !== 'clear crm'}
+                        disabled={crmClearing || crmConfirm.toLowerCase() !== clearCrmPhrase.toLowerCase()}
                         onClick={async () => {
                           setCrmClearing(true);
                           setCrmError('');
@@ -864,7 +1020,11 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                             setCrmCleared(true);
                             setTimeout(() => window.location.reload(), 1500);
                           } catch (err: unknown) {
-                            setCrmError(err instanceof Error ? err.message : 'Failed to clear CRM data');
+                            setCrmError(
+                              err instanceof Error
+                                ? err.message
+                                : t('settings.danger.clearFailed')
+                            );
                           } finally {
                             setCrmClearing(false);
                           }
@@ -879,7 +1039,11 @@ export function SettingsPanel({ branding, onBrandingUpdate, onClose }: Props) {
                           transition: 'background 0.15s, color 0.15s',
                           whiteSpace: 'nowrap',
                         }}
-                      >{crmClearing ? 'Clearing...' : 'Clear all'}</button>
+                      >
+                        {crmClearing
+                          ? t('settings.danger.clearing')
+                          : t('settings.danger.clearAll')}
+                      </button>
                     </div>
                     {crmError && <p style={{ color: '#D97757', fontSize: 13, marginTop: 8 }}>{crmError}</p>}
                   </>

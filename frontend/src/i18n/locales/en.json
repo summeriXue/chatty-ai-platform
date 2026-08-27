@@ -1,0 +1,2012 @@
+{
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "providers": "Providers",
+      "branding": "Branding",
+      "integrations": "Integrations",
+      "chat": "Chat",
+      "language": "Language",
+      "data": "Data",
+      "logs": "Logs",
+      "security": "Security",
+      "danger": "Danger"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose the language used in the Chatty interface.",
+      "english": "English",
+      "chinese": "简体中文"
+    },
+    "branding": {
+      "companyName": "Company name",
+      "accentColor": "Accent color",
+      "logo": "Logo",
+      "saving": "Saving...",
+      "save": "Save Branding",
+      "saveFailed": "Failed to save branding."
+    },
+    "chat": {
+    "showToolCalls": "Show tool calls",
+    "showToolCallsDescription": "Display tool call details in chat",
+    "alwaysPowerMode": "Always power mode",
+    "alwaysPowerModeDescription": "Skip write-tool confirmations for all agents",
+    "limitBotReplies": "Limit bot replies",
+    "limitBotRepliesDescription": "Cap consecutive bot-to-bot replies in Telegram groups",
+    "maxReplies": "Max replies",
+    "maxRepliesDescription": "Maximum consecutive bot replies before suppressing",
+    "inferredFollowUps": "Inferred follow-ups",
+    "inferredFollowUpsDescription": "Agents notice follow-ups in conversations and check in via their heartbeat",
+    "dailyFollowUpCap": "Daily follow-up cap",
+    "dailyFollowUpCapDescription": "Maximum follow-ups surfaced per agent per day",
+    "defaultModel": "Default model",
+    "defaultModelDescription": "Auto selects the best model per message. Pin one to always use it.",
+    "autoSmartRouting": "Auto (smart routing)",
+
+    "heartbeatTriage": "Heartbeat triage",
+    "triageStandardDescription": "Uses agent model for triage",
+    "triageCheapDescription": "Uses cheaper triage model when supported",
+    "triageAlwaysCheapDescription": "Forces triage on with cheapest model (supported providers)",
+    "triageStandard": "Standard",
+    "triageCheap": "Cheap",
+    "triageAlwaysCheap": "Always Cheap",
+    "triageTip": "Tip: Add an OpenAI API key for the best triage model (GPT-4.1 Nano)",
+
+    "securitySection": "Security",
+    "importScanning": "Import scanning",
+    "importScanningDescription": "Scan imported content for prompt injection patterns",
+    "scanOff": "Off",
+    "scanFlag": "Flag",
+    "scanBlock": "Block",
+    "writeBudgets": "Write Budgets",
+    "heartbeatWriteBudget": "Heartbeat write budget",
+    "heartbeatWriteBudgetDescription": "Max write operations per background turn",
+    "chatWriteBudget": "Chat write budget",
+    "chatWriteBudgetDescription": "Max write operations per chat turn",
+    "hourlyWriteLimit": "Hourly write limit",
+    "hourlyWriteLimitDescription": "Global cap on write operations per hour (all agents)",
+    "eventLogRetention": "Event log retention",
+    "eventLogRetentionDescription": "How long to keep event log entries",
+    "days": "days"
+    },
+    "danger": {
+    "warning": "Actions here are permanent and cannot be undone. Deleted agents lose all knowledge, conversations, and memory.",
+    "deleteAgents": "Delete agents",
+    "noAgents": "No agents to delete.",
+    "delete": "Delete",
+    "clearCrmData": "Clear CRM data",
+    "crmCleared": "All CRM data has been cleared.",
+    "clearCrmDescription": "Delete all contacts, deals, tasks, and activity from the CRM. This cannot be undone.",
+    "confirmClearCrm": "Type \"clear crm\" to confirm.",
+    "clearing": "Clearing...",
+    "clearAll": "Clear all",
+    "clearFailed": "Failed to clear CRM data",
+    "clearCrmPhrase": "clear crm",
+    "confirmClearCrmPrefix": "Type",
+    "confirmClearCrmSuffix": "to confirm."
+    },
+    "notifications": {
+    "title": "Notifications",
+    "webPush": "Web Push",
+    "webPushDescription": "Push notifications to this browser",
+    "webPushBlocked": "Blocked — update in browser site settings",
+    "webPushUnsupported": "Not supported in this browser",
+    "telegram": "Telegram",
+    "telegramDescription": "Send via connected Telegram bots",
+    "whatsapp": "WhatsApp",
+    "whatsappDescription": "Send via connected WhatsApp sessions"
+    },
+    "data": {
+    "downloadBackup": "Download Backup",
+    "downloadDescription": "Download a ZIP containing all your agents, conversations, settings, and integrations data.",
+    "downloading": "Downloading...",
+    "downloaded": "Backup downloaded.",
+    "downloadFailed": "Failed to download backup.",
+
+    "restoreFromBackup": "Restore from Backup",
+    "restoreDescription": "Upload a previously downloaded backup ZIP to restore all your data.",
+    "restoreWarning": "This will replace all current data and cannot be undone.",
+    "chooseFile": "Choose file",
+    "noFileSelected": "No file selected",
+    "restoring": "Restoring...",
+    "restoreBackup": "Restore Backup",
+
+    "restoreDialogTitle": "Restore from backup",
+    "restoreDialogMessage": "This will replace ALL current data with the backup contents. This cannot be undone.",
+    "replaceEverything": "Replace everything",
+
+    "restoreComplete": "Restore complete. Reloading...",
+    "restoreFailed": "Restore failed."
+    },
+    "logs": {
+    "loadFailed": "Failed to load logs.",
+    "exportFailed": "Export failed.",
+
+    "activity": "Activity",
+    "security": "Security",
+    "all": "All",
+    "ok": "OK",
+    "errors": "Errors",
+    "allTypes": "All Types",
+    "scheduled": "Scheduled",
+    "chat": "Chat",
+
+    "autoRefresh": "Auto-refresh",
+    "allAgents": "All agents",
+    "exporting": "Exporting...",
+    "exportJson": "Export JSON",
+
+    "loading": "Loading logs...",
+    "empty": "No log entries yet.",
+
+    "model": "Model",
+    "input": "In",
+    "output": "Out",
+    "completed": "Completed",
+    "source": "Source",
+    "type": "Type",
+    "toolCalls": "Tool Calls",
+
+    "statusOk": "OK",
+    "statusError": "Error",
+    "statusActionTaken": "Action Taken",
+    "statusLeaseLost": "Lease Lost",
+    "statusSkipped": "Skipped",
+    "statusRunning": "Running",
+
+    "eventChat": "Chat",
+    "eventReview": "Review",
+    "eventScheduledAction": "Scheduled Action",
+    "eventSecurity": "Security"
+    },
+    "security": {
+    "loading": "Loading...",
+
+    "twoFactor": "Two-factor authentication",
+    "twoFactorDescription": "Add an extra layer of security to your account. You'll need an authenticator app like Google Authenticator, Authy, or 1Password.",
+    "settingUp": "Setting up...",
+    "enableTwoFactor": "Enable two-factor authentication",
+
+    "scanQrCode": "Scan QR code",
+    "scanQrDescription": "Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.",
+    "manualEntryKey": "Manual entry key",
+    "verificationCode": "Verification code",
+    "confirmPassword": "Confirm password",
+    "enterPassword": "Enter your password",
+    "cancel": "Cancel",
+    "verifying": "Verifying...",
+    "verifyAndEnable": "Verify & Enable",
+
+    "saveBackupCodes": "Save your backup codes",
+    "backupCodesWarning": "Save these codes in a safe place. Each code can only be used once. If you lose access to your authenticator app, these are the only way to log in.",
+    "copyAll": "Copy all",
+    "downloadTxt": "Download .txt",
+    "savedCodes": "I've saved my codes",
+
+    "backupCodesRemaining": "{{count}} backup codes remaining",
+    "trustedDevice": "{{count}} trusted device",
+    "trustedDevices": "{{count}} trusted devices",
+    "enabled": "Enabled",
+    "regenerateBackupCodes": "Regenerate backup codes",
+    "disableTwoFactor": "Disable two-factor authentication",
+
+    "disableDescription": "Enter your password to confirm. This will also revoke all trusted devices.",
+    "password": "Password",
+    "disabling": "Disabling...",
+    "disable2FA": "Disable 2FA",
+
+    "regenerateDescription": "This will replace your existing backup codes. Enter your password to confirm.",
+    "regenerating": "Regenerating...",
+    "regenerateCodes": "Regenerate codes",
+    "qrCodeAlt": "2FA QR Code",
+
+    "setupFailed": "Setup failed",
+    "invalidCode": "Invalid code",
+    "disableFailed": "Failed to disable",
+    "regenerateFailed": "Failed to regenerate",
+
+    "backupFileTitle": "Chatty — Backup Codes",
+    "backupFileSafePlace": "Store these codes in a safe place.",
+    "backupFileSingleUse": "Each code can only be used once."
+    }
+  },
+  "providers": {
+    "apiKey": "API Key",
+    "localSetup": "Local Setup",
+    "active": "Active",
+    "expired": "Expired",
+    "connected": "Connected",
+    "setAsActive": "Set as active",
+    "disconnect": "Disconnect",
+    "invalidApiKey": "Invalid API key",
+    "validating": "Validating...",
+    "connect": "Connect",
+
+    "getAnthropicApiKey": "Get your API key at console.anthropic.com",
+    "getOpenAIApiKey": "Get your API key at platform.openai.com",
+    "getGoogleApiKey": "Get your API key at aistudio.google.com",
+    "getDeepSeekApiKey": "Get your API key at platform.deepseek.com",
+    "getKimiApiKey": "Get your API key at Kimi API Platform",
+    "model": "Model",
+    "tiers": "Tiers (used by auto-triage & per-agent top/mid/light)",
+    "tierTop": "Top",
+    "tierMid": "Mid",
+    "tierLight": "Light",
+    "useInferredDefault": "Use inferred default",
+    "ollamaDetecting": "Detecting Ollama...",
+    "ollamaDetected": "Ollama detected",
+    "ollamaSelectModel": "Select a model",
+    "connecting": "Connecting...",
+
+    "ollamaNoModels": "Ollama is running but no models are installed",
+    "ollamaPullHint": "Pull a model in your terminal, then click \"Refresh\":",
+    "ollamaModelLight": "Lightweight (3.4 GB) — works on any computer",
+    "ollamaModelBalanced": "Balanced (6 GB) — best quality for the size",
+    "ollamaModelQuality": "Quality (5 GB) — needs 16 GB RAM",
+    "refresh": "Refresh",
+
+    "ollamaNotDetected": "Ollama not detected",
+    "ollamaLocalIntro": "Run AI models locally for free:",
+    "ollamaInstallStep": "Install Ollama from",
+    "ollamaRunStep": "Run {{command}} in your terminal",
+    "ollamaReturnStep": "Come back here and click \"Refresh\"",
+    "selectModel": "Select a model",
+
+    "advanced": "Advanced",
+    "hide": "Hide",
+    "customOllamaUrl": "Custom Ollama URL",
+    "ollamaConnectFailed": "Failed to connect to Ollama",
+    "ollamaRunStepPrefix": "Run",
+    "ollamaRunStepSuffix": "in your terminal",
+    "togetherIntro": "Run open-weight AI models in the cloud for a fraction of the cost.",
+    "togetherStepCreateAccount": "Create a free account at together.ai ($25 free credits, no credit card)",
+    "togetherStepCreateKey": "Go to Settings > API Keys and create a key",
+    "togetherStepPaste": "Paste it below",
+    "getTogetherApiKey": "Get your API key at api.together.xyz",
+    "invalidSetupToken": "Invalid setup token",
+    "setupTokenPrefix": "Run",
+    "setupTokenSuffix": "in your terminal, then paste below.",
+    "setupTokenPlaceholder": "Paste your setup token"
+  },
+  "onboarding": {
+    "provider": {
+      "connectYourModel": "Connect your model",
+      "headingBefore": "Where does",
+      "headingEmphasis": "the thinking",
+      "headingAfter": "happen?",
+      "intro": "Chatty routes agents through the model you connect. You can change this later, or run different agents on different providers.",
+      "connectedBanner": "Provider connected. Connect more below or continue.",
+      "continue": "Continue",
+      "connectOneRequired": "Connect at least one provider to continue",
+
+      "subtitleDeepseek": "DeepSeek chat and reasoning models",
+      "subtitleKimi": "Moonshot AI chat and reasoning models",
+      "subtitleOllama": "Run models locally - no API key",
+
+      "methodApiKeyAnthropic": "Paste an API key from console.anthropic.com",
+      "methodApiKeyOpenai": "Paste an API key from platform.openai.com",
+      "methodApiKeyGoogle": "Paste an API key from aistudio.google.com",
+      "methodApiKeyDeepseek": "Paste your DeepSeek API key",
+      "methodApiKeyKimi": "Paste your Kimi API key",
+      "methodImportCli": "Import from CLI",
+      "methodImportCliDesc": "Import credentials from the OpenAI CLI if installed",
+      "methodLocal": "Local",
+      "methodOllamaDesc": "Automatically detect models running with Ollama",
+
+      "linkAnthropic": "Open Anthropic Console",
+      "linkOpenai": "Open OpenAI Platform",
+      "linkGoogle": "Open Google AI Studio",
+      "linkDeepseek": "Open DeepSeek Platform",
+      "linkKimi": "Open Kimi Platform",
+
+      "cliSyncIntro": "If you have the OpenAI CLI installed and signed in, Chatty can import your credentials automatically.",
+      "searching": "Searching...",
+      "noCliCredentials": "No CLI credentials found",
+      "setupTokenPlaceholder": "Paste your setup token here",
+      "setupTokenStepRun": "1. Open your terminal and run:",
+      "setupTokenStepPaste": "2. Copy the token and paste it below:"
+    },
+    "messaging": {
+      "title": "Connect a Messaging Platform",
+      "intro": "We strongly encourage you to set up a messaging connection for your agent. Telegram is the recommended choice and by far the easiest. No separate number needed for Telegram. Use your existing telephone number and set up a Telegram bot for your agent easily and quickly.",
+      "alreadyConfigured": "Messaging integrations are already configured!",
+      "recommended": "Recommended",
+      "footnote": "If you skip this step, you'll need to be logged in to a browser to chat with your agent. Setting up a messaging platform lets you talk to your agent anytime from your phone.",
+      "skipForNow": "Skip for Now",
+      "continue": "Continue"
+    },
+    "integrations": {
+      "title": "Connect Business Tools",
+      "intro": "Connect your business tools so the agent can handle accounting, HR, CRM, and more. You can also configure these anytime later in Settings.",
+      "alreadyConfigured": "All integrations are already configured!",
+      "continueToChatty": "Continue to Chatty",
+      "skip": "Skip",
+      "continue": "Continue"
+    },
+    "completion": {
+      "title": "You're all set!",
+      "summary": "Here's your setup summary:",
+      "aiProvider": "AI Provider",
+      "agentWillHelp": "your agent will help you set this up",
+      "noIntegrations": "No integrations selected — you can add them anytime from Settings.",
+      "walkThrough": "When you create your first agent, it will walk you through setting these up conversationally.",
+      "goToChatty": "Go to Chatty"
+    },
+    "bamboohr": {
+      "title": "Connect BambooHR",
+      "description": "Connect BambooHR to give your agents access to employee directory, time tracking, and HR data.",
+      "companySubdomain": "Company Subdomain",
+      "subdomainHelp": "The subdomain from your BambooHR URL (e.g. \"acme\" from acme.bamboohr.com)",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Your BambooHR API key",
+      "apiKeyScreenshot": "Screenshot: BambooHR Account → API Keys → Add New Key (coming soon)",
+      "connectionFailed": "Connection failed",
+      "skip": "Skip",
+      "connecting": "Connecting...",
+      "connect": "Connect BambooHR"
+    },
+    "odoo": {
+      "title": "Connect Odoo",
+      "description": "Connect your Odoo ERP to give your agents access to inventory, sales, accounting, and more.",
+      "url": "Odoo URL",
+      "urlHelp": "Your Odoo instance URL",
+      "searching": "Searching...",
+      "findDatabase": "Find my database",
+      "databaseName": "Database Name",
+      "selectDatabase": "Select a database...",
+      "databaseFound": "Database found",
+      "databasesFound": "{{count}} databases found",
+      "inferredFromUrl": "(inferred from URL)",
+      "typeManually": "Type manually",
+      "enterDatabaseName": "Enter your database name",
+      "useDiscoveredDatabases": "Use discovered databases",
+      "databaseHelp": "Use \"Find my database\" above, or enter the name manually",
+      "username": "Username / Email",
+      "usernameHelp": "The email you use to log into Odoo",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Your Odoo API key",
+      "apiKeyHelp": "Settings → Users → your profile → API Keys tab",
+      "noDatabasesFound": "No databases found. Please enter the name manually.",
+      "couldNotReach": "Could not reach the Odoo instance. Check the URL and try again.",
+      "connectionFailed": "Connection failed",
+      "skip": "Skip",
+      "connecting": "Connecting...",
+      "connect": "Connect Odoo"
+    },
+    "quickbooks": {
+      "title": "Connect QuickBooks",
+      "description": "Connect QuickBooks Online to let your agents access invoices, bills, payments, and financial reports.",
+      "howItWorks": "How it works",
+      "stepConnect": "Click \"Connect QuickBooks\" below",
+      "stepPopup": "A popup will open to Intuit's login page",
+      "stepAuthorize": "Sign in and authorize Chatty to access your QuickBooks data",
+      "stepClose": "The popup will close automatically when done",
+      "preparingAuthorization": "Preparing authorization...",
+      "completeAuthorization": "Complete authorization in the popup window...",
+      "finalizingConnection": "Finalizing connection...",
+      "connectedSuccessfully": "Connected successfully!",
+      "skip": "Skip",
+      "waiting": "Waiting...",
+      "connect": "Connect QuickBooks"
+    }
+  },
+  "integrations": {
+    "loadFailed": "Couldn't load integrations",
+    "deprecatedFrozen": "Deprecated · Frozen",
+    "connectionLost": "Connection lost",
+    "reconnect": "Reconnect",
+    "setupCredentials": "Setup credentials",
+    "connecting": "Connecting...",
+    "connect": "Connect",
+    "setup": "Setup",
+    "manage": "Manage",
+    "editCredentials": "Edit credentials",
+    "disconnect": "Disconnect",
+    "close": "Close",
+    "comingSoon": "Coming soon",
+    "permissions": "Permissions",
+    "permissionRead": "Read",
+    "permissionApproval": "Approval",
+    "permissionFullControl": "Full Control",
+    "reconfigure": "Reconfigure",
+    "agentMapping": "Agent Mapping",
+    "agentMappingRequired": "(required for heartbeats)",
+    "noPaperclipAgents": "No Paperclip agents found. Create agents in the Paperclip UI first.",
+    "notMapped": "Not mapped",
+    "saving": "Saving...",
+    "saveMapping": "Save Mapping",
+    "connectionFailed": "Connection failed",
+    "setupFailed": "Setup failed",
+    "disconnectFailed": "Disconnect failed",
+    "mappingSaveFailed": "Failed to save mapping",
+    "noAgents": "No agents created yet.",
+    "selectAgent": "Select agent",
+    "chooseAgent": "Choose an agent...",
+    "connected": "connected",
+    "connectWhatsApp": "Connect WhatsApp",
+    "scanWithWhatsApp": "Scan with WhatsApp",
+    "whatsappSetupDescription": "WhatsApp requires a QR code scan from your phone, so it must be set up here. Select an agent below, then scan the code with WhatsApp → Settings → Linked Devices.",
+    "whatsappScanInstructions": "Open WhatsApp → Settings → Linked Devices → Link a Device",
+    "whatsappHandledBy": "Messages to this WhatsApp number will be handled by {{agent}}.",
+    "connectedAgents": "Connected agents",
+    "telegramSetupDescription": "Each agent gets its own Telegram bot. You can set this up here, or ask your agent to “set up Telegram” and it will walk you through creating a bot with @BotFather.",
+    "odooSetupDescription": "You can also set this up by asking your agent to “connect Odoo” and provide your credentials in chat.",
+    "odooUrlPlaceholder": "Odoo URL (https://...)",
+    "searching": "Searching...",
+    "findDatabase": "Find my database",
+    "selectDatabase": "Select a database...",
+    "databaseFound": "Database found",
+    "databasesFound": "{{count}} databases found",
+    "inferredFromUrl": "(inferred from URL)",
+    "typeManually": "Type manually",
+    "databaseNamePlaceholder": "Database name",
+    "useDiscoveredDatabases": "Use discovered databases",
+    "usernameEmailPlaceholder": "Username / email",
+    "apiKeyPlaceholder": "API key",
+    "cancel": "Cancel",
+    "odooNoDatabases": "No databases found. Enter the name manually.",
+    "odooUnreachable": "Could not reach the Odoo instance. Check the URL and try again.",
+    "bambooSetupDescription": "You can also set this up by asking your agent to “connect BambooHR” and provide your subdomain and API key in chat.",
+    "bambooSubdomainPlaceholder": "Subdomain (company.bamboohr.com)",
+    "todoistSetupDescription": "Paste your Todoist API token. Find it in Todoist → Settings → Integrations → Developer.",
+    "todoistTokenPlaceholder": "Todoist API token",
+    "githubSetupDescription": "Paste your GitHub Personal Access Token. The token determines which repositories Chatty can access.",
+    "githubTokenPlaceholder": "GitHub Personal Access Token",
+    "feishuSetupDescription": "Connect a Feishu custom app using its App ID and App Secret.",
+    "feishuAppIdPlaceholder": "Feishu App ID",
+    "feishuAppSecretPlaceholder": "Feishu App Secret",
+    "selectChattyAgent": "Select a Chatty agent...",
+    "wecomSetupDescription": "Connect a WeCom custom application using its Corp ID, application Agent ID, and Secret.",
+    "wecomCorpIdPlaceholder": "WeCom Corp ID",
+    "wecomAppAgentIdPlaceholder": "WeCom Application Agent ID",
+    "wecomSecretPlaceholder": "WeCom Application Secret",
+    "wecomCallbackTokenPlaceholder": "WeCom Callback Token",
+    "wecomEncodingAesKeyPlaceholder": "WeCom EncodingAESKey",
+    "paperclipSetupDescription": "Sign in to your Paperclip instance. Chatty will auto-detect your company.",
+    "paperclipUrlPlaceholder": "Paperclip URL (https://your-instance.up.railway.app)",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "statusConnected": "Connected",
+    "statusDisconnected": "Disconnected",
+    "statusConnecting": "Connecting",
+    "statusScanQr": "Scan QR",
+    "statusChecking": "Checking",
+    "statusUnknown": "Unknown",
+    "descriptions": {
+      "quickbooks": "Connect QuickBooks for accounting and finance workflows.",
+      "qbCsv": "Import QuickBooks data from CSV files.",
+      "odoo": "Connect Odoo business data and workflows.",
+      "bamboohr": "Connect BambooHR employee and HR data.",
+      "hubspot": "Connect HubSpot CRM data and workflows.",
+      "salesforce": "Connect Salesforce CRM data and workflows.",
+      "whatsapp": "Connect WhatsApp messaging for your agents.",
+      "telegram": "Connect Telegram bots to individual agents.",
+      "feishu": "Connect a Feishu custom app to Chatty.",
+      "wecom": "Connect a WeCom custom application to Chatty.",
+      "gmail": "Connect Gmail for email tools.",
+      "calendar": "Connect Google Calendar for scheduling tools.",
+      "paperclip": "Connect your Paperclip workspace and map agents.",
+      "todoist": "Connect Todoist tasks and projects.",
+      "github": "Connect GitHub repositories with a Personal Access Token."
+    }
+  },
+  "googleIntegration": {
+    "description": "Connect Google — email, calendar, and Drive access, with per-scope permissions",
+    "setup": "Setup",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "addAccount": "+ Add Account",
+    "editCredentials": "Edit credentials",
+    "accountsConnected_one": "{{count}} account connected",
+    "accountsConnected_other": "{{count}} accounts connected",
+    "enableOneService": "Enable at least one of Gmail, Calendar, or Drive.",
+    "disconnectFailed": "Disconnect failed",
+    "updateAgentFailed": "Failed to update agent",
+    "preparingAuthorization": "Preparing authorization...",
+    "completeAuthorization": "Complete authorization in the popup...",
+    "finalizingConnection": "Finalizing connection...",
+    "connectionLost": "Connection lost",
+    "reconnect": "Reconnect",
+    "changeScopes": "Change scopes",
+    "disconnect": "Disconnect",
+    "agentAssignments": "Agent Assignments",
+    "noAgents": "No agents created yet.",
+    "noAccounts": "No accounts",
+    "default": "default",
+    "updateScopesDescription": "Update the access levels for this account. You'll re-authorize on Google's consent screen.",
+    "newAccountScopesDescription": "Pick the access levels for the new Google account.",
+    "cancel": "Cancel",
+    "connectGoogleAccount": "Connect Google Account",
+    "gmail": {
+      "none": {
+        "label": "Off",
+        "hint": "Don't request Gmail access"
+      },
+      "read": {
+        "label": "Read only",
+        "hint": "Search, read messages, read threads"
+      },
+      "send": {
+        "label": "Read + send + draft",
+        "hint": "Everything above plus compose, reply, save drafts"
+      }
+    },
+    "calendar": {
+      "none": {
+        "label": "Off",
+        "hint": "Don't request Calendar access"
+      },
+      "read": {
+        "label": "Read only",
+        "hint": "List and search events, check free/busy"
+      },
+      "full": {
+        "label": "Full access",
+        "hint": "Everything above plus create, update, and delete events"
+      }
+    },
+    "drive": {
+      "none": {
+        "label": "Off",
+        "hint": "Don't request Drive access"
+      },
+      "file": {
+        "label": "App files only",
+        "hint": "Chatty can read & upload files it creates. Minimal scope, no Google verification."
+      },
+      "readonly": {
+        "label": "Read only (all files)",
+        "hint": "Search and read any Drive file. Requires Google OAuth verification."
+      },
+      "full": {
+        "label": "Full access",
+        "hint": "Read, write, and delete any Drive file. Most powerful; requires verification."
+      }
+    },
+    "scopeValues": {
+      "gmail": {
+        "none": "off",
+        "read": "read",
+        "send": "read+send"
+      },
+      "calendar": {
+        "none": "off",
+        "read": "read",
+        "full": "full"
+      },
+      "drive": {
+        "none": "off",
+        "file": "app files",
+        "readonly": "read only",
+        "full": "full"
+      }
+    },
+    "services": {
+      "gmail": "Gmail",
+      "calendar": "Calendar",
+      "drive": "Drive",
+      "calendarFull": "Google Calendar",
+      "driveFull": "Google Drive"
+    }
+  },
+  "appCredentials": {
+    "clientIdRequired": "Client ID is required.",
+    "clientSecretRequired": "Client Secret is required.",
+    "saveFailed": "Failed to save credentials",
+
+    "intro": "Enter your own {{provider}} OAuth app credentials.",
+    "createAt": "Create one at {{portal}}",
+
+    "redirectUri": "Redirect URI",
+    "copied": "Copied",
+    "copy": "Copy",
+    "redirectHint": "Add this URL as an authorized redirect URI in your OAuth app settings.",
+
+    "clientId": "Client ID",
+    "clientIdPlaceholder": "Your {{provider}} OAuth Client ID",
+
+    "clientSecret": "Client Secret",
+    "clientSecretPlaceholder": "Your {{provider}} OAuth Client Secret",
+    "clientSecretUnchanged": "(unchanged — leave blank to keep current)",
+
+    "environment": "Environment",
+    "sandbox": "Sandbox",
+    "sandboxHint": "Free, instant — no app review needed",
+    "production": "Production",
+    "productionHint": "Requires Intuit app review",
+
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "updateCredentials": "Update Credentials",
+    "saveCredentials": "Save Credentials"
+  },
+  "telegramSettings": {
+    "webhookFailed": "Webhook registration failed — check that your server is publicly accessible.",
+    "validateTokenFailed": "Failed to validate token",
+    "connectTitle": "Connect to Telegram",
+    "connectDescriptionPrefix": "Let people message",
+    "connectDescriptionSuffix": "directly on Telegram",
+    "step1Title": "Step 1: Create Your Telegram Bot",
+    "step1OpenTelegram": "Open Telegram and search for",
+    "step1Send": "Send",
+    "step1ChooseName": "Choose a name (e.g., \"My Business Assistant\")",
+    "step1ChooseUsernamePrefix": "Choose a username ending in",
+    "step1ChooseUsernameMiddle": "(e.g.,",
+    "step1ChooseUsernameSuffix": ")",
+    "step1TokenPrefix": "BotFather will give you a",
+    "step1TokenSuffix": "copy it",
+    "botFatherConversation": "BotFather Conversation",
+    "screenshotPlaceholder": "Screenshot placeholder",
+    "botTokenResponse": "Bot Token Response",
+    "haveTokenNext": "I have my bot token — Next",
+    "step2Title": "Step 2: Paste Your Bot Token",
+    "step2Description": "Paste the token that BotFather gave you. It looks like:",
+    "tokenPlaceholder": "Paste your bot token here",
+    "whereToken": "Where to Find the Token",
+    "back": "Back",
+    "validating": "Validating...",
+    "connect": "Connect",
+    "accountLinked": "Account Linked!",
+    "messagesToPrefix": "Messages to",
+    "messagesToMiddle": "will be handled by",
+    "continue": "Continue",
+    "step3Title": "Step 3: Link Your Telegram Account",
+    "botConnected": "Bot connected!",
+    "botReadyPrefix": "Your bot",
+    "botReadySuffix": "is ready. Now link your Telegram account:",
+    "openTelegram": "Open Telegram",
+    "searchFor": "Search for",
+    "sendAnyMessage": "Send any message (e.g., \"Hello!\")",
+    "registrationOpen_one": "Registration window open — {{count}} minute remaining",
+    "registrationOpen_other": "Registration window open — {{count}} minutes remaining",
+    "registrationExpired": "Registration window expired — reset below",
+    "searchForBot": "Search for bot",
+    "sendFirstMessage": "Send first message",
+    "screenshot": "Screenshot",
+    "checking": "Checking...",
+    "sentMessage": "I've sent a message",
+    "allSet": "All Set!",
+    "agentLivePrefix": "Your agent",
+    "agentLiveMiddle": "is now live on Telegram as",
+    "botAnswerDescription": "Messages sent to the bot will be answered by your agent with full access to tools and knowledge.",
+    "enablePushPrompt": "Enable web push notifications too?",
+    "enable": "Enable",
+    "skip": "Skip",
+    "openBot": "Open @{{username}} in Telegram",
+    "updateGroupFailed": "Failed to update group setting.",
+    "updateTelegramFailed": "Failed to update Telegram setting.",
+    "disconnectFailed": "Failed to disconnect Telegram.",
+    "resetRegistrationFailed": "Failed to reset registration.",
+    "active": "Active",
+    "disabled": "Disabled",
+    "telegramMessaging": "Telegram Messaging",
+    "respondTelegram": "Respond to messages on Telegram",
+    "openInTelegram": "Open in Telegram",
+    "accountLinking": "Account Linking",
+    "accountLinkingDescription": "Reset the registration window to link a different Telegram account to this agent.",
+    "resetting": "Resetting...",
+    "resetRegistrationWindow": "Reset Registration Window",
+    "registrationReopened": "Registration window reopened for 10 minutes. Message the bot to link your account.",
+    "groupChats": "Group Chats",
+    "groupChatsDescription": "Allow this bot to respond in Telegram groups when @mentioned or replied to. Anyone in the group can interact with the agent and its tools.",
+    "enableGroupChats": "Enable Group Chats",
+    "respondGroupChats": "Respond to messages in group conversations",
+    "disconnectBot": "Disconnect Bot",
+    "disconnectBotDescription": "Remove the Telegram bot connection. The bot will stop responding to messages.",
+    "disconnect": "Disconnect",
+    "disconnecting": "Disconnecting...",
+    "confirmDisconnect": "Confirm Disconnect",
+    "cancel": "Cancel"
+  },
+  "dashboard": {
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "searchPlaceholder": "Ask Chatty, or jump to…",
+    "loadingAgents": "Loading your agents...",
+    "noAgentsHero": "No agents yet — commission your first one below.",
+    "youHave": "You currently have",
+    "agentCount_one": "{{count}} agent",
+    "agentCount_other": "{{count}} agents",
+    "readyToWork": "ready to work.",
+    "agents": "Agents",
+    "yourAgents": "Your agents",
+    "importAgent": "Import agent",
+    "commissionAgent": "Commission agent",
+    "loadAgentsFailed": "Couldn't load your agents",
+    "buildTeam": "Build your team",
+    "teamIdeas": "Ideas for your team",
+    "roles": {
+      "personalAssistant": {
+        "role": "Personal Assistant",
+        "desc": "Scheduling, email drafts, meeting prep"
+      },
+      "apClerk": {
+        "role": "AP Clerk",
+        "desc": "Invoice review, vendor payments, expense tracking"
+      },
+      "arClerk": {
+        "role": "AR Clerk",
+        "desc": "Collections, payment tracking, customer billing"
+      },
+      "customerService": {
+        "role": "Customer Service",
+        "desc": "Ticket triage, inquiries, escalations"
+      },
+      "purchasing": {
+        "role": "Purchasing",
+        "desc": "Vendor sourcing, purchase orders, cost analysis"
+      },
+      "salesRep": {
+        "role": "Sales Rep",
+        "desc": "Lead qualification, outreach, deal closing"
+      },
+      "salesSupport": {
+        "role": "Sales Support",
+        "desc": "Proposals, follow-ups, CRM updates"
+      },
+      "researchAnalyst": {
+        "role": "Research Analyst",
+        "desc": "Market research, competitive analysis, reports"
+      },
+      "bookkeeper": {
+        "role": "Bookkeeper",
+        "desc": "Reconciliation, journal entries, financial reports"
+      },
+      "hrCoordinator": {
+        "role": "HR Coordinator",
+        "desc": "Onboarding, time-off requests, policy questions"
+      },
+      "marketingAssistant": {
+        "role": "Marketing Assistant",
+        "desc": "Content ideas, social posts, campaign tracking"
+      },
+      "operationsManager": {
+        "role": "Operations Manager",
+        "desc": "Process optimization, vendor coordination, logistics"
+      }
+    }
+  },
+    "agentCard": {
+    "email": "Email",
+    "calendar": "Calendar"
+  },
+  "createAgent": {
+    "title": "Commission Agent",
+    "agentType": "Agent type",
+    "general": "General",
+    "generalDesc": "General-purpose assistant",
+    "technicalEngineer": "Technical Engineer",
+    "technicalEngineerDesc": "Code, architecture and debugging",
+    "agentName": "Agent name *",
+    "namePlaceholder": "e.g. Arthur, Penelope, Rhea",
+    "titleRole": "Title / Role",
+    "rolePlaceholder": "e.g. AP Clerk, Sales Rep",
+    "roleHint": "This helps your agent understand its role during onboarding.",
+    "creating": "Creating...",
+    "commission": "Commission",
+    "cancel": "Cancel",
+    "createFailed": "Failed to create agent"
+  },
+  "importAgent": {
+    "title": "Import Existing Agent",
+    "description": "Bring knowledge from another AI system into a new Chatty agent. Your agent will walk you through the import.",
+    "agentName": "Agent name *",
+    "namePlaceholder": "Name for your new agent",
+    "nameHint": "You can change this during import if you're cloning an existing agent.",
+    "cancel": "Cancel",
+    "starting": "Starting...",
+    "startImport": "Start Import",
+    "startFailed": "Failed to start import"
+  },
+  "agentPage": {
+    "tabs": {
+      "chat": "Chat",
+      "knowledge": "Knowledge",
+      "project": "Project",
+      "playbooks": "Playbooks",
+      "reports": "Reports",
+      "reminders": "Reminders",
+      "heartbeat": "Heartbeat"
+    },
+    "toolModes": {
+      "read": "Read",
+      "normal": "Normal",
+      "power": "Power"
+    },
+    "thisAgent": "This agent",
+    "trainAgent": "Train {{name}}",
+    "improveAgent": "Improve {{name}}",
+    "exit": "Exit",
+    "on": "ON",
+    "off": "OFF",
+    "deleteConversation": {
+      "title": "Delete conversation",
+      "message": "This conversation and its messages will be permanently deleted.",
+      "confirm": "Delete",
+      "failed": "Failed to delete conversation."
+    },
+    "powerMode": {
+      "enableTitle": "Enable Power mode",
+      "enableMessage": "{{name}} will be able to read and write data without asking for confirmation each time.",
+      "enableConfirm": "Enable Power mode",
+      "banner": "POWER MODE",
+      "alwaysOn": "ALWAYS ON",
+      "alwaysEnabled": "Always power mode is enabled in Settings.",
+      "canWrite": "{{name}} can read and write without confirmation."
+    },
+    "plan": {
+      "plan": "Plan",
+      "planOn": "Plan ON",
+      "banner": "PLAN MODE",
+      "description": "{{name}} will propose a plan before acting.",
+      "mobileLabel": "Plan Mode"
+    },
+    "training": {
+      "improveMode": "IMPROVE MODE",
+      "trainingMode": "TRAINING MODE",
+      "improvingKnowledge": "Reviewing and improving {{name}}'s knowledge.",
+      "teachingBusiness": "Teaching {{name}} about your business.",
+      "exitTitle": "Exit training",
+      "exitMessage": "{{name}} will use whatever knowledge has been saved so far.",
+      "exitConfirm": "Exit training",
+      "keepTraining": "Keep training"
+    },
+    "live": {
+      "starting": "STARTING…",
+      "recording": "RECORDING",
+      "pausedResuming": "PAUSED — RESUMING…",
+      "pausedTapToResume": "PAUSED — TAP TO RESUME",
+      "finishing": "FINISHING",
+      "uploadingCount_one": "UPLOADING {{count}}",
+      "uploadingCount_other": "UPLOADING {{count}}",
+      "finalizing": "FINALIZING…",
+      "saved": "SAVED",
+      "uploading_one": "{{count}} uploading",
+      "uploading_other": "{{count}} uploading",
+      "stop": "Stop",
+      "downloadRecording": "Download recording",
+      "foreignSession": "Recording active on {{name}} — tap to open"
+    },
+    "avatar": {
+      "change": "Change Avatar",
+      "set": "Set Avatar"
+    },
+    "importCancel": {
+      "title": "Cancel import",
+      "message": "The agent and all import progress will be permanently deleted.",
+      "confirm": "Delete import",
+      "keep": "Keep importing",
+      "failed": "Failed to cancel import."
+    }
+  },
+  "agentChat": {
+    "toolModes": {
+      "read": "Read",
+      "normal": "Normal",
+      "power": "Power"
+    },
+    "files": {
+      "unsupportedType": "{{name}}: unsupported type (.{{ext}})",
+      "exceedsSize": "{{name}}: exceeds {{max}}",
+      "emptyFile": "{{name}}: empty file",
+      "alreadyAttached": "{{name}}: already attached",
+      "maxFiles": "Max {{max}} files. Dropped {{dropped}}."
+    },
+    "playbooks": {
+      "needsIntegration": "“{{name}}” needs {{needs}} connected. Connect it in Settings → Integrations."
+    },
+    "attachedFilesMessage": "(see attached files)",
+    "queued": {
+      "label": "Queued ↵",
+      "files_one": "{{count}} file",
+      "files_other": "{{count}} files",
+      "message": "(message)",
+      "cancelTitle": "Cancel — move back to the message box"
+    },
+    "live": {
+      "prepPlaceholder": "What's this meeting? What do you want out of it? (optional)",
+      "start": "Start",
+      "recordMeeting": "Record a live meeting"
+    },
+    "input": {
+      "playbookDetails": "Add details for “{{name}}” (optional) — Enter to run",
+      "nextMessage": "Type your next message — sends when {{name}} finishes…",
+      "messageAgent": "Message {{name}}…"
+    },
+    "theAgent": "the agent",
+    "agent": "agent",
+    "modelTier": {
+      "title": "Model tier",
+      "auto": "Auto"
+    },
+    "stop": "Stop",
+    "context": {
+      "withPercent": "{{pct}}% ctx · ⏎ send",
+      "send": "⏎ send"
+    },
+    "dropFiles": "Drop files here",
+    "emptyState": "How can I help?",
+    "sources": {
+      "telegramGroup": "Telegram Group",
+      "messagesFrom": "Messages from {{source}} appear here"
+    },
+    "importMode": {
+      "title": "Import Mode",
+      "description": "Importing knowledge from another system",
+      "cancel": "Cancel"
+    },
+    "alerts": {
+      "dismissFailed": "Failed to dismiss alert.",
+      "ackFailed": "Failed to acknowledge alert."
+    },
+    "compacted": {
+      "title": "Earlier messages were summarized to free up context",
+      "label": "Compacted"
+    }
+  },
+  "conversationSidebar": {
+    "search": "Search...",
+    "newChat": "New chat",
+    "loadFailed": "Couldn't load conversations",
+    "noResults": "No results found",
+    "noConversations": "No conversations yet",
+    "newConversation": "New conversation",
+    "renameFailed": "Failed to rename conversation.",
+    "rename": "Rename conversation",
+    "delete": "Delete conversation"
+  },
+  "agentMessage": {
+    "copied": "Copied!",
+    "copyMessage": "Copy message",
+    "input": "Input",
+    "output": "Output",
+    "toolMayBeStuck": "Tool may be stuck...",
+    "waitingForResult": "Waiting for result...",
+    "approved": "Approved",
+    "denied": "Denied",
+    "awaitingApproval": "Awaiting approval",
+    "executeTool": "Execute {{tool}}",
+    "approve": "Approve",
+    "deny": "Deny",
+    "proposedPlan": "Proposed Plan",
+    "planApproved": "Plan Approved",
+    "refiningPlan": "Refining Plan...",
+    "approveExecute": "Approve & Execute",
+    "keepIterating": "Keep Iterating",
+    "runPlaybook": "Run “{{name}}”",
+    "agent": "Agent",
+    "viaModel": "via {{model}}",
+    "transcribing": "Transcribing {{filename}}…",
+    "tools": {
+      "list_context_files": "Listing files",
+      "read_context_file": "Reading file",
+      "write_context_file": "Writing file",
+      "append_to_context_file": "Appending to file",
+      "delete_context_file": "Deleting file",
+      "search_memory": "Searching memory",
+      "append_daily_note": "Adding daily note",
+      "read_daily_note": "Reading daily note",
+      "list_daily_notes": "Listing daily notes",
+      "read_memory": "Reading MEMORY.md",
+      "update_memory": "Updating MEMORY.md",
+      "add_fact": "Recording fact",
+      "query_facts": "Querying facts",
+      "invalidate_fact": "Invalidating fact",
+      "search_emails": "Searching emails",
+      "get_email": "Reading email",
+      "get_email_thread": "Reading thread",
+      "list_calendar_events": "Listing events",
+      "get_calendar_event": "Reading event",
+      "search_calendar_events": "Searching events",
+      "web_search": "Searching web",
+      "web_fetch": "Fetching page",
+      "generate_report": "Generating report",
+      "create_reminder": "Creating reminder",
+      "list_reminders": "Listing reminders",
+      "cancel_reminder": "Cancelling reminder",
+      "create_scheduled_action": "Creating action",
+      "list_scheduled_actions": "Listing actions",
+      "list_shared_context": "Listing shared context",
+      "read_shared_context": "Reading shared context",
+      "write_shared_context": "Writing shared context"
+    }
+  },
+  "alertBanner": {
+    "alertCount_one": "{{count}} alert",
+    "alertCount_other": "{{count}} alerts",
+    "discuss": "Discuss",
+    "dismiss": "Dismiss",
+    "sources": {
+      "heartbeatFailure": "Heartbeat failing",
+      "heartbeat": "Heartbeat",
+      "scheduledAction": "Scheduled action",
+      "agentMessage": "Agent message",
+      "reminder": "Reminder",
+      "alert": "Alert"
+    }
+  },
+  "notificationLog": {
+    "notificationCount_one": "notification",
+    "notificationCount_other": "notifications",
+    "clearAll": "Clear all",
+    "dismiss": "Dismiss",
+    "dismissFailed": "Failed to dismiss notification.",
+    "dismissAllFailed": "Failed to dismiss notifications."
+  },
+    "slashCommandMenu": {
+    "playbooks": "Playbooks",
+    "noMatches": "No playbooks match",
+    "needs": "Needs {{integrations}}",
+    "manage": "Manage playbooks"
+  },
+  "playbookChips": {
+    "integrationRequired": "“{{name}}” needs {{integrations}} connected. Connect it in Settings → Integrations.",
+    "needs": "Needs {{integrations}}",
+    "more": "+{{count}} more"
+  },
+  "agentContext": {
+    "discard": {
+      "title": "Discard changes",
+      "message": "You have unsaved changes that will be lost.",
+      "confirm": "Discard",
+      "keepEditing": "Keep editing"
+    },
+    "deleteFile": {
+      "title": "Delete file",
+      "message": "{{name}} will be permanently removed from this agent's knowledge."
+    },
+    "deleteObservation": {
+      "title": "Delete observation",
+      "message": "This observation will be permanently removed from memory."
+    },
+    "delete": "Delete",
+    "save": "Save",
+    "saving": "Saving...",
+    "errors": {
+      "loadFile": "Failed to load file.",
+      "saveFile": "Failed to save file.",
+      "deleteFile": "Failed to delete file.",
+      "deleteObservation": "Failed to delete observation."
+    },
+    "learned": {
+      "title": "What I've Learned",
+      "empty": "No observations yet — these appear automatically after conversations"
+    },
+    "files": {
+      "title": "Knowledge Files",
+      "loadFailed": "Couldn't load files",
+      "empty": "No knowledge files yet",
+      "selectToEdit": "Select a file to edit"
+    }
+  },
+  "projectPanel": {
+    "title": "Project",
+    "description": "Connect this agent to a local software project. Project tools are restricted to files inside this directory.",
+    "projectRoot": "Project root",
+    "backendAccess": "The backend must be able to access this directory.",
+    "saved": "Project root saved.",
+    "saving": "Saving...",
+    "saveProject": "Save project",
+    "saveFailed": "Failed to save project root"
+  },
+  "playbooksPanel": {
+    "title_one": "Playbooks ({{count}})",
+    "title_other": "Playbooks ({{count}})",
+    "loading": "Loading playbooks...",
+    "loadFailed": "Couldn't load playbooks",
+    "newPlaybook": "New playbook",
+    "empty": {
+      "title": "No playbooks yet.",
+      "description": "Playbooks are step-by-step procedures {{name}} can run on demand. Create one, or {{name}} will write its own as it learns your routines."
+    },
+    "you": "You",
+    "needsIntegration": "Needs {{integration}}",
+    "runCount_one": "{{count}} run",
+    "runCount_other": "{{count}} runs",
+    "quickAction": "Quick action",
+    "quickActionTitle": "Show as a quick-action button above the chat input",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loadingDetail": "Loading…",
+    "archived_one": "Archived ({{count}})",
+    "archived_other": "Archived ({{count}})",
+    "restore": "Restore",
+    "learned": "What {{name}} learned",
+    "deleteDialog": {
+      "title": "Delete playbook",
+      "message": "“{{name}}” will be permanently deleted.",
+      "confirm": "Delete"
+    },
+    "toasts": {
+      "deleted": "Playbook deleted.",
+      "restored": "Playbook restored.",
+      "created": "Playbook created.",
+      "saved": "Playbook saved."
+    },
+    "errors": {
+      "load": "Failed to load playbook.",
+      "delete": "Failed to delete playbook.",
+      "quickAction": "Failed to update quick action.",
+      "restore": "Failed to restore playbook."
+    }
+  },
+  "learningFeed": {
+    "kinds": {
+      "playbookCreated": "New playbook",
+      "playbookUpdated": "Playbook updated",
+      "playbookArchived": "Playbook archived",
+      "memoryUpdated": "Memory updated",
+      "blockedUnsafeLearning": "Blocked unsafe learning"
+    },
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load learning events",
+    "showMore": "Show more",
+    "revert": "Revert",
+    "reverted": "Reverted",
+    "empty": "Nothing learned yet. As {{name}} works with you, new playbooks and memory updates will appear here — and you can undo any of them with one click.",
+    "revertDialog": {
+      "title": "Revert this change?",
+      "message": "“{{title}}” will be restored to how it was before {{name}} changed it."
+    },
+    "toasts": {
+      "reverted": "Reverted."
+    },
+    "errors": {
+      "loadMore": "Failed to load more events.",
+      "revert": "Failed to revert."
+    }
+  },
+  "reportsPanel": {
+    "loading": "Loading reports...",
+    "loadFailed": "Couldn't load reports",
+    "empty": {
+      "title": "No reports yet",
+      "description": "Ask the agent to create one!"
+    },
+    "searchPlaceholder": "Search reports...",
+    "sectionCount_one": "{{count}} section",
+    "sectionCount_other": "{{count}} sections",
+    "deleteReport": "Delete report",
+    "loadingReport": "Loading report...",
+    "failedToLoadReport": "Failed to load report",
+    "noMatches": "No reports matching \"{{search}}\"",
+    "deleteDialog": {
+      "title": "Delete report",
+      "message": "This report will be permanently deleted.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "loadReport": "Failed to load report.",
+      "deleteReport": "Failed to delete report."
+    }
+  },
+  "reportRenderer": {
+    "downloadPdf": "Download PDF",
+    "unsupportedChartType": "Unsupported chart type: {{type}}"
+  },
+  "remindersPanel": {
+    "loading": "Loading reminders...",
+    "loadFailed": "Couldn't load reminders",
+    "empty": {
+      "title": "No reminders yet.",
+      "description": "Ask your agent to set a reminder and it will appear here."
+    },
+    "sections": {
+      "upcoming_one": "Upcoming ({{count}})",
+      "upcoming_other": "Upcoming ({{count}})",
+      "completed_one": "Completed ({{count}})",
+      "completed_other": "Completed ({{count}})",
+      "cancelled_one": "Cancelled ({{count}})",
+      "cancelled_other": "Cancelled ({{count}})",
+      "noPending": "No pending reminders.",
+      "noCompleted": "No fired reminders yet."
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo_one": "{{count}}m ago",
+      "minutesAgo_other": "{{count}}m ago",
+      "hoursAgo_one": "{{count}}h ago",
+      "hoursAgo_other": "{{count}}h ago",
+      "daysAgo_one": "{{count}}d ago",
+      "daysAgo_other": "{{count}}d ago",
+      "inLessThanMinute": "In <1m",
+      "inMinutes_one": "In {{count}}m",
+      "inMinutes_other": "In {{count}}m",
+      "inHours_one": "In {{count}}h",
+      "inHours_other": "In {{count}}h",
+      "inDays_one": "In {{count}}d",
+      "inDays_other": "In {{count}}d"
+    },
+    "days": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "recurrence": {
+      "daily": "Daily",
+      "weekly": "Weekly: {{days}}",
+      "monthly": "Monthly: day {{day}}",
+      "everyHours_one": "Every {{count}}h",
+      "everyHours_other": "Every {{count}}h",
+      "everyMinutes_one": "Every {{count}}m",
+      "everyMinutes_other": "Every {{count}}m",
+      "everyHoursMinutes": "Every {{hours}}h {{minutes}}m",
+      "cron": "Cron: {{expression}}"
+    },
+    "status": {
+      "pending": "Pending",
+      "fired": "Fired",
+      "cancelled": "Cancelled"
+    },
+    "followUps": {
+      "title": "Inferred follow-ups",
+      "loadFailed": "Couldn't load inferred follow-ups.",
+      "empty": "None right now — these appear automatically when conversations mention things worth checking back on.",
+      "due": "Due {{date}}",
+      "noticed": "Noticed {{time}}",
+      "viewConversation": "View conversation",
+      "markDone": "Mark done",
+      "dismiss": "Dismiss",
+      "toasts": {
+        "completed": "Follow-up marked done.",
+        "dismissed": "Follow-up dismissed."
+      },
+      "errors": {
+        "complete": "Couldn't complete the follow-up.",
+        "dismiss": "Couldn't dismiss the follow-up."
+      }
+    },
+    "details": {
+      "message": "Message",
+      "context": "Context",
+      "due": "Due",
+      "created": "Created",
+      "fired": "Fired",
+      "status": "Status",
+      "result": "Result",
+      "seriesHistory_one": "Series History ({{count}})",
+      "seriesHistory_other": "Series History ({{count}})",
+      "loading": "Loading...",
+      "viewSeriesHistory": "View series history"
+    }
+  },
+  "heartbeatPanel": {
+    "loading": "Loading heartbeat..."
+  },
+  "heartbeatStatus": {
+    "loadError": "Could not load heartbeat configuration. Check that the backend is running.",
+    "initializing": "Initializing heartbeat...",
+    "paused": "PAUSED",
+    "pausedRepeatedErrors": "Heartbeat paused due to repeated errors.",
+    "disabled": "Heartbeat is disabled.",
+    "reEnable": "Re-enable",
+    "nextRun": "NEXT RUN",
+    "running": "Running...",
+    "runNow": "Run Now",
+    "disable": "Disable heartbeat",
+    "enable": "Enable heartbeat",
+    "totalRuns_one": "{{count}} total run",
+    "totalRuns_other": "{{count}} total runs",
+    "interval": {
+      "hours_one": "Every {{count}}h",
+      "hours_other": "Every {{count}}h",
+      "minutes_one": "Every {{count}}m",
+      "minutes_other": "Every {{count}}m",
+      "custom": "Custom"
+    },
+    "status": {
+      "ok": "All clear",
+      "action_taken": "Action taken",
+      "error": "Error",
+      "skipped": "Skipped"
+    }
+  },
+  "heartbeatChecklist": {
+    "title": "CHECKLIST",
+    "save": "Save",
+    "saving": "Saving...",
+    "saveFailed": "Failed to save checklist.",
+    "addItem": "Add Item",
+    "empty": "No checklist items yet.",
+    "addFirstTask": "Add your first task",
+    "edit": "Edit",
+    "delete": "Delete",
+    "placeholder": "Describe a task for the agent to check...",
+    "add": "Add"
+  },
+  "heartbeatHistory": {
+    "title": "RECENT RUNS",
+    "empty": "No heartbeat runs yet.",
+    "model": "Model",
+    "tokens": "Tokens",
+    "toolCount_one": "{{count}} tool",
+    "toolCount_other": "{{count}} tools",
+    "status": {
+      "ok": "All clear",
+      "action_taken": "Action taken",
+      "error": "Error",
+      "skipped": "Skipped"
+    }
+  },
+  "heartbeatConfig": {
+    "title": "CONFIGURATION",
+    "interval": "Interval (minutes)",
+    "triage": "Triage (quick check before full run)",
+    "advanced": "Advanced",
+    "alwaysOn": "Always On (ignore active hours)",
+    "activeStart": "Active Start",
+    "activeEnd": "Active End",
+    "modelOverride": "Model Override",
+    "defaultModel": "Default",
+    "maxToolIterations": "Max Tool Iterations",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes"
+  },
+  "playbookEditor": {
+    "newPlaybook": "New playbook",
+    "editPlaybook": "Edit playbook",
+    "name": "Name",
+    "namePlaceholder": "e.g. Chase overdue invoices",
+    "nameExists": "A playbook with this name already exists.",
+    "description": "Description",
+    "descriptionPlaceholder": "One sentence: when does this apply?",
+    "descriptionHint": "Shown in the / menu and on quick-action chips.",
+    "steps": "Steps",
+    "stepsPlaceholder": "Write the steps in plain language, one per line. e.g.\n1. Search Gmail for unpaid invoices\n2. Draft a friendly reminder for each…",
+    "quickAction": "Show as a quick action above chat",
+    "cancel": "Cancel",
+    "create": "Create",
+    "save": "Save",
+    "saving": "Saving…",
+    "discard": {
+      "title": "Discard changes",
+      "message": "Your edits to this playbook will be lost.",
+      "confirm": "Discard"
+    },
+    "errors": {
+      "saveFailed": "Failed to save playbook."
+    }
+  },
+  "agentActivity": {
+    "title": "Recent Activity",
+    "loading": "Loading activity...",
+    "empty": {
+      "title": "No recent heartbeat activity.",
+      "description": "Actions taken during periodic checks will appear here."
+    },
+    "model": "Model",
+    "tokens": "Tokens",
+    "toolCount_one": "{{count}} tool",
+    "toolCount_other": "{{count}} tools"
+  },
+  "crmLayout": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "contacts": "Contacts",
+      "pipeline": "Pipeline",
+      "tasks": "Tasks"
+    },
+    "demoDialog": {
+      "title": "This CRM has example data",
+      "description": "We added sample contacts, deals, and tasks so you can see how everything works. Would you like to clear it and start fresh?",
+      "keepExploring": "Keep exploring",
+      "clearing": "Clearing...",
+      "clearData": "Clear example data",
+      "doneTitle": "You're all set",
+      "doneDescription": "Example data cleared. Your CRM is ready to use.",
+      "getStarted": "Get started"
+    },
+    "demoBanner": {
+      "description": "You're viewing example data — contacts, deals, and tasks are samples.",
+      "clearFailed": "Failed to clear example data. Please try again.",
+      "clearing": "Clearing...",
+      "clearData": "Clear example data"
+    }
+  },
+  "crmDashboard": {
+    "loadFailed": "Couldn't load CRM dashboard",
+    "weekOf": "Week of {{date}}",
+    "pipelineIs": "Pipeline is",
+    "openDeals_one": "across {{count}} open deal.",
+    "openDeals_other": "across {{count}} open deals.",
+    "noActiveDeals": "No active deals yet.",
+    "dealCount_one": "{{count}} deal",
+    "dealCount_other": "{{count}} deals",
+    "topDeals": "Top deals",
+    "noDeals": "No deals yet.",
+    "noContact": "No contact",
+    "recentActivity": "Recent activity",
+    "actions": {
+      "addContact": "+ Add Contact",
+      "addDeal": "+ Add Deal",
+      "addTask": "+ Add Task"
+    },
+    "errors": {
+      "moveDeal": "Failed to move deal."
+    },
+    "stages": {
+      "lead": "Lead",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    }
+  },
+  "crmContacts": {
+    "title": "Contacts",
+    "importShort": "Import",
+    "importContacts": "Import Contacts",
+    "addShort": "Add",
+    "addContact": "Add Contact",
+    "searchPlaceholder": "Search contacts...",
+    "statusTabs": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "archived": "Archived"
+    },
+    "tags": "Tags",
+    "tagsWithCount": "Tags ({{count}})",
+    "clearAll": "Clear all",
+    "loadFailed": "Couldn't load contacts",
+    "emptySearch": "No contacts match your search.",
+    "empty": "No contacts yet. Add your first one!",
+    "contactCount_one": "{{count}} contact",
+    "contactCount_other": "{{count}} contacts",
+    "columns": {
+      "name": "Name",
+      "company": "Company",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status"
+    },
+    "loadingMore": "Loading more…",
+    "more": "{{count}} more",
+    "errors": {
+      "loadMore": "Failed to load more contacts."
+    }
+  },
+  "crmContactDetail": {
+    "notFound": "Contact not found.",
+    "backToContacts": "Contacts",
+    "edit": "Edit",
+    "delete": "Delete",
+    "atCompany": " at {{company}}",
+    "notes": "Notes",
+    "deals": "Deals",
+    "tasks": "Tasks",
+    "add": "+ Add",
+    "noDeals": "No deals yet.",
+    "noTasks": "No tasks yet.",
+    "logActivity": "Log Activity",
+    "activityHistory": "Activity History",
+    "notePlaceholder": "Add a note...",
+    "saving": "Saving...",
+    "log": "Log",
+    "activityTypes": {
+      "call": "Call",
+      "email": "Email",
+      "meeting": "Meeting",
+      "note": "Note"
+    },
+    "deleteDialog": {
+      "title": "Delete contact",
+      "message": "This will permanently delete {{name}} and their activity history. This cannot be undone.",
+      "thisContact": "this contact",
+      "confirm": "Delete contact"
+    },
+    "errors": {
+      "logActivity": "Failed to log activity.",
+      "deleteContact": "Failed to delete contact."
+    }
+  },
+  "crmPipeline": {
+    "title": "Pipeline",
+    "loadFailed": "Couldn't load pipeline",
+    "summary_one": "{{value}} total · {{count}} open deal",
+    "summary_other": "{{value}} total · {{count}} open deals",
+    "addShort": "Add",
+    "addDeal": "Add Deal",
+    "all": "All",
+    "noDeals": "No deals",
+    "stageSummary_one": "{{count}} deal · {{value}}",
+    "stageSummary_other": "{{count}} deals · {{value}}",
+    "columns": {
+      "deal": "Deal",
+      "contact": "Contact",
+      "value": "Value",
+      "probability": "Prob.",
+      "closeDate": "Close Date"
+    },
+    "stages": {
+      "lead": "Lead",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    },
+    "errors": {
+      "moveDeal": "Failed to move deal."
+    }
+  },
+  "crmTasks": {
+    "title": "Tasks",
+    "addShort": "Add",
+    "addTask": "Add Task",
+    "loadFailed": "Couldn't load tasks",
+    "completed": "Completed",
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "dueToday": "Due Today",
+      "overdue": "Overdue",
+      "done": "Done"
+    },
+    "empty": {
+      "all": "No tasks yet.",
+      "pending": "No pending tasks.",
+      "due_today": "No tasks due today.",
+      "overdue": "No overdue tasks.",
+      "completed": "No completed tasks."
+    },
+    "detail": {
+      "contact": "Contact",
+      "deal": "Deal",
+      "due": "Due",
+      "close": "Close",
+      "edit": "Edit",
+      "markIncomplete": "Mark Incomplete",
+      "markComplete": "Mark Complete"
+    },
+    "errors": {
+      "updateTask": "Failed to update task."
+    }
+  },
+  "crmContactForm": {
+    "newTitle": "New Contact",
+    "editTitle": "Edit Contact",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "jobTitle": "Job Title",
+      "source": "Source",
+      "status": "Status",
+      "tags": "Tags (comma-separated)",
+      "notes": "Notes"
+    },
+    "source": {
+      "select": "Select...",
+      "referral": "Referral",
+      "website": "Website",
+      "coldCall": "Cold Call",
+      "socialMedia": "Social Media",
+      "event": "Event",
+      "other": "Other"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "archived": "Archived"
+    },
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "update": "Update",
+    "create": "Create",
+    "errors": {
+      "nameRequired": "Name is required",
+      "saveFailed": "Failed to save"
+    }
+  },
+  "crmDealForm": {
+    "newTitle": "New Deal",
+    "editTitle": "Edit Deal",
+    "fields": {
+      "title": "Title",
+      "contact": "Contact",
+      "stage": "Stage",
+      "value": "Value ($)",
+      "probability": "Probability (%)",
+      "expectedClose": "Expected Close",
+      "notes": "Notes"
+    },
+    "noContact": "No contact",
+    "stages": {
+      "lead": "Lead",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    },
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "update": "Update",
+    "create": "Create",
+    "errors": {
+      "titleRequired": "Title is required",
+      "saveFailed": "Failed to save"
+    }
+  },
+  "crmDealDetail": {
+    "stage": "Stage",
+    "contact": "Contact",
+    "probability": "Probability",
+    "expectedClose": "Expected Close",
+    "close": "Close",
+    "edit": "Edit",
+    "markWon": "Mark Won",
+    "markLost": "Mark Lost",
+    "stages": {
+      "lead": "Lead",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    }
+  },
+  "crmTaskForm": {
+    "newTitle": "New Task",
+    "editTitle": "Edit Task",
+    "fields": {
+      "title": "What needs to be done?",
+      "description": "Description",
+      "contact": "Contact",
+      "dueDate": "Due Date",
+      "priority": "Priority"
+    },
+    "noContact": "No contact",
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "createTask": "Create Task",
+    "errors": {
+      "titleRequired": "Title is required",
+      "saveFailed": "Failed to save"
+    }
+  },
+  "crmActivityTimeline": {
+    "empty": "No activity yet.",
+    "editTitle": "Edit Activity",
+    "fields": {
+      "activity": "Activity",
+      "note": "Note"
+    },
+    "notePlaceholder": "Add a note...",
+    "meta": {
+      "contact": "Contact",
+      "deal": "Deal",
+      "logged": "Logged"
+    },
+    "activityTypes": {
+      "call": "Call",
+      "email": "Email",
+      "meeting": "Meeting",
+      "note": "Note",
+      "follow_up": "Follow Up"
+    },
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "saving": "Saving...",
+    "save": "Save",
+    "deleteDialog": {
+      "title": "Delete activity",
+      "message": "This activity entry will be permanently deleted.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "save": "Failed to save activity.",
+      "delete": "Failed to delete activity."
+    }
+  },
+  "crmBadges": {
+    "priority": {
+      "urgent": "Urgent",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "archived": "Archived"
+    }
+  },
+  "crmCsvImport": {
+    "title": "Import Contacts",
+    "description": "Upload a CSV with columns: name, email, phone, company, title, source, tags, notes. Only \"name\" is required.",
+    "selectFile": "Click to select a CSV file",
+    "close": "Close",
+    "cancel": "Cancel",
+    "importing": "Importing...",
+    "import": "Import",
+    "result": {
+      "imported_one": "{{count}} contact imported",
+      "imported_other": "{{count}} contacts imported",
+      "skipped_one": "{{count}} row skipped (no name)",
+      "skipped_other": "{{count}} rows skipped (no name)",
+      "errors_one": "{{count}} error:",
+      "errors_other": "{{count}} errors:"
+    },
+    "errors": {
+      "importFailed": "Import failed",
+      "importFailedWithStatus": "Import failed ({{status}})"
+    }
+  },
+  "crmSmartImport": {
+    "title": "Import Contacts",
+    "description": "Drop any file — CSV, vCard (.vcf), JSON, or plain text. AI will extract contacts from any format.",
+    "selectFile": "Click to select a file",
+    "cancel": "Cancel",
+    "close": "Close",
+    "parseContacts": "Parse Contacts",
+    "analyzing": "Analyzing contacts...",
+    "aiParsedWarning": "Parsed with AI — please verify the results before importing.",
+    "selectAll": "Select all ({{count}})",
+    "selected": "{{count}} selected",
+    "importSelected": "Import Selected ({{count}})",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company"
+    },
+    "result": {
+      "imported_one": "{{count}} contact imported",
+      "imported_other": "{{count}} contacts imported",
+      "skipped_one": "{{count}} skipped (no name)",
+      "skipped_other": "{{count}} skipped (no name)",
+      "errors_one": "{{count}} error:",
+      "errors_other": "{{count}} errors:"
+    },
+    "errors": {
+      "parseFailed": "Parse failed",
+      "parseFailedWithStatus": "Parse failed ({{status}})",
+      "noContactsFound": "No contacts found in file",
+      "noContactsSelected": "No contacts selected",
+      "importFailed": "Import failed",
+      "importFailedWithStatus": "Import failed ({{status}})"
+    }
+  },
+  "usagePage": {
+    "loadFailed": "Couldn't load usage data",
+    "eyebrow": "Usage & Cost",
+    "title": "Usage",
+    "empty": "No usage recorded yet.",
+    "ranges": {
+      "sevenDays": "7 days",
+      "thirtyDays": "30 days",
+      "allTime": "All time"
+    },
+    "cards": {
+      "estimatedCost": "Estimated Cost",
+      "totalTokens": "Total Tokens",
+      "events": "Events",
+      "tokenBreakdown": "{{input}} in / {{output}} out"
+    },
+    "chart": {
+      "dailyCost": "Daily Cost",
+      "dailyTokens": "Daily Tokens",
+      "cost": "Cost",
+      "tokens": "Tokens",
+      "chat": "Chat",
+      "background": "Background"
+    },
+    "table": {
+      "agent": "Agent",
+      "model": "Model",
+      "tokens": "Tokens",
+      "events": "Events",
+      "estimatedCost": "Est. Cost"
+    },
+    "pricingUnknown": "pricing unknown",
+    "pricingUnknownTitle": "No published price for: {{models}}. Run the price-check skill to add it to pricing.py.",
+    "disclaimer": "Costs are estimates based on published API prices. Local models (Ollama) are free ($0.00). A “pricing unknown” tag means a paid model has no entry in pricing.py yet — run the price-check skill to refresh rates; until then its cost is shown as $0.00 but excluded from accuracy."
+  },
+  "webbyPage": {
+    "loadFailed": "Couldn't load Webby status",
+    "setup": {
+      "title": "Meet Webby",
+      "description": "Webby manages your website through GitHub. Describe what you want changed in plain language — no coding required.",
+      "phaseTitle": "Phase 1 — Preview",
+      "phaseDescription": "GitHub editing tools are stubs in this version. Webby can be onboarded and chat, but file editing and pull requests require Phase 2.",
+      "backToDashboard": "Back to Dashboard",
+      "settingUp": "Setting up...",
+      "setUpWebby": "Set Up Webby"
+    },
+    "badges": {
+      "phase1Stub": "Phase 1 Stub",
+      "onboarding": "Onboarding"
+    },
+    "tabs": {
+      "chat": "Chat",
+      "knowledge": "Knowledge",
+      "preview": "Preview"
+    },
+    "deleteDialog": {
+      "title": "Delete conversation",
+      "message": "This conversation and its messages will be permanently deleted.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "createAgent": "Failed to create agent.",
+      "deleteConversation": "Failed to delete conversation."
+    }
+  },
+  "webbyPreview": {
+    "emptyTitle": "No preview yet",
+    "emptyDescription": "Ask Webby to make a change and a preview will appear here so you can see what it will look like.",
+    "phpWarning": "PHP file — dynamic content (like product listings) won't render in the preview.",
+    "iframeTitle": "Preview of {{file}}"
+  },
+  "loginPage": {
+    "marketing": {
+      "titleLine1": "Hire a team of agents,",
+      "titleLine2": "not just a chatbot.",
+      "description": "Commission a personal assistant, an AP clerk, a sales rep. They learn your business, handle the tedious work, and stay quietly at their desks."
+    },
+    "signIn": {
+      "eyebrow": "Sign in",
+      "title": "Welcome back.",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "signingIn": "Signing in...",
+      "continue": "Continue"
+    },
+    "twoFactor": {
+      "eyebrow": "Two-factor authentication",
+      "title": "Verify your identity.",
+      "backupDescription": "Enter one of your backup codes.",
+      "authenticatorDescription": "Enter the 6-digit code from your authenticator app.",
+      "backupCode": "Backup code",
+      "code": "Code",
+      "trustBrowser": "Trust this browser for 30 days",
+      "verifying": "Verifying...",
+      "verify": "Verify",
+      "back": "Back",
+      "useAuthenticatorCode": "Use authenticator code",
+      "useBackupCode": "Use a backup code"
+    },
+    "errors": {
+      "loginFailed": "Login failed",
+      "verificationFailed": "Verification failed"
+    }
+  },
+  "setupWizard": {
+    "welcome": {
+      "title": "Welcome to your AI workspace",
+      "description": "Let's get you set up. We'll connect an AI provider and customize your platform. You can always change these settings later.",
+      "getStarted": "Get Started",
+      "skipSetup": "Skip setup — I'll do this later"
+    },
+    "providers": {
+      "title": "Connect an AI provider",
+      "description": "Your agents need at least one AI provider to work. Connect one or more below.",
+      "continue": "Continue",
+      "skip": "Skip"
+    },
+    "branding": {
+      "title": "Customize your platform",
+      "description": "Give your workspace a name, color, and logo. All optional.",
+      "platformName": "Platform name",
+      "platformNamePlaceholder": "My Company",
+      "accentColor": "Accent color",
+      "logo": "Logo",
+      "logoUploaded": "Logo uploaded",
+      "saving": "Saving...",
+      "finishSetup": "Finish Setup",
+      "skip": "Skip"
+    },
+    "errors": {
+      "finishFailed": "Failed to finish setup."
+    }
+  },
+  "common": {
+    "loadError": {
+      "couldntLoad": "Couldn't load",
+      "error": "Error",
+      "retry": "Retry"
+    },
+    "mobileMenu": {
+      "menu": "Menu",
+      "agents": "Agents",
+      "usage": "Usage",
+      "settings": "Settings"
+    },
+    "errorBoundary": {
+      "detailsLogged": "Details were logged to the browser console.",
+      "errorDetail": "Error detail",
+      "rootTitle": "Something went wrong",
+      "rootDescription": "An unexpected error occurred. Reloading usually fixes it.",
+      "reload": "Reload",
+      "routeTitle": "This page hit an error",
+      "routeDescription": "The rest of the app is still running. You can head back to the dashboard or reload.",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "toast": {
+      "error": "Error",
+      "success": "Success",
+      "notice": "Notice",
+      "dismiss": "Dismiss"
+    },
+    "mobileNav": {
+      "agents": "Agents",
+      "usage": "Usage",
+      "knowledge": "Knowledge",
+      "settings": "Settings"
+    },
+    "status": {
+      "live": "Live",
+      "ready": "Ready",
+      "asleep": "Asleep"
+    }
+  },
+  "deleteAgent": {
+    "title": "Delete Agent",
+    "descriptionBefore": "This will permanently delete",
+    "descriptionAfter": "and all of their knowledge, conversations, and memory. This cannot be undone.",
+    "confirmInstructionBefore": "To confirm, type",
+    "confirmInstructionAfter": "below.",
+    "confirmPhrase": "delete {{name}}",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "deletePermanently": "Delete permanently",
+    "errors": {
+      "deleteFailed": "Failed to delete agent"
+    }
+  },
+  "avatarPicker": {
+    "title": "Give {{name}} a face",
+    "descriptionGenerate": "We'll generate a few avatar options based on {{name}}'s personality. Pick your favorite!",
+    "descriptionUpload": "Upload an avatar image for {{name}}, or skip for now.",
+    "generateAvatars": "Generate avatars",
+    "uploadYourOwn": "Upload your own",
+    "uploadYourOwnLower": "upload your own",
+    "skipForNow": "Skip for now",
+    "uploading": "Uploading avatar...",
+    "generating": "Generating avatars... this takes about 30 seconds",
+    "retry": "Retry",
+    "or": "or",
+    "avatarOption": "Avatar option {{number}}",
+    "choose": "Choose",
+    "saving": "Saving avatar...",
+    "errors": {
+      "generationTimedOut": "Generation timed out — try uploading your own instead",
+      "generationFailed": "Generation failed",
+      "saveFailed": "Failed to save avatar",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "reports": {
+    "exportCsv": "Export CSV"
+  },
+  "conversations": {
+    "loadFailed": "Failed to load conversation."
+  },
+  "heartbeat": {
+    "alreadyRunning": "Heartbeat is already running.",
+    "runFailed": "Failed to run heartbeat."
+  },
+  "onboardingWizard": {
+    "steps": {
+      "provider": "AI Provider",
+      "messaging": "Messaging",
+      "integrations": "Business Tools",
+      "done": "Done"
+    }
+  }
+}

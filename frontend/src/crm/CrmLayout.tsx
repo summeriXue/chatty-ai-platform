@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import { useIsMobile } from '../shared/useIsMobile';
@@ -7,15 +8,16 @@ import { INK, INK_SOFT, INK_MUTE, LINE, LINE_STRONG, ACCENT, FONT_DISPLAY, FONT_
 import { modalOverlay, modalContent, btnPrimary, btnSecondary } from './styles';
 
 const NAV_ITEMS = [
-  { to: '/crm', label: 'Dashboard', end: true },
-  { to: '/crm/contacts', label: 'Contacts' },
-  { to: '/crm/pipeline', label: 'Pipeline' },
-  { to: '/crm/tasks', label: 'Tasks' },
+  { to: '/crm', labelKey: 'crmLayout.nav.dashboard', end: true },
+  { to: '/crm/contacts', labelKey: 'crmLayout.nav.contacts' },
+  { to: '/crm/pipeline', labelKey: 'crmLayout.nav.pipeline' },
+  { to: '/crm/tasks', labelKey: 'crmLayout.nav.tasks' },
 ];
 
 function DemoDialog({ onClear, onDismiss }: {
   onClear: () => Promise<void>; onDismiss: (wasCleared: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState(false);
   const isMobile = useIsMobile();
@@ -26,7 +28,6 @@ function DemoDialog({ onClear, onDismiss }: {
       await onClear();
       setCleared(true);
     } catch {
-      // stays on prompt screen so user can retry
     } finally {
       setClearing(false);
     }
@@ -40,21 +41,22 @@ function DemoDialog({ onClear, onDismiss }: {
             <h2 style={{
               fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 400,
               letterSpacing: '-0.02em', color: INK, margin: '0 0 12px',
-            }}>This CRM has example data</h2>
+            }}>{t('crmLayout.demoDialog.title')}</h2>
             <p style={{
               fontFamily: FONT_SANS, fontSize: 14, color: INK_MUTE,
               lineHeight: 1.6, margin: 0,
-            }}>
-              We added sample contacts, deals, and tasks so you can see how
-              everything works. Would you like to clear it and start fresh?
-            </p>
+            }}>{t('crmLayout.demoDialog.description')}</p>
             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-              <button onClick={() => onDismiss(false)} style={btnSecondary}>Keep exploring</button>
+              <button onClick={() => onDismiss(false)} style={btnSecondary}>
+                {t('crmLayout.demoDialog.keepExploring')}
+              </button>
               <button
                 onClick={handleClear}
                 disabled={clearing}
                 style={{ ...btnPrimary, opacity: clearing ? 0.6 : 1, cursor: clearing ? 'wait' : 'pointer' }}
-              >{clearing ? 'Clearing...' : 'Clear example data'}</button>
+              >
+                {clearing ? t('crmLayout.demoDialog.clearing') : t('crmLayout.demoDialog.clearData')}
+              </button>
             </div>
           </>
         ) : (
@@ -68,13 +70,15 @@ function DemoDialog({ onClear, onDismiss }: {
             <h2 style={{
               fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 400,
               letterSpacing: '-0.02em', color: INK, margin: '0 0 8px',
-            }}>You're all set</h2>
+            }}>{t('crmLayout.demoDialog.doneTitle')}</h2>
             <p style={{
               fontFamily: FONT_SANS, fontSize: 14, color: INK_MUTE,
               lineHeight: 1.6, margin: 0,
-            }}>Example data cleared. Your CRM is ready to use.</p>
+            }}>{t('crmLayout.demoDialog.doneDescription')}</p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-              <button onClick={() => onDismiss(true)} style={btnPrimary}>Get started</button>
+              <button onClick={() => onDismiss(true)} style={btnPrimary}>
+                {t('crmLayout.demoDialog.getStarted')}
+              </button>
             </div>
           </>
         )}
@@ -86,6 +90,7 @@ function DemoDialog({ onClear, onDismiss }: {
 function DemoBanner({ onClear, isMobile }: {
   onClear: () => Promise<void>; isMobile: boolean;
 }) {
+  const { t } = useTranslation();
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState(false);
 
@@ -114,9 +119,7 @@ function DemoBanner({ onClear, isMobile }: {
       <span style={{
         fontFamily: FONT_SANS, fontSize: 13, color: error ? '#D97757' : GOLD, lineHeight: 1.4,
       }}>
-        {error
-          ? 'Failed to clear example data. Please try again.'
-          : <>You're viewing example data &mdash; contacts, deals, and tasks are samples.</>}
+        {error ? t('crmLayout.demoBanner.clearFailed') : t('crmLayout.demoBanner.description')}
       </span>
       <button
         onClick={handleClear}
@@ -128,12 +131,15 @@ function DemoBanner({ onClear, isMobile }: {
           fontWeight: 500, cursor: clearing ? 'wait' : 'pointer',
           opacity: clearing ? 0.6 : 1, whiteSpace: 'nowrap',
         }}
-      >{clearing ? 'Clearing...' : 'Clear example data'}</button>
+      >
+        {clearing ? t('crmLayout.demoBanner.clearing') : t('crmLayout.demoBanner.clearData')}
+      </button>
     </div>
   );
 }
 
 export function CrmLayout() {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -142,8 +148,9 @@ export function CrmLayout() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    // best-effort: assume non-demo on failure
-    api<{ demo_mode: boolean }>('/api/crm/demo-status').then(r => setDemoMode(r.demo_mode)).catch(() => setDemoMode(false));
+    api<{ demo_mode: boolean }>('/api/crm/demo-status')
+      .then(r => setDemoMode(r.demo_mode))
+      .catch(() => setDemoMode(false));
   }, []);
 
   const handleClearDemo = useCallback(async () => {
@@ -158,10 +165,7 @@ export function CrmLayout() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{
-        borderBottom: `1px solid ${LINE}`,
-      }}>
-        {/* Row 1: Title + nav tabs (desktop) or hamburger (mobile) */}
+      <div style={{ borderBottom: `1px solid ${LINE}` }}>
         <div style={{
           height: 52, padding: isMobile ? '0 16px' : '0 28px',
           display: 'flex', alignItems: 'center',
@@ -197,7 +201,7 @@ export function CrmLayout() {
                       cursor: 'pointer', textDecoration: 'none',
                     })}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </NavLink>
                 ))}
               </div>
@@ -205,7 +209,6 @@ export function CrmLayout() {
           )}
         </div>
 
-        {/* Row 2: Tabs (mobile only) */}
         {isMobile && (
           <div style={{
             display: 'flex', overflowX: 'auto', padding: '0 16px',
@@ -224,7 +227,7 @@ export function CrmLayout() {
                   cursor: 'pointer', textDecoration: 'none',
                 })}
               >
-                {item.label}
+                {t(item.labelKey)}
               </NavLink>
             ))}
           </div>

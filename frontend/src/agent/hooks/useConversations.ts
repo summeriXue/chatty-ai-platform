@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, type SetStateAction } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { toast } from '../../shared/toast';
 import type { ChatMessage } from './useAgentChat';
@@ -23,6 +24,7 @@ export interface Conversation {
 }
 
 export function useConversations(apiPrefix: string) {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -111,12 +113,14 @@ export function useConversations(apiPrefix: string) {
       // null (not []) so callers can distinguish failure from an empty
       // conversation and skip switching the chat view. A stale failure stays
       // silent — it shouldn't toast over a newer selection.
-      if (seq === selectSeqRef.current) toast.error('Failed to load conversation.');
+      if (seq === selectSeqRef.current) {
+        toast.error(t('conversations.loadFailed'));
+      }
       return null;
     } finally {
       if (seq === selectSeqRef.current) setLoading(false);
     }
-  }, [apiPrefix, setActiveId]);
+  }, [apiPrefix, setActiveId, t]);
 
   const startNewChat = useCallback(() => {
     // Invalidate any in-flight select so a slow response can't land after

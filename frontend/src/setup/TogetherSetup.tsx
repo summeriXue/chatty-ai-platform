@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 interface Props {
@@ -6,6 +7,8 @@ interface Props {
 }
 
 export function TogetherSetup({ onConnected }: Props) {
+  const { t } = useTranslation();
+
   const [key, setKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +24,11 @@ export function TogetherSetup({ onConnected }: Props) {
       });
       onConnected();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid API key');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('providers.invalidApiKey')
+      );
     } finally {
       setLoading(false);
     }
@@ -31,12 +38,12 @@ export function TogetherSetup({ onConnected }: Props) {
     <div className="space-y-3">
       <div className="bg-ch-bg-card rounded-lg px-4 py-3 space-y-2">
         <p className="text-sm text-ch-ink-mute">
-          Run open-weight AI models in the cloud for a fraction of the cost.
+          {t('providers.togetherIntro')}
         </p>
         <ol className="text-xs text-ch-ink-mute space-y-1 list-decimal list-inside">
-          <li>Create a free account at together.ai ($25 free credits, no credit card)</li>
-          <li>Go to Settings &gt; API Keys and create a key</li>
-          <li>Paste it below</li>
+          <li>{t('providers.togetherStepCreateAccount')}</li>
+          <li>{t('providers.togetherStepCreateKey')}</li>
+          <li>{t('providers.togetherStepPaste')}</li>
         </ol>
       </div>
 
@@ -57,7 +64,7 @@ export function TogetherSetup({ onConnected }: Props) {
         rel="noopener noreferrer"
         className="block text-xs text-ch-gold hover:text-ch-gold transition"
       >
-        Get your API key at api.together.xyz &rarr;
+        {t('providers.getTogetherApiKey')} &rarr;
       </a>
 
       <button
@@ -65,7 +72,9 @@ export function TogetherSetup({ onConnected }: Props) {
         disabled={loading || !key.trim()}
         className="w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-lg hover:opacity-90 transition disabled:opacity-50"
       >
-        {loading ? 'Validating...' : 'Connect'}
+        {loading
+          ? t('providers.validating')
+          : t('providers.connect')}
       </button>
     </div>
   );

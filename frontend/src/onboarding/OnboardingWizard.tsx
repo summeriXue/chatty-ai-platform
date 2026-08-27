@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import type { ProviderStatus } from '../core/types';
 import { StepIndicator } from './StepIndicator';
@@ -16,6 +17,7 @@ type Phase = 'provider' | 'pick-messaging' | 'pick-integrations' | 'done';
 const INTEGRATION_ORDER = ['odoo', 'quickbooks', 'bamboohr', 'crm_lite'];
 
 export function OnboardingWizard({ onComplete }: Props) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('provider');
   const [selectedMessaging, setSelectedMessaging] = useState<string[]>([]);
   const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
@@ -31,15 +33,20 @@ export function OnboardingWizard({ onComplete }: Props) {
 
   const steps = useMemo(() => {
     const s = [
-      { id: 'provider', title: 'AI Provider' },
-      { id: 'messaging', title: 'Messaging' },
-      { id: 'integrations', title: 'Business Tools' },
+      { id: 'provider', title: t('onboardingWizard.steps.provider') },
+      { id: 'messaging', title: t('onboardingWizard.steps.messaging') },
+      { id: 'integrations', title: t('onboardingWizard.steps.integrations') },
     ];
+
     if (selectedMessaging.length > 0 || selectedIntegrations.length > 0) {
-      s.push({ id: 'done', title: 'Done' });
+      s.push({
+        id: 'done',
+        title: t('onboardingWizard.steps.done'),
+      });
     }
+
     return s;
-  }, [selectedMessaging, selectedIntegrations]);
+  }, [selectedMessaging, selectedIntegrations, t]);
 
   const currentStepIndex = useMemo(() => {
     if (phase === 'provider') return 0;

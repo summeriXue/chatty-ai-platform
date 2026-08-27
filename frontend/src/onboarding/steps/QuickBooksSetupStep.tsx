@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOAuthFlow } from '../../core/hooks/useOAuthFlow';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function QuickBooksSetupStep({ onComplete, onSkip }: Props) {
+  const { t } = useTranslation();
   const { state, start } = useOAuthFlow();
 
   useEffect(() => {
@@ -20,44 +22,61 @@ export function QuickBooksSetupStep({ onComplete, onSkip }: Props) {
     });
   }
 
-  const isWaiting = state.status === 'starting' || state.status === 'awaiting_user' || state.status === 'completing';
+  const isWaiting =
+    state.status === 'starting' ||
+    state.status === 'awaiting_user' ||
+    state.status === 'completing';
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-white mb-2">Connect QuickBooks</h2>
+      <h2 className="text-xl font-bold text-white mb-2">
+        {t('onboarding.quickbooks.title')}
+      </h2>
+
       <p className="text-gray-400 text-sm mb-6">
-        Connect QuickBooks Online to let your agents access invoices, bills, payments, and financial reports.
+        {t('onboarding.quickbooks.description')}
       </p>
 
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 mb-6">
-        <h3 className="text-white font-medium mb-2">How it works</h3>
+        <h3 className="text-white font-medium mb-2">
+          {t('onboarding.quickbooks.howItWorks')}
+        </h3>
+
         <ol className="text-gray-400 text-sm space-y-2 list-decimal list-inside">
-          <li>Click "Connect QuickBooks" below</li>
-          <li>A popup will open to Intuit's login page</li>
-          <li>Sign in and authorize Chatty to access your QuickBooks data</li>
-          <li>The popup will close automatically when done</li>
+          <li>{t('onboarding.quickbooks.stepConnect')}</li>
+          <li>{t('onboarding.quickbooks.stepPopup')}</li>
+          <li>{t('onboarding.quickbooks.stepAuthorize')}</li>
+          <li>{t('onboarding.quickbooks.stepClose')}</li>
         </ol>
       </div>
 
       {isWaiting && (
         <div className="flex items-center gap-3 text-sm text-ch-gold bg-indigo-900/20 rounded-lg px-4 py-3 mb-4">
           <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+
           <span>
-            {state.status === 'starting' && 'Preparing authorization...'}
-            {state.status === 'awaiting_user' && 'Complete authorization in the popup window...'}
-            {state.status === 'completing' && 'Finalizing connection...'}
+            {state.status === 'starting' &&
+              t('onboarding.quickbooks.preparingAuthorization')}
+
+            {state.status === 'awaiting_user' &&
+              t('onboarding.quickbooks.completeAuthorization')}
+
+            {state.status === 'completing' &&
+              t('onboarding.quickbooks.finalizingConnection')}
           </span>
         </div>
       )}
 
       {state.status === 'success' && (
         <div className="text-sm text-green-400 bg-green-900/20 rounded-lg px-4 py-3 mb-4">
-          Connected successfully!
+          {t('onboarding.quickbooks.connectedSuccessfully')}
         </div>
       )}
 
       {state.status === 'error' && state.error && (
-        <div className="text-red-400 text-sm bg-red-900/20 rounded-lg px-4 py-3 mb-4">{state.error}</div>
+        <div className="text-red-400 text-sm bg-red-900/20 rounded-lg px-4 py-3 mb-4">
+          {state.error}
+        </div>
       )}
 
       <div className="flex gap-3">
@@ -65,8 +84,9 @@ export function QuickBooksSetupStep({ onComplete, onSkip }: Props) {
           onClick={onSkip}
           className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 transition font-medium"
         >
-          Skip
+          {t('onboarding.quickbooks.skip')}
         </button>
+
         {state.status !== 'success' && (
           <button
             onClick={startOAuth}
@@ -76,10 +96,10 @@ export function QuickBooksSetupStep({ onComplete, onSkip }: Props) {
             {isWaiting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Waiting...
+                {t('onboarding.quickbooks.waiting')}
               </>
             ) : (
-              'Connect QuickBooks'
+              t('onboarding.quickbooks.connect')
             )}
           </button>
         )}

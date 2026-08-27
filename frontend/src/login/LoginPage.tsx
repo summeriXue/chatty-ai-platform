@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../core/auth/AuthContext';
 import { IconWordmark } from '../shared/icons';
@@ -13,6 +14,7 @@ const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
 });
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const { login, verify2fa } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
@@ -44,7 +46,7 @@ export function LoginPage() {
         navigate('/');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t('loginPage.errors.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ export function LoginPage() {
       await verify2fa(pendingToken, code, trustDevice);
       navigate('/');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
+      setError(err instanceof Error ? err.message : t('loginPage.errors.verificationFailed'));
       setCode('');
     } finally {
       setLoading(false);
@@ -109,14 +111,13 @@ export function LoginPage() {
               fontSize: 54, fontWeight: 400, letterSpacing: '-0.025em',
               lineHeight: 1.1, margin: 0,
             }}>
-              Hire a team of agents,<br />not just a&nbsp;chatbot.
+              {t('loginPage.marketing.titleLine1')}<br />{t('loginPage.marketing.titleLine2')}
             </h1>
             <p style={{
               fontSize: 16, color: 'rgba(237,240,244,0.52)',
               marginTop: 20, maxWidth: 420, lineHeight: 1.6,
             }}>
-              Commission a personal assistant, an AP clerk, a sales rep.
-              They learn your business, handle the tedious work, and stay quietly at their desks.
+              {t('loginPage.marketing.description')}
             </p>
           </div>
 
@@ -164,22 +165,22 @@ export function LoginPage() {
 
         {step === 'password' ? (
           <form onSubmit={handlePasswordSubmit} style={{ maxWidth: 360, width: '100%' }}>
-            <div style={mono(10, 'rgba(237,240,244,0.38)')}>Sign in</div>
+            <div style={mono(10, 'rgba(237,240,244,0.38)')}>{t('loginPage.signIn.eyebrow')}</div>
             <h2 style={{
               fontFamily: "'Fraunces', Georgia, serif",
               fontSize: isMobile ? 30 : 36, fontWeight: 400, letterSpacing: '-0.02em',
               lineHeight: 1.05, margin: '10px 0 24px',
-            }}>Welcome back.</h2>
+            }}>{t('loginPage.signIn.title')}</h2>
 
             <div style={{ marginBottom: 22 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={mono(9, 'rgba(237,240,244,0.38)')}>Password</div>
+                <div style={mono(9, 'rgba(237,240,244,0.38)')}>{t('loginPage.signIn.password')}</div>
               </div>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder={t('loginPage.signIn.passwordPlaceholder')}
                 autoFocus
                 style={{
                   width: '100%', boxSizing: 'border-box',
@@ -211,26 +212,26 @@ export function LoginPage() {
                 opacity: (loading || !password) ? 0.5 : 1,
               }}
             >
-              {loading ? 'Signing in...' : 'Continue'}
+              {loading ? t('loginPage.signIn.signingIn') : t('loginPage.signIn.continue')}
             </button>
           </form>
         ) : (
           <form onSubmit={handle2faSubmit} style={{ maxWidth: 360, width: '100%' }}>
-            <div style={mono(10, 'rgba(237,240,244,0.38)')}>Two-factor authentication</div>
+            <div style={mono(10, 'rgba(237,240,244,0.38)')}>{t('loginPage.twoFactor.eyebrow')}</div>
             <h2 style={{
               fontFamily: "'Fraunces', Georgia, serif",
               fontSize: isMobile ? 30 : 36, fontWeight: 400, letterSpacing: '-0.02em',
               lineHeight: 1.05, margin: '10px 0 8px',
-            }}>Verify your identity.</h2>
+            }}>{t('loginPage.twoFactor.title')}</h2>
             <p style={{ fontSize: 14, color: 'rgba(237,240,244,0.52)', margin: '0 0 24px', lineHeight: 1.5 }}>
               {useBackupCode
-                ? 'Enter one of your backup codes.'
-                : 'Enter the 6-digit code from your authenticator app.'}
+                ? t('loginPage.twoFactor.backupDescription')
+                : t('loginPage.twoFactor.authenticatorDescription')}
             </p>
 
             <div style={{ marginBottom: 22 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={mono(9, 'rgba(237,240,244,0.38)')}>{useBackupCode ? 'Backup code' : 'Code'}</div>
+                <div style={mono(9, 'rgba(237,240,244,0.38)')}>{useBackupCode ? t('loginPage.twoFactor.backupCode') : t('loginPage.twoFactor.code')}</div>
               </div>
               <input
                 ref={codeInputRef}
@@ -264,7 +265,7 @@ export function LoginPage() {
                 style={{ accentColor: 'var(--color-ch-accent, #C8D1D9)' }}
               />
               <label htmlFor="trust-device" style={{ fontSize: 13, color: 'rgba(237,240,244,0.52)', cursor: 'pointer' }}>
-                Trust this browser for 30 days
+                {t('loginPage.twoFactor.trustBrowser')}
               </label>
             </div>
 
@@ -284,7 +285,7 @@ export function LoginPage() {
                 opacity: (loading || !code) ? 0.5 : 1,
               }}
             >
-              {loading ? 'Verifying...' : 'Verify'}
+              {loading ? t('loginPage.twoFactor.verifying') : t('loginPage.twoFactor.verify')}
             </button>
 
             <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
@@ -296,7 +297,7 @@ export function LoginPage() {
                   fontSize: 13, cursor: 'pointer', padding: 0,
                 }}
               >
-                &larr; Back
+                ← {t('loginPage.twoFactor.back')}
               </button>
               <button
                 type="button"
@@ -307,7 +308,7 @@ export function LoginPage() {
                   fontSize: 13, cursor: 'pointer', padding: 0,
                 }}
               >
-                {useBackupCode ? 'Use authenticator code' : 'Use a backup code'}
+                {useBackupCode ? t('loginPage.twoFactor.useAuthenticatorCode') : t('loginPage.twoFactor.useBackupCode')}
               </button>
             </div>
           </form>

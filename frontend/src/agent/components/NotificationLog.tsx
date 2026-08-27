@@ -1,22 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AgentNotification } from '../../core/types';
 import { api } from '../../core/api/client';
 import { toast } from '../../shared/toast';
+import { timeAgo } from '../utils/dateFormat';
 
 interface Props {
   agentSlug: string;
 }
 
-function timeAgo(iso: string): string {
-  const d = new Date(iso + 'Z');
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
-}
-
 export default function NotificationLog({ agentSlug }: Props) {
+  const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = useState<AgentNotification[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -36,7 +30,9 @@ export default function NotificationLog({ agentSlug }: Props) {
     try {
       await api(`/api/notifications/${id}/dismiss`, { method: 'POST' });
       setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch { toast.error('Failed to dismiss notification.'); }
+    } catch {
+        toast.error(t('notificationLog.dismissFailed'));
+      }
   };
 
   const dismissAll = async () => {
@@ -46,7 +42,9 @@ export default function NotificationLog({ agentSlug }: Props) {
         body: JSON.stringify({ agent: agentSlug }),
       });
       setNotifications([]);
-    } catch { toast.error('Failed to dismiss notifications.'); }
+    } catch {
+        toast.error(t('notificationLog.dismissAllFailed'));
+      }
   };
 
   const toggleExpand = (id: string) => {
@@ -108,7 +106,7 @@ export default function NotificationLog({ agentSlug }: Props) {
             flex: 1,
             minWidth: 0,
           }}>
-            {latest.title} — {timeAgo(latest.created_at)}
+            {latest.title} — {timeAgo(latest.created_at, i18n.language)}
           </span>
         )}
         {expanded && (
@@ -118,7 +116,9 @@ export default function NotificationLog({ agentSlug }: Props) {
             color: '#8CA0C8',
             fontWeight: 600,
           }}>
-            notification{notifications.length !== 1 ? 's' : ''}
+            {t('notificationLog.notificationCount', {
+              count: notifications.length,
+            })}
           </span>
         )}
         {expanded && (
@@ -135,7 +135,7 @@ export default function NotificationLog({ agentSlug }: Props) {
               padding: '0 2px',
             }}
           >
-            Clear all
+            {t('notificationLog.clearAll')}
           </button>
         )}
       </div>
@@ -184,7 +184,7 @@ export default function NotificationLog({ agentSlug }: Props) {
                       color: 'rgba(140,160,200,0.4)',
                       marginTop: 4,
                     }}>
-                      {timeAgo(n.created_at)}
+                      {timeAgo(n.created_at, i18n.language)}
                       {n.channels_sent.length > 0 && ` · ${n.channels_sent.join(', ')}`}
                     </div>
                   </div>
@@ -200,7 +200,7 @@ export default function NotificationLog({ agentSlug }: Props) {
                       padding: '0 4px',
                       marginLeft: 8,
                     }}
-                    title="Dismiss"
+                    title={t('notificationLog.dismiss')}
                   >
                     ×
                   </button>

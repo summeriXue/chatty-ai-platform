@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import { isPushSupported, subscribeToPush, unsubscribeFromPush } from '../core/notifications/pushSubscription';
 
 export function NotificationSettings() {
+  const { t } = useTranslation();
   const [webPush, setWebPush] = useState(false);
   const [telegram, setTelegram] = useState(true);
   const [whatsapp, setWhatsapp] = useState(true);
@@ -72,29 +74,33 @@ export function NotificationSettings() {
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
         fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase',
         color: 'rgba(237,240,244,0.38)', marginBottom: 12,
-      }}>Notifications</h3>
+      }}>
+        {t('settings.notifications.title')}
+      </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <ChannelToggle
-          label="Web Push"
+          label={t('settings.notifications.webPush')}
           description={
-            pushBlocked ? 'Blocked — update in browser site settings' :
-            pushUnsupported ? 'Not supported in this browser' :
-            'Push notifications to this browser'
+            pushBlocked
+              ? t('settings.notifications.webPushBlocked')
+              : pushUnsupported
+                ? t('settings.notifications.webPushUnsupported')
+                : t('settings.notifications.webPushDescription')
           }
           on={webPush && !pushBlocked && !pushUnsupported}
           disabled={pushBlocked || pushUnsupported}
           onChange={toggleWebPush}
         />
         <ChannelToggle
-          label="Telegram"
-          description="Send via connected Telegram bots"
+          label={t('settings.notifications.telegram')}
+          description={t('settings.notifications.telegramDescription')}
           on={telegram}
           onChange={toggleTelegram}
         />
         <ChannelToggle
-          label="WhatsApp"
-          description="Send via connected WhatsApp sessions"
+          label={t('settings.notifications.whatsapp')}
+          description={t('settings.notifications.whatsappDescription')}
           on={whatsapp}
           onChange={toggleWhatsapp}
         />

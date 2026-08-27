@@ -4,6 +4,7 @@
  */
 
 import { toast } from '../../shared/toast';
+import { useTranslation } from 'react-i18next';
 import { IconZap } from '../../shared/icons';
 import { BG_RAISED, LINE, INK_MUTE, FONT_SANS } from '../../shared/styles';
 import { useIsMobile } from '../../shared/useIsMobile';
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function PlaybookChipsRow({ playbooks, disabled, onInvoke, onOverflow }: Props) {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   if (playbooks.length === 0) return null;
 
@@ -37,7 +39,10 @@ export function PlaybookChipsRow({ playbooks, disabled, onInvoke, onOverflow }: 
     if (disabled) return;
     if (!p.available) {
       const needs = p.missing_integrations.map(integrationLabel).join(', ');
-      toast.info(`“${p.name}” needs ${needs} connected. Connect it in Settings → Integrations.`);
+      toast.info(t('playbookChips.integrationRequired', {
+        name: p.name,
+        integrations: needs,
+      }));
       return;
     }
     onInvoke(p);
@@ -55,7 +60,13 @@ export function PlaybookChipsRow({ playbooks, disabled, onInvoke, onOverflow }: 
         <button
           key={p.slug}
           onClick={() => handleClick(p)}
-          title={p.available ? p.description : `Needs ${p.missing_integrations.map(integrationLabel).join(', ')}`}
+          title={
+            p.available
+              ? p.description
+              : t('playbookChips.needs', {
+                  integrations: p.missing_integrations.map(integrationLabel).join(', '),
+                })
+          }
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '5px 12px', background: BG_RAISED,
@@ -83,7 +94,9 @@ export function PlaybookChipsRow({ playbooks, disabled, onInvoke, onOverflow }: 
             cursor: disabled ? 'default' : 'pointer',
             whiteSpace: 'nowrap', flexShrink: 0,
           }}
-        >+{overflow} more</button>
+        >
+          {t('playbookChips.more', { count: overflow })}
+        </button>
       )}
     </div>
   );

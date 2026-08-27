@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 
 const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
@@ -23,6 +24,8 @@ interface SetupResponse {
 type State = 'loading' | 'disabled' | 'showing-qr' | 'show-backup-codes' | 'enabled' | 'disabling' | 'regenerating';
 
 export function SecurityTab() {
+  const { t } = useTranslation();
+
   const [state, setState] = useState<State>('loading');
   const [status, setStatus] = useState<TwoFAStatus | null>(null);
   const [setup, setSetup] = useState<SetupResponse | null>(null);
@@ -54,7 +57,11 @@ export function SecurityTab() {
       setState('showing-qr');
       setTimeout(() => codeRef.current?.focus(), 100);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Setup failed');
+      setError(
+        e instanceof Error
+          ? e.message
+          : t('settings.security.setupFailed')
+      );
     } finally {
       setSaving(false);
     }
@@ -73,7 +80,11 @@ export function SecurityTab() {
       setPassword('');
       setState('show-backup-codes');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Invalid code');
+      setError(
+        e instanceof Error
+          ? e.message
+          : t('settings.security.invalidCode')
+      );
     } finally {
       setSaving(false);
     }
@@ -92,7 +103,11 @@ export function SecurityTab() {
       setStatus(null);
       loadStatus();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to disable');
+      setError(
+        e instanceof Error
+          ? e.message
+          : t('settings.security.disableFailed')
+      );
     } finally {
       setSaving(false);
     }
@@ -110,7 +125,11 @@ export function SecurityTab() {
       setPassword('');
       setState('show-backup-codes');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to regenerate');
+      setError(
+        e instanceof Error
+          ? e.message
+          : t('settings.security.regenerateFailed')
+      );
     } finally {
       setSaving(false);
     }
@@ -122,7 +141,12 @@ export function SecurityTab() {
   }
 
   function downloadBackupCodes() {
-    const text = `Chatty — Backup Codes\n${'='.repeat(30)}\n\nStore these codes in a safe place.\nEach code can only be used once.\n\n${backupCodes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n`;
+    const text =
+      `${t('settings.security.backupFileTitle')}\n` +
+      `${'='.repeat(30)}\n\n` +
+      `${t('settings.security.backupFileSafePlace')}\n` +
+      `${t('settings.security.backupFileSingleUse')}\n\n` +
+      `${backupCodes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n`;
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -153,7 +177,11 @@ export function SecurityTab() {
   };
 
   if (state === 'loading') {
-    return <p style={{ color: 'rgba(237,240,244,0.52)', fontSize: 14 }}>Loading...</p>;
+    return (
+      <p style={{ color: 'rgba(237,240,244,0.52)', fontSize: 14 }}>
+        {t('settings.security.loading')}
+      </p>
+    );
   }
 
   // ── Disabled state ──────────────────────────────────────────────────────
@@ -161,15 +189,18 @@ export function SecurityTab() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>Two-factor authentication</p>
+          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>
+            {t('settings.security.twoFactor')}
+          </p>
           <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.52)', margin: 0, lineHeight: 1.6 }}>
-            Add an extra layer of security to your account. You'll need an authenticator app
-            like Google Authenticator, Authy, or 1Password.
+            {t('settings.security.twoFactorDescription')}
           </p>
         </div>
         {error && <p style={{ color: '#D97757', fontSize: 13, margin: 0 }}>{error}</p>}
         <button onClick={startSetup} disabled={saving} style={btnPrimary}>
-          {saving ? 'Setting up...' : 'Enable two-factor authentication'}
+          {saving
+            ? t('settings.security.settingUp')
+            : t('settings.security.enableTwoFactor')}
         </button>
       </div>
     );
@@ -180,22 +211,26 @@ export function SecurityTab() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>Scan QR code</p>
+          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>
+            {t('settings.security.scanQrCode')}
+          </p>
           <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.52)', margin: 0, lineHeight: 1.6 }}>
-            Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.
+            {t('settings.security.scanQrDescription')}
           </p>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
           <img
             src={setup.qr_code_data_uri}
-            alt="2FA QR Code"
+            alt={t('settings.security.qrCodeAlt')}
             style={{ borderRadius: 8, background: '#fff', padding: 8 }}
           />
         </div>
 
         <div>
-          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>Manual entry key</label>
+          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>
+            {t('settings.security.manualEntryKey')}
+          </label>
           <div style={{
             ...inputStyle,
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
@@ -207,7 +242,9 @@ export function SecurityTab() {
         </div>
 
         <div>
-          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>Verification code</label>
+          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>
+            {t('settings.security.verificationCode')}
+          </label>
           <input
             ref={codeRef}
             type="text"
@@ -226,12 +263,14 @@ export function SecurityTab() {
         </div>
 
         <div>
-          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>Confirm password</label>
+          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>
+            {t('settings.security.confirmPassword')}
+          </label>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={t('settings.security.enterPassword')}
             style={inputStyle}
           />
         </div>
@@ -243,14 +282,16 @@ export function SecurityTab() {
             onClick={() => { setState('disabled'); setSetup(null); setVerifyCode(''); setPassword(''); setError(''); }}
             style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4' }}
           >
-            Cancel
+            {t('settings.security.cancel')}
           </button>
           <button
             onClick={confirmSetup}
             disabled={saving || verifyCode.length < 6 || !password}
             style={{ ...btnPrimary, opacity: saving || verifyCode.length < 6 || !password ? 0.5 : 1 }}
           >
-            {saving ? 'Verifying...' : 'Verify & Enable'}
+            {saving
+              ? t('settings.security.verifying')
+              : t('settings.security.verifyAndEnable')}
           </button>
         </div>
       </div>
@@ -262,10 +303,11 @@ export function SecurityTab() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>Save your backup codes</p>
+          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>
+            {t('settings.security.saveBackupCodes')}
+          </p>
           <p style={{ fontSize: 13, color: '#D97757', margin: 0, lineHeight: 1.6 }}>
-            Save these codes in a safe place. Each code can only be used once.
-            If you lose access to your authenticator app, these are the only way to log in.
+            {t('settings.security.backupCodesWarning')}
           </p>
         </div>
 
@@ -287,15 +329,15 @@ export function SecurityTab() {
 
         <div style={{ display: 'flex', gap: 12 }}>
           <button onClick={copyBackupCodes} style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4' }}>
-            Copy all
+            {t('settings.security.copyAll')}
           </button>
           <button onClick={downloadBackupCodes} style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4' }}>
-            Download .txt
+            {t('settings.security.downloadTxt')}
           </button>
         </div>
 
         <button onClick={() => { loadStatus(); setBackupCodes([]); }} style={btnPrimary}>
-          I've saved my codes
+          {t('settings.security.savedCodes')}
         </button>
       </div>
     );
@@ -307,10 +349,20 @@ export function SecurityTab() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>Two-factor authentication</p>
+            <p style={{ fontSize: 14, color: '#EDF0F4', margin: 0 }}>{t('settings.security.twoFactor')}</p>
             <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', marginTop: 2 }}>
-              {status?.backup_code_count ?? 0} backup codes remaining
-              {status?.trusted_device_count ? ` · ${status.trusted_device_count} trusted device${status.trusted_device_count > 1 ? 's' : ''}` : ''}
+              {t('settings.security.backupCodesRemaining', {
+                count: status?.backup_code_count ?? 0,
+              })}
+
+              {status?.trusted_device_count
+                ? ` · ${t(
+                    status.trusted_device_count > 1
+                      ? 'settings.security.trustedDevices'
+                      : 'settings.security.trustedDevice',
+                    { count: status.trusted_device_count }
+                  )}`
+                : ''}
             </p>
           </div>
           <div style={{
@@ -319,7 +371,7 @@ export function SecurityTab() {
             background: 'rgba(76,175,80,0.15)', color: '#66BB6A',
             fontFamily: "'Inter Tight', system-ui, sans-serif",
           }}>
-            Enabled
+            {t('settings.security.enabled')}
           </div>
         </div>
 
@@ -328,13 +380,13 @@ export function SecurityTab() {
             onClick={() => setState('regenerating')}
             style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4' }}
           >
-            Regenerate backup codes
+            {t('settings.security.regenerateBackupCodes')}
           </button>
           <button
             onClick={() => setState('disabling')}
             style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#D97757' }}
           >
-            Disable two-factor authentication
+            {t('settings.security.disableTwoFactor')}
           </button>
         </div>
       </div>
@@ -346,19 +398,23 @@ export function SecurityTab() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>Disable two-factor authentication</p>
+          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>
+            {t('settings.security.disableTwoFactor')}
+          </p>
           <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.52)', margin: 0, lineHeight: 1.6 }}>
-            Enter your password to confirm. This will also revoke all trusted devices.
+            {t('settings.security.disableDescription')}
           </p>
         </div>
 
         <div>
-          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>Password</label>
+          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>
+            {t('settings.security.password')}
+          </label>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={t('settings.security.enterPassword')}
             autoFocus
             style={inputStyle}
           />
@@ -371,10 +427,12 @@ export function SecurityTab() {
             onClick={() => { setState('enabled'); setPassword(''); setError(''); }}
             style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4' }}
           >
-            Cancel
+            {t('settings.security.cancel')}
           </button>
           <button onClick={disable2fa} disabled={saving || !password} style={{ ...btnDanger, opacity: saving || !password ? 0.5 : 1 }}>
-            {saving ? 'Disabling...' : 'Disable 2FA'}
+            {saving
+              ? t('settings.security.disabling')
+              : t('settings.security.disable2FA')}
           </button>
         </div>
       </div>
@@ -386,19 +444,23 @@ export function SecurityTab() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>Regenerate backup codes</p>
+          <p style={{ fontSize: 14, color: '#EDF0F4', margin: '0 0 8px' }}>
+            {t('settings.security.regenerateBackupCodes')}
+          </p>
           <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.52)', margin: 0, lineHeight: 1.6 }}>
-            This will replace your existing backup codes. Enter your password to confirm.
+            {t('settings.security.regenerateDescription')}
           </p>
         </div>
 
         <div>
-          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>Password</label>
+          <label style={{ ...mono(9), display: 'block', marginBottom: 6 }}>
+            {t('settings.security.password')}
+          </label>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={t('settings.security.enterPassword')}
             autoFocus
             style={inputStyle}
           />
@@ -411,10 +473,12 @@ export function SecurityTab() {
             onClick={() => { setState('enabled'); setPassword(''); setError(''); }}
             style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4' }}
           >
-            Cancel
+            {t('settings.security.cancel')}
           </button>
           <button onClick={regenerateCodes} disabled={saving || !password} style={{ ...btnPrimary, opacity: saving || !password ? 0.5 : 1 }}>
-            {saving ? 'Regenerating...' : 'Regenerate codes'}
+            {saving
+              ? t('settings.security.regenerating')
+              : t('settings.security.regenerateCodes')}
           </button>
         </div>
       </div>

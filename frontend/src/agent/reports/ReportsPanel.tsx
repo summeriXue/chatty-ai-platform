@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { confirmDialog } from '../../shared/confirm';
 import { toast } from '../../shared/toast';
@@ -11,6 +12,8 @@ interface ReportsPanelProps {
 }
 
 export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
+  const { t, i18n } = useTranslation();
+
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -56,7 +59,7 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
     } catch {
       if (expandIdRef.current === id) {
         setExpandedReport(null);
-        toast.error('Failed to load report.');
+        toast.error(t('reportsPanel.errors.loadReport'));
       }
     } finally {
       if (expandIdRef.current === id) {
@@ -68,9 +71,9 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const ok = await confirmDialog({
-      title: 'Delete report',
-      message: 'This report will be permanently deleted.',
-      confirmLabel: 'Delete',
+      title: t('reportsPanel.deleteDialog.title'),
+      message: t('reportsPanel.deleteDialog.message'),
+      confirmLabel: t('reportsPanel.deleteDialog.confirm'),
       danger: true,
     });
     if (!ok) return;
@@ -82,13 +85,13 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
         setExpandedReport(null);
       }
     } catch {
-      toast.error('Failed to delete report.');
+      toast.error(t('reportsPanel.errors.deleteReport'));
     }
   };
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString('en-US', {
+      return new Date(iso).toLocaleDateString(i18n.language, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -111,7 +114,7 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-ch-ink-mute text-sm">
-        Loading reports...
+        {t('reportsPanel.loading')}
       </div>
     );
   }
@@ -120,7 +123,7 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
     return (
       <div className="h-full p-4">
         <LoadError
-          label="Couldn't load reports"
+          label={t('reportsPanel.loadFailed')}
           onRetry={() => { setLoading(true); loadReports(); }}
         />
       </div>
@@ -133,8 +136,8 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
         <svg className="w-12 h-12 mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <p className="text-sm font-medium text-ch-ink-mute">No reports yet</p>
-        <p className="text-xs mt-1 text-ch-ink-dim">Ask the agent to create one!</p>
+        <p className="text-sm font-medium text-ch-ink-mute">{t('reportsPanel.empty.title')}</p>
+        <p className="text-xs mt-1 text-ch-ink-dim">{t('reportsPanel.empty.description')}</p>
       </div>
     );
   }
@@ -148,7 +151,7 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search reports..."
+            placeholder={t('reportsPanel.searchPlaceholder')}
             className="w-full px-3 py-2 text-sm border border-ch-line-strong rounded-lg bg-ch-bg-raised text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
           />
         </div>
@@ -172,14 +175,16 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-ch-ink-mute">{formatDate(r.created_at)}</span>
                     <span className="text-xs text-ch-ink-dim">
-                      {r.section_count} section{r.section_count !== 1 ? 's' : ''}
+                      {t('reportsPanel.sectionCount', {
+                        count: r.section_count,
+                      })}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={(e) => handleDelete(r.id, e)}
                   className="ml-2 p-1 text-ch-ink-dim hover:text-red-400 transition-colors"
-                  title="Delete report"
+                  title={t('reportsPanel.deleteReport')}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -190,11 +195,11 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
             {expandedId === r.id && (
               <div className="mt-2 mb-2">
                 {loadingReport ? (
-                  <div className="text-center py-6 text-ch-ink-mute text-sm">Loading report...</div>
+                  <div className="text-center py-6 text-ch-ink-mute text-sm">{t('reportsPanel.loadingReport')}</div>
                 ) : expandedReport ? (
                   <ReportRenderer report={expandedReport} />
                 ) : (
-                  <div className="text-center py-6 text-ch-ink-dim text-sm">Failed to load report</div>
+                  <div className="text-center py-6 text-ch-ink-dim text-sm">{t('reportsPanel.failedToLoadReport')}</div>
                 )}
               </div>
             )}
@@ -202,7 +207,9 @@ export default function ReportsPanel({ apiPrefix }: ReportsPanelProps) {
         ))}
         {filtered.length === 0 && search.trim() && (
           <div className="text-center py-8 text-ch-ink-dim text-sm">
-            No reports matching &quot;{search}&quot;
+            {t('reportsPanel.noMatches', {
+              search,
+            })}
           </div>
         )}
       </div>

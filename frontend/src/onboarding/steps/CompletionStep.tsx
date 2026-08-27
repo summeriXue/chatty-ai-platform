@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface SetupResult {
   provider: string;
   pendingMessaging: string[];
@@ -28,6 +30,7 @@ const INTEGRATION_NAMES: Record<string, string> = {
 };
 
 export function CompletionStep({ result, onComplete }: Props) {
+  const { t } = useTranslation();
   const allPending = [...result.pendingMessaging, ...result.pendingIntegrations];
 
   return (
@@ -38,9 +41,9 @@ export function CompletionStep({ result, onComplete }: Props) {
         </svg>
       </div>
 
-      <h2 className="text-xl font-bold text-white mb-2">You're all set!</h2>
+      <h2 className="text-xl font-bold text-white mb-2">{t('onboarding.completion.title')}</h2>
       <p className="text-gray-400 text-sm mb-8">
-        Here's your setup summary:
+        {t('onboarding.completion.summary')}
       </p>
 
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 mb-8 text-left">
@@ -53,7 +56,7 @@ export function CompletionStep({ result, onComplete }: Props) {
               </svg>
             </div>
             <span className="text-gray-300 text-sm">
-              AI Provider: <span className="text-white font-medium">{PROVIDER_NAMES[result.provider] || result.provider}</span>
+              {t('onboarding.completion.aiProvider')}: <span className="text-white font-medium">{PROVIDER_NAMES[result.provider] || result.provider}</span>
             </span>
           </div>
 
@@ -67,14 +70,14 @@ export function CompletionStep({ result, onComplete }: Props) {
                 </svg>
               </div>
               <span className="text-gray-300 text-sm">
-                {INTEGRATION_NAMES[id] || id} <span className="text-amber-400/80 text-xs ml-1">— your agent will help you set this up</span>
+                {INTEGRATION_NAMES[id] || id} <span className="text-amber-400/80 text-xs ml-1">— {t('onboarding.completion.agentWillHelp')}</span>
               </span>
             </div>
           ))}
 
           {allPending.length === 0 && (
             <p className="text-gray-500 text-xs ml-8">
-              No integrations selected — you can add them anytime from Settings.
+              {t('onboarding.completion.noIntegrations')}
             </p>
           )}
         </div>
@@ -82,7 +85,7 @@ export function CompletionStep({ result, onComplete }: Props) {
 
       {allPending.length > 0 && (
         <p className="text-gray-500 text-xs mb-6">
-          When you create your first agent, it will walk you through setting these up conversationally.
+          {t('onboarding.completion.walkThrough')}
         </p>
       )}
 
@@ -90,7 +93,7 @@ export function CompletionStep({ result, onComplete }: Props) {
         onClick={onComplete}
         className="w-full py-3 bg-brand text-white font-semibold rounded-xl hover:opacity-90 transition"
       >
-        Go to Chatty
+        {t('onboarding.completion.goToChatty')}
       </button>
     </div>
   );

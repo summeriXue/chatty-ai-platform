@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import { NavRail } from './NavRail';
@@ -9,6 +10,7 @@ import { IconBot, IconFunnel, IconChart, IconBook, IconSettings } from './icons'
 import type { BrandingConfig } from '../core/types';
 
 export function AppShell() {
+  const { t } = useTranslation();
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [activeNavKey, setActiveNavKey] = useState<string | null>(null);
@@ -35,11 +37,41 @@ export function AppShell() {
   const userInitial = branding?.company_name?.charAt(0) || 'C';
 
   const mobileNavItems = [
-    { key: 'agents', icon: IconBot, label: 'Agents', path: '/', match: (p: string) => p === '/' || p.startsWith('/agent/') },
-    { key: 'crm', icon: IconFunnel, label: 'CRM', path: '/crm', match: (p: string) => p.startsWith('/crm') },
-    { key: 'usage', icon: IconChart, label: 'Usage', path: '/usage', match: (p: string) => p.startsWith('/usage') },
-    { key: 'knowledge', icon: IconBook, label: 'Knowledge', path: null as string | null, match: () => false },
-    { key: 'settings', icon: IconSettings, label: 'Settings', path: null as string | null, match: () => false },
+    {
+      key: 'agents',
+      icon: IconBot,
+      label: t('common.mobileNav.agents'),
+      path: '/',
+      match: (p: string) => p === '/' || p.startsWith('/agent/'),
+    },
+    {
+      key: 'crm',
+      icon: IconFunnel,
+      label: 'CRM',
+      path: '/crm',
+      match: (p: string) => p.startsWith('/crm'),
+    },
+    {
+      key: 'usage',
+      icon: IconChart,
+      label: t('common.mobileNav.usage'),
+      path: '/usage',
+      match: (p: string) => p.startsWith('/usage'),
+    },
+    {
+      key: 'knowledge',
+      icon: IconBook,
+      label: t('common.mobileNav.knowledge'),
+      path: null as string | null,
+      match: () => false,
+    },
+    {
+      key: 'settings',
+      icon: IconSettings,
+      label: t('common.mobileNav.settings'),
+      path: null as string | null,
+      match: () => false,
+    },
   ];
 
   function handleMobileNav(item: typeof mobileNavItems[0]) {

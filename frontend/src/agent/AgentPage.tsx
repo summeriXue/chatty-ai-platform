@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../core/api/client';
 import type { ProviderStatus } from '../core/types';
@@ -53,23 +54,24 @@ function parseTab(raw: string | null): Tab | null {
   return null;
 }
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'chat', label: 'Chat' },
-  { key: 'knowledge', label: 'Knowledge' },
-  { key: 'project', label: 'Project' },
-  { key: 'playbooks', label: 'Playbooks' },
-  { key: 'reports', label: 'Reports' },
-  { key: 'reminders', label: 'Reminders' },
-  { key: 'heartbeat', label: 'Heartbeat' },
+const TABS: { key: Tab; labelKey: string }[] = [
+  { key: 'chat', labelKey: 'agentPage.tabs.chat' },
+  { key: 'knowledge', labelKey: 'agentPage.tabs.knowledge' },
+  { key: 'project', labelKey: 'agentPage.tabs.project' },
+  { key: 'playbooks', labelKey: 'agentPage.tabs.playbooks' },
+  { key: 'reports', labelKey: 'agentPage.tabs.reports' },
+  { key: 'reminders', labelKey: 'agentPage.tabs.reminders' },
+  { key: 'heartbeat', labelKey: 'agentPage.tabs.heartbeat' },
 ];
 
-const TOOL_MODES: { key: ToolMode; label: string }[] = [
-  { key: 'read-only', label: 'Read' },
-  { key: 'normal', label: 'Normal' },
-  { key: 'power', label: 'Power' },
+const TOOL_MODES: { key: ToolMode; labelKey: string }[] = [
+  { key: 'read-only', labelKey: 'agentPage.toolModes.read' },
+  { key: 'normal', labelKey: 'agentPage.toolModes.normal' },
+  { key: 'power', labelKey: 'agentPage.toolModes.power' },
 ];
 
 export function AgentPage() {
+  const { t } = useTranslation();
   const { id: agentId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -336,15 +338,15 @@ export function AgentPage() {
 
   async function handleDeleteConversation(id: string) {
     const ok = await confirmDialog({
-      title: 'Delete conversation',
-      message: 'This conversation and its messages will be permanently deleted.',
-      confirmLabel: 'Delete',
+      title: t('agentPage.deleteConversation.title'),
+      message: t('agentPage.deleteConversation.message'),
+      confirmLabel: t('agentPage.deleteConversation.confirm'),
       danger: true,
     });
     if (!ok) return;
     const res = await convs.deleteConversation(id);
     if (!res.ok) {
-      toast.error('Failed to delete conversation.');
+      toast.error(t('agentPage.deleteConversation.failed'));
       return;
     }
     // wasActive comes from the hook's ref (not this render's closure), so a
@@ -372,9 +374,9 @@ export function AgentPage() {
     if (mode === 'power') {
       const seq = modeChangeSeqRef.current;
       const ok = await confirmDialog({
-        title: 'Enable Power mode',
-        message: `${agent?.agent_name || 'This agent'} will be able to read and write data without asking for confirmation each time.`,
-        confirmLabel: 'Enable Power mode',
+        title: t('agentPage.powerMode.enableTitle'),
+        message: t('agentPage.powerMode.enableMessage', { name: agent?.agent_name || t('agentPage.thisAgent') }),
+        confirmLabel: t('agentPage.powerMode.enableConfirm'),
       });
       if (!ok) return;
       // A non-power choice landed while the dialog was open — discard.
@@ -422,7 +424,9 @@ export function AgentPage() {
   }
 
   const letter = agent.agent_name.charAt(0);
-  const trainLabel = agent.onboarding_complete ? `Improve ${agent.agent_name}` : `Train ${agent.agent_name}`;
+  const trainLabel = agent.onboarding_complete
+    ? t('agentPage.improveAgent', { name: agent.agent_name })
+    : t('agentPage.trainAgent', { name: agent.agent_name });
   const showTopBar = activeTab !== 'chat' || topBarVisible;
 
   return (
@@ -490,7 +494,7 @@ export function AgentPage() {
                     cursor: alwaysPowerMode ? 'default' : 'pointer',
                   }}
                 >
-                  {m.label}
+                  {t(m.labelKey)}
                 </div>
               ))}
             </div>
@@ -508,7 +512,7 @@ export function AgentPage() {
                 border: `1px solid ${chat.planMode ? 'rgba(212,168,90,0.3)' : 'rgba(230,235,242,0.07)'}`,
               }}
             >
-              {chat.planMode ? 'Plan ON' : 'Plan'}
+              {chat.planMode ? t('agentPage.plan.planOn') : t('agentPage.plan.plan')}
             </button>
           )}
 
@@ -541,7 +545,7 @@ export function AgentPage() {
                     borderBottom: activeTab === tab.key ? '1px solid var(--color-ch-accent, #C8D1D9)' : '1px solid transparent',
                   }}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </div>
               ))}
             </div>
@@ -565,7 +569,7 @@ export function AgentPage() {
                   borderBottom: activeTab === tab.key ? '2px solid var(--color-ch-accent, #C8D1D9)' : '2px solid transparent',
                 }}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </div>
             ))}
           </div>
@@ -583,11 +587,11 @@ export function AgentPage() {
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             fontSize: 10, fontWeight: 600, letterSpacing: '0.16em',
             textTransform: 'uppercase', color: '#D97757',
-          }}>POWER MODE{alwaysPowerMode ? ' (ALWAYS ON)' : ''}</span>
+          }}>{t('agentPage.powerMode.banner')}{alwaysPowerMode ? ` (${t('agentPage.powerMode.alwaysOn')})` : ''}</span>
           <span style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)' }}>
             {alwaysPowerMode
-              ? 'Always power mode is enabled in Settings.'
-              : `${agent.agent_name} can read and write without confirmation.`}
+              ? t('agentPage.powerMode.alwaysEnabled')
+              : t('agentPage.powerMode.canWrite', { name: agent.agent_name })}
           </span>
         </div>
       )}
@@ -602,9 +606,9 @@ export function AgentPage() {
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             fontSize: 10, fontWeight: 600, letterSpacing: '0.16em',
             textTransform: 'uppercase', color: '#D4A85A',
-          }}>PLAN MODE</span>
+          }}>{t('agentPage.plan.banner')}</span>
           <span style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)' }}>
-            {agent.agent_name} will propose a plan before acting.
+            {t('agentPage.plan.description', { name: agent.agent_name })}
           </span>
           <button
             onClick={() => chat.setPlanMode(false)}
@@ -612,7 +616,7 @@ export function AgentPage() {
               marginLeft: 'auto', fontSize: 11,
               color: '#D4A85A', background: 'none', border: 'none', cursor: 'pointer',
             }}
-          >Exit</button>
+          >{t('agentPage.exit')}</button>
         </div>
       )}
 
@@ -626,11 +630,11 @@ export function AgentPage() {
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             fontSize: 10, fontWeight: 600, letterSpacing: '0.16em',
             textTransform: 'uppercase', color: '#8EA589',
-          }}>{chat.trainingType === 'improve' ? 'IMPROVE MODE' : 'TRAINING MODE'}</span>
+          }}>{chat.trainingType === 'improve' ? t('agentPage.training.improveMode') : t('agentPage.training.trainingMode')}</span>
           <span style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)' }}>
             {chat.trainingType === 'improve'
-              ? `Reviewing and improving ${agent.agent_name}'s knowledge.`
-              : `Teaching ${agent.agent_name} about your business.`}
+              ? t('agentPage.training.improvingKnowledge', { name: agent.agent_name })
+              : t('agentPage.training.teachingBusiness', { name: agent.agent_name })}
           </span>
           <button
             onClick={async () => {
@@ -639,10 +643,10 @@ export function AgentPage() {
                 return;
               }
               const ok = await confirmDialog({
-                title: 'Exit training',
-                message: `${agent.agent_name} will use whatever knowledge has been saved so far.`,
-                confirmLabel: 'Exit training',
-                cancelLabel: 'Keep training',
+                title: t('agentPage.training.exitTitle'),
+                message: t('agentPage.training.exitMessage', { name: agent.agent_name }),
+                confirmLabel: t('agentPage.training.exitConfirm'),
+                cancelLabel: t('agentPage.training.keepTraining'),
               });
               if (!ok) return;
               try {
@@ -658,7 +662,7 @@ export function AgentPage() {
               marginLeft: 'auto', fontSize: 11,
               color: '#8EA589', background: 'none', border: 'none', cursor: 'pointer',
             }}
-          >Exit</button>
+          >{t('agentPage.exit')}</button>
         </div>
       )}
 
@@ -686,13 +690,13 @@ export function AgentPage() {
             fontSize: 10, fontWeight: 600, letterSpacing: '0.16em',
             textTransform: 'uppercase', color: '#E0524D', whiteSpace: 'nowrap',
           }}>
-            {live.status === 'starting' && 'STARTING…'}
-            {live.status === 'recording' && 'RECORDING'}
-            {live.status === 'suspended' && 'PAUSED — RESUMING…'}
-            {live.status === 'tap_to_resume' && 'PAUSED — TAP TO RESUME'}
-            {live.status === 'stopping' && `FINISHING${live.pendingUploads > 0 ? ` — UPLOADING ${live.pendingUploads}` : ''}…`}
-            {live.status === 'finalizing' && 'FINALIZING…'}
-            {live.status === 'done' && 'SAVED'}
+            {live.status === 'starting' && t('agentPage.live.starting')}
+            {live.status === 'recording' && t('agentPage.live.recording')}
+            {live.status === 'suspended' && t('agentPage.live.pausedResuming')}
+            {live.status === 'tap_to_resume' && t('agentPage.live.pausedTapToResume')}
+            {live.status === 'stopping' && `${t('agentPage.live.finishing')}${live.pendingUploads > 0 ? ` — ${t('agentPage.live.uploadingCount', { count: live.pendingUploads })}` : ''}…`}
+            {live.status === 'finalizing' && t('agentPage.live.finalizing')}
+            {live.status === 'done' && t('agentPage.live.saved')}
           </span>
           {live.status !== 'done' && live.status !== 'finalizing' && live.status !== 'starting' && (
             <span style={{
@@ -702,7 +706,7 @@ export function AgentPage() {
           )}
           {live.status === 'recording' && live.pendingUploads > 1 && (
             <span style={{ fontSize: 11, color: 'rgba(237,240,244,0.62)' }}>
-              · {live.pendingUploads} uploading
+              · {t('agentPage.live.uploading', { count: live.pendingUploads })}
             </span>
           )}
           {live.status === 'done' && live.doneInfo && (
@@ -719,7 +723,7 @@ export function AgentPage() {
                 marginLeft: 'auto', fontSize: 11,
                 color: '#E0524D', background: 'none', border: 'none', cursor: 'pointer',
               }}
-            >Stop</button>
+            >{t('agentPage.live.stop')}</button>
           )}
           {live.status === 'done' && (
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -730,7 +734,7 @@ export function AgentPage() {
                     fontSize: 11, color: '#E0524D',
                     background: 'none', border: 'none', cursor: 'pointer',
                   }}
-                >Download recording</button>
+                >{t('agentPage.live.downloadRecording')}</button>
               )}
               <span
                 onClick={live.dismissDone}
@@ -751,7 +755,7 @@ export function AgentPage() {
         >
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E0524D', opacity: 0.6, flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)' }}>
-            Recording active on {live.foreignSession.agent_name} — tap to open
+            {t('agentPage.live.foreignSession', { name: live.foreignSession.agent_name })}
           </span>
         </div>
       )}
@@ -771,13 +775,13 @@ export function AgentPage() {
                   {agent.onboarding_complete && (
                     <div onClick={() => { setShowSidebar(false); setShowAvatarPicker(true); }}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px', borderRadius: 4, cursor: 'pointer', color: 'rgba(237,240,244,0.7)' }}>
-                      <span style={{ fontSize: 14 }}>{agent.avatar_url ? 'Change Avatar' : 'Set Avatar'}</span>
+                      <span style={{ fontSize: 14 }}>{agent.avatar_url ? t('agentPage.avatar.change') : t('agentPage.avatar.set')}</span>
                     </div>
                   )}
                   <div onClick={() => { setShowSidebar(false); handleTogglePlanMode(); }}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 8px', borderRadius: 4, cursor: 'pointer', color: chat.planMode ? '#D4A85A' : 'rgba(237,240,244,0.7)' }}>
-                    <span style={{ fontSize: 14 }}>Plan Mode</span>
-                    <span style={{ fontSize: 12, color: chat.planMode ? '#D4A85A' : 'rgba(237,240,244,0.38)' }}>{chat.planMode ? 'ON' : 'OFF'}</span>
+                    <span style={{ fontSize: 14 }}>{t('agentPage.plan.mobileLabel')}</span>
+                    <span style={{ fontSize: 12, color: chat.planMode ? '#D4A85A' : 'rgba(237,240,244,0.38)' }}>{chat.planMode ? t('agentPage.on') : t('agentPage.off')}</span>
                   </div>
                   {!chat.trainingMode && (
                     <div onClick={() => { setShowSidebar(false); if (agent.onboarding_complete) { handleStartImprove(); } else { handleStartOnboarding(); } }}
@@ -861,10 +865,10 @@ export function AgentPage() {
               }
               onCancelImport={async () => {
                 const ok = await confirmDialog({
-                  title: 'Cancel import',
-                  message: 'The agent and all import progress will be permanently deleted.',
-                  confirmLabel: 'Delete import',
-                  cancelLabel: 'Keep importing',
+                  title: t('agentPage.importCancel.title'),
+                  message: t('agentPage.importCancel.message'),
+                  confirmLabel: t('agentPage.importCancel.confirm'),
+                  cancelLabel: t('agentPage.importCancel.keep'),
                   danger: true,
                 });
                 if (!ok) return;
@@ -873,7 +877,7 @@ export function AgentPage() {
                 } catch {
                   // A failed delete leaves the agent live — don't navigate
                   // away as if it were gone.
-                  toast.error('Failed to cancel import.');
+                  toast.error(t('agentPage.importCancel.failed'));
                   return;
                 }
                 navigate('/');

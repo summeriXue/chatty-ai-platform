@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import type { CrmDashboard, CrmDeal } from '../core/types';
@@ -18,6 +19,7 @@ import {
 import { sectionHeading, btnSecondary } from './styles';
 
 export function CrmDashboardPage() {
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState<CrmDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<CrmDeal | null>(null);
@@ -39,7 +41,7 @@ export function CrmDashboardPage() {
       reload();
     } catch (err) {
       console.error('Failed to update deal stage:', err);
-      toast.error('Failed to move deal.');
+      toast.error(t('crmDashboard.errors.moveDeal'));
     }
   }
 
@@ -62,7 +64,7 @@ export function CrmDashboardPage() {
     );
   }
 
-  if (!data) return <LoadError label="Couldn't load CRM dashboard" onRetry={() => { setLoading(true); loadDashboard(); }} />;
+  if (!data) return <LoadError label={t('crmDashboard.loadFailed')} onRetry={() => { setLoading(true); loadDashboard(); }} />;
 
   const activePipeline = data.pipeline_by_stage
     .filter(s => s.stage !== 'won' && s.stage !== 'lost')
@@ -79,15 +81,17 @@ export function CrmDashboardPage() {
       {/* Hero */}
       <div style={{ padding: isMobile ? '24px 20px 20px' : '36px 44px 28px', position: 'relative', zIndex: 2 }}>
         <div style={mono(10, INK_DIM)}>
-          Week of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {t('crmDashboard.weekOf', { date: new Date().toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) })}
         </div>
         <h1 style={{
           fontFamily: FONT_DISPLAY,
           fontSize: isMobile ? 30 : 48, fontWeight: 400, letterSpacing: '-0.02em',
           lineHeight: 1.1, margin: '10px 0 0', color: INK,
         }}>
-          Pipeline is <span style={{ color: GOLD, fontStyle: 'italic' }}>{totalPipelineValue}</span>
-          <br /><span style={{ color: INK_MUTE, fontSize: isMobile ? 16 : 26 }}>across {totalDeals} open deals.</span>
+          {t('crmDashboard.pipelineIs')} <span style={{ color: GOLD, fontStyle: 'italic' }}>{totalPipelineValue}</span>
+          <br /><span style={{ color: INK_MUTE, fontSize: isMobile ? 16 : 26 }}>
+            {t('crmDashboard.openDeals', { count: totalDeals })}
+          </span>
         </h1>
       </div>
 
@@ -95,7 +99,7 @@ export function CrmDashboardPage() {
       <div style={{ padding: `0 ${px} 28px`, position: 'relative', zIndex: 2 }}>
         <div style={{ borderTop: `1px solid ${LINE}` }}>
           {activePipeline.length === 0 ? (
-            <p style={{ color: INK_DIM, fontSize: 13, padding: '16px 0' }}>No active deals yet.</p>
+            <p style={{ color: INK_DIM, fontSize: 13, padding: '16px 0' }}>{t('crmDashboard.noActiveDeals')}</p>
           ) : (
             activePipeline.map(stage => {
               const pct = data.total_pipeline_value > 0 ? (stage.total_value / data.total_pipeline_value) * 100 : 0;
@@ -122,14 +126,14 @@ export function CrmDashboardPage() {
                             fontFamily: FONT_DISPLAY,
                             fontSize: 16, letterSpacing: '-0.01em',
                             textTransform: 'capitalize', color: INK,
-                          }}>{stage.stage}</span>
+                          }}>{t(`crmDashboard.stages.${stage.stage}`, { defaultValue: stage.stage })}</span>
                         </div>
                         <div style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
                           <span style={{
                             fontFamily: FONT_DISPLAY,
                             fontSize: 16, color: INK,
                           }}>${formatNumber(stage.total_value)}</span>
-                          <span style={{ ...mono(10, INK_MUTE) }}>{stage.count} deals</span>
+                          <span style={{ ...mono(10, INK_MUTE) }}>{t('crmDashboard.dealCount', { count: stage.count })}</span>
                         </div>
                       </div>
                       <div style={{ height: 2, background: LINE, position: 'relative' }}>
@@ -151,7 +155,7 @@ export function CrmDashboardPage() {
                           fontFamily: FONT_DISPLAY,
                           fontSize: 20, letterSpacing: '-0.01em',
                           textTransform: 'capitalize', color: INK,
-                        }}>{stage.stage}</span>
+                        }}>{t(`crmDashboard.stages.${stage.stage}`, { defaultValue: stage.stage })}</span>
                       </div>
                       <div style={{ height: 2, background: LINE, position: 'relative' }}>
                         <div style={{
@@ -187,10 +191,10 @@ export function CrmDashboardPage() {
         gap: isMobile ? 28 : 36,
       }}>
         <div>
-          <div style={sectionHeading(INK_SOFT)}>Top deals</div>
+          <div style={sectionHeading(INK_SOFT)}>{t('crmDashboard.topDeals')}</div>
           <div style={{ borderTop: `1px solid ${LINE}` }}>
             {data.top_deals.length === 0 ? (
-              <p style={{ color: INK_DIM, fontSize: 15, padding: '16px 0' }}>No deals yet.</p>
+              <p style={{ color: INK_DIM, fontSize: 15, padding: '16px 0' }}>{t('crmDashboard.noDeals')}</p>
             ) : (
               data.top_deals.map(deal => (
                 <div key={deal.id} onClick={() => setSelectedDeal(deal)} style={{
@@ -205,12 +209,12 @@ export function CrmDashboardPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 16, letterSpacing: '-0.005em', color: INK }}>
                       {deal.title}
-                      {!isMobile && <span style={{ color: INK_MUTE }}> · {deal.contact_name || 'No contact'}</span>}
+                      {!isMobile && <span style={{ color: INK_MUTE }}> · {deal.contact_name || t('crmDashboard.noContact')}</span>}
                     </div>
                     <div style={{
                       ...mono(11, STAGE_COLORS[deal.stage]?.color || INK_DIM),
                       marginTop: 3, textTransform: 'uppercase',
-                    }}>{deal.stage}{isMobile && deal.contact_name ? ` · ${deal.contact_name}` : ''}</div>
+                    }}>{t(`crmDashboard.stages.${deal.stage}`, { defaultValue: deal.stage })}{isMobile && deal.contact_name ? ` · ${deal.contact_name}` : ''}</div>
                   </div>
                   <div style={{
                     fontFamily: FONT_DISPLAY,
@@ -224,7 +228,7 @@ export function CrmDashboardPage() {
         </div>
 
         <div>
-          <div style={sectionHeading(INK_SOFT)}>Recent activity</div>
+          <div style={sectionHeading(INK_SOFT)}>{t('crmDashboard.recentActivity')}</div>
           <div style={{ borderTop: `1px solid ${LINE}` }}>
             <ActivityTimeline activities={data.recent_activity} onUpdate={reload} />
           </div>
@@ -234,9 +238,9 @@ export function CrmDashboardPage() {
       {/* Quick actions */}
       <div style={{ padding: `0 ${px} 40px`, display: 'flex', gap: 8, position: 'relative', zIndex: 2, flexWrap: 'wrap' }}>
         {[
-          { label: '+ Add Contact', path: '/crm/contacts' },
-          { label: '+ Add Deal', path: '/crm/pipeline' },
-          { label: '+ Add Task', path: '/crm/tasks' },
+          { label: t('crmDashboard.actions.addContact'), path: '/crm/contacts' },
+          { label: t('crmDashboard.actions.addDeal'), path: '/crm/pipeline' },
+          { label: t('crmDashboard.actions.addTask'), path: '/crm/tasks' },
         ].map(a => (
           <button
             key={a.label}

@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -57,20 +58,20 @@ interface UsageSummary {
 }
 
 const RANGES = [
-  { label: '7 days', days: 7 },
-  { label: '30 days', days: 30 },
-  { label: 'All time', days: 0 },
+  { labelKey: 'usagePage.ranges.sevenDays', days: 7 },
+  { labelKey: 'usagePage.ranges.thirtyDays', days: 30 },
+  { labelKey: 'usagePage.ranges.allTime', days: 0 },
 ];
 
 function formatCost(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-function formatDay(date: string): string {
+function formatDay(date: string, locale: string): string {
   // Parse "YYYY-MM-DD" manually — new Date(string) parses as UTC midnight
   // and shifts the day in negative-offset timezones.
   const [y, m, d] = date.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
 const cardStyle = {
@@ -81,6 +82,7 @@ const cardStyle = {
 };
 
 export function UsagePage() {
+  const { t, i18n } = useTranslation();
   const [days, setDays] = useState(7);
   const [metric, setMetric] = useState<'cost' | 'tokens'>('cost');
   const [data, setData] = useState<UsageSummary | null>(null);
@@ -114,7 +116,7 @@ export function UsagePage() {
   }
 
   if (error && !data) {
-    return <LoadError label="Couldn't load usage data" onRetry={() => { setLoading(true); load(); }} />;
+    return <LoadError label={t('usagePage.loadFailed')} onRetry={() => { setLoading(true); load(); }} />;
   }
 
   if (!data) return null;
@@ -133,12 +135,12 @@ export function UsagePage() {
         display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16,
       }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={mono(10, INK_DIM)}>Usage &amp; Cost</div>
+          <div style={mono(10, INK_DIM)}>{t('usagePage.eyebrow')}</div>
           <h1 style={{
             fontFamily: FONT_DISPLAY, fontSize: isMobile ? 28 : 38, fontWeight: 400,
             letterSpacing: '-0.02em', lineHeight: 1.1, margin: '8px 0 0', color: INK,
           }}>
-            Usage
+            {t('usagePage.title')}
           </h1>
         </div>
 
@@ -158,7 +160,7 @@ export function UsagePage() {
                   color: active ? INK : 'rgba(237,240,244,0.5)',
                 }}
               >
-                {r.label}
+                {t(r.labelKey)}
               </button>
             );
           })}
@@ -173,7 +175,7 @@ export function UsagePage() {
         }}>
           <IconChart size={36} strokeWidth={1.5} />
           <div style={{ fontFamily: FONT_SANS, fontSize: 14, color: 'rgba(237,240,244,0.38)' }}>
-            No usage recorded yet.
+            {t('usagePage.empty')}
           </div>
         </div>
       ) : (
@@ -185,7 +187,7 @@ export function UsagePage() {
             gap: 12, padding: `0 ${px} 16px`,
           }}>
             <div style={cardStyle}>
-              <div style={mono(10, INK_DIM)}>Estimated Cost</div>
+              <div style={mono(10, INK_DIM)}>{t('usagePage.cards.estimatedCost')}</div>
               <div style={{
                 fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 400,
                 color: INK, marginTop: 8, lineHeight: 1,
@@ -194,7 +196,7 @@ export function UsagePage() {
               </div>
             </div>
             <div style={cardStyle}>
-              <div style={mono(10, INK_DIM)}>Total Tokens</div>
+              <div style={mono(10, INK_DIM)}>{t('usagePage.cards.totalTokens')}</div>
               <div style={{
                 fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 400,
                 color: INK, marginTop: 8, lineHeight: 1,
@@ -202,11 +204,11 @@ export function UsagePage() {
                 {formatNumber(data.totals.input_tokens + data.totals.output_tokens)}
               </div>
               <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: INK_DIM, marginTop: 8 }}>
-                {formatNumber(data.totals.input_tokens)} in / {formatNumber(data.totals.output_tokens)} out
+                {t('usagePage.cards.tokenBreakdown', { input: formatNumber(data.totals.input_tokens), output: formatNumber(data.totals.output_tokens) })}
               </div>
             </div>
             <div style={cardStyle}>
-              <div style={mono(10, INK_DIM)}>Events</div>
+              <div style={mono(10, INK_DIM)}>{t('usagePage.cards.events')}</div>
               <div style={{
                 fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 400,
                 color: INK, marginTop: 8, lineHeight: 1,
@@ -223,7 +225,7 @@ export function UsagePage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '0 8px 14px 22px',
               }}>
-                <div style={mono(10, INK_DIM)}>Daily {metric === 'cost' ? 'Cost' : 'Tokens'}</div>
+                <div style={mono(10, INK_DIM)}>{metric === 'cost' ? t('usagePage.chart.dailyCost') : t('usagePage.chart.dailyTokens')}</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {(['cost', 'tokens'] as const).map(m => (
                     <button
@@ -237,7 +239,7 @@ export function UsagePage() {
                         color: metric === m ? INK : 'rgba(237,240,244,0.4)',
                       }}
                     >
-                      {m === 'cost' ? 'Cost' : 'Tokens'}
+                      {m === 'cost' ? t('usagePage.chart.cost') : t('usagePage.chart.tokens')}
                     </button>
                   ))}
                 </div>
@@ -247,7 +249,7 @@ export function UsagePage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(230,235,242,0.07)" vertical={false} />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={formatDay}
+                    tickFormatter={(value: string) => formatDay(value, i18n.language)}
                     tick={{ fontSize: 10, fill: '#6B7280', fontFamily: FONT_MONO }}
                     axisLine={{ stroke: 'rgba(230,235,242,0.07)' }}
                     tickLine={false}
@@ -262,10 +264,10 @@ export function UsagePage() {
                   />
                   <Tooltip
                     cursor={{ fill: 'rgba(230,235,242,0.04)' }}
-                    labelFormatter={(label) => formatDay(String(label))}
+                    labelFormatter={(label) => formatDay(String(label), i18n.language)}
                     formatter={(value, name) => [
                       formatMetric(Number(value)),
-                      name === chartKeys.chat ? 'Chat' : 'Background',
+                      name === chartKeys.chat ? t('usagePage.chart.chat') : t('usagePage.chart.background'),
                     ]}
                     contentStyle={{
                       backgroundColor: '#1A1D24',
@@ -283,7 +285,7 @@ export function UsagePage() {
               </ResponsiveContainer>
               {/* Legend */}
               <div style={{ display: 'flex', gap: 16, padding: '8px 0 4px 22px' }}>
-                {[{ label: 'Chat', color: SAGE_HEX }, { label: 'Background', color: GOLD_HEX }].map(item => (
+                {[{ label: t('usagePage.chart.chat'), color: SAGE_HEX }, { label: t('usagePage.chart.background'), color: GOLD_HEX }].map(item => (
                   <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
                     <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: INK_DIM }}>{item.label}</span>
@@ -300,7 +302,7 @@ export function UsagePage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT_SANS, fontSize: 13 }}>
                   <thead>
                     <tr>
-                      {['Agent', 'Model', 'Tokens', 'Events', 'Est. Cost'].map((h, i) => (
+                      {[t('usagePage.table.agent'), t('usagePage.table.model'), t('usagePage.table.tokens'), t('usagePage.table.events'), t('usagePage.table.estimatedCost')].map((h, i) => (
                         <th
                           key={h}
                           style={{
@@ -329,14 +331,14 @@ export function UsagePage() {
                           {a.primary_model || '—'}
                           {a.has_unknown_pricing && (
                             <span
-                              title={`No published price for: ${(a.unknown_pricing_models || []).join(', ')}. Run the price-check skill to add it to pricing.py.`}
+                              title={t('usagePage.pricingUnknownTitle', { models: (a.unknown_pricing_models || []).join(', ') })}
                               style={{
                                 marginLeft: 8, padding: '1px 6px', borderRadius: 3, fontSize: 9,
                                 fontFamily: FONT_MONO, letterSpacing: '0.08em', textTransform: 'uppercase',
                                 color: '#D4A85A', border: '1px solid rgba(212,168,90,0.4)', whiteSpace: 'nowrap',
                               }}
                             >
-                              pricing unknown
+                              {t('usagePage.pricingUnknown')}
                             </span>
                           )}
                         </td>
@@ -345,7 +347,7 @@ export function UsagePage() {
                           borderBottom: `1px solid ${LINE}`, fontFamily: FONT_MONO, fontSize: 11,
                           whiteSpace: 'nowrap',
                         }}>
-                          {formatNumber(a.input_tokens)} in / {formatNumber(a.output_tokens)} out
+                          {t('usagePage.cards.tokenBreakdown', { input: formatNumber(a.input_tokens), output: formatNumber(a.output_tokens) })}
                         </td>
                         <td style={{
                           padding: '11px 16px', textAlign: 'right', color: INK_MUTE,
@@ -375,7 +377,7 @@ export function UsagePage() {
         fontFamily: FONT_SANS, fontSize: 11, color: 'rgba(237,240,244,0.38)',
       }}>
         Costs are estimates based on published API prices. Local models (Ollama) are free ($0.00).
-        A “pricing unknown” tag means a paid model has no entry in pricing.py yet — run the price-check
+        A “{t('usagePage.pricingUnknown')}” tag means a paid model has no entry in pricing.py yet — run the price-check
         skill to refresh rates; until then its cost is shown as $0.00 but excluded from accuracy.
       </div>
     </div>

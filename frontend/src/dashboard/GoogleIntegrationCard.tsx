@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import { useOAuthFlow } from '../core/hooks/useOAuthFlow';
 import { AppCredentialsForm } from './AppCredentialsForm';
@@ -16,34 +17,12 @@ interface Props {
   onChanged: () => void;
 }
 
-const GMAIL_OPTIONS: { value: GmailScopeLevel; label: string; hint: string }[] = [
-  { value: 'none', label: 'Off',   hint: 'Don\'t request Gmail access' },
-  { value: 'read', label: 'Read only', hint: 'Search, read messages, read threads' },
-  { value: 'send', label: 'Read + send + draft', hint: 'Everything above plus compose, reply, save drafts' },
-];
-
-const CALENDAR_OPTIONS: { value: CalendarScopeLevel; label: string; hint: string }[] = [
-  { value: 'none', label: 'Off', hint: 'Don\'t request Calendar access' },
-  { value: 'read', label: 'Read only', hint: 'List and search events, check free/busy' },
-  { value: 'full', label: 'Full access', hint: 'Everything above plus create, update, and delete events' },
-];
-
-const DRIVE_OPTIONS: { value: DriveScopeLevel; label: string; hint: string }[] = [
-  { value: 'none',      label: 'Off', hint: 'Don\'t request Drive access' },
-  { value: 'file',      label: 'App files only', hint: 'Chatty can read & upload files it creates. Minimal scope, no Google verification.' },
-  { value: 'readonly',  label: 'Read only (all files)', hint: 'Search and read any Drive file. Requires Google OAuth verification.' },
-  { value: 'full',      label: 'Full access', hint: 'Read, write, and delete any Drive file. Most powerful; requires verification.' },
-];
-
-function scopeSummary(grants: GoogleAccount['scope_grants']) {
-  return [
-    grants.gmail !== 'none' && `Gmail: ${grants.gmail === 'send' ? 'read+send' : grants.gmail}`,
-    grants.calendar !== 'none' && `Calendar: ${grants.calendar}`,
-    grants.drive !== 'none' && `Drive: ${grants.drive}`,
-  ].filter(Boolean).join(' \u00b7 ');
-}
+const GMAIL_SCOPE_VALUES: GmailScopeLevel[] = ['none', 'read', 'send'];
+const CALENDAR_SCOPE_VALUES: CalendarScopeLevel[] = ['none', 'read', 'full'];
+const DRIVE_SCOPE_VALUES: DriveScopeLevel[] = ['none', 'file', 'readonly', 'full'];
 
 export function GoogleIntegrationCard({ integration, onChanged }: Props) {
+  const { t } = useTranslation();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState('');
   const [gmail, setGmail]       = useState<GmailScopeLevel>('none');
@@ -58,6 +37,39 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
   const [savingAgent, setSavingAgent] = useState('');
   const hasAppCreds = integration.has_app_credentials !== false;
   const accounts = integration.google_accounts || [];
+
+  const gmailOptions = GMAIL_SCOPE_VALUES.map(value => ({
+    value,
+    label: t(`googleIntegration.gmail.${value}.label`),
+    hint: t(`googleIntegration.gmail.${value}.hint`),
+  }));
+
+  const calendarOptions = CALENDAR_SCOPE_VALUES.map(value => ({
+    value,
+    label: t(`googleIntegration.calendar.${value}.label`),
+    hint: t(`googleIntegration.calendar.${value}.hint`),
+  }));
+
+  const driveOptions = DRIVE_SCOPE_VALUES.map(value => ({
+    value,
+    label: t(`googleIntegration.drive.${value}.label`),
+    hint: t(`googleIntegration.drive.${value}.hint`),
+  }));
+
+  function scopeValueLabel(service: 'gmail' | 'calendar' | 'drive', value: string): string {
+    return t(`googleIntegration.scopeValues.${service}.${value}`, { defaultValue: value });
+  }
+
+  function scopeSummary(grants: GoogleAccount['scope_grants']): string {
+    return [
+      grants.gmail !== 'none' &&
+        `${t('googleIntegration.services.gmail')}: ${scopeValueLabel('gmail', grants.gmail)}`,
+      grants.calendar !== 'none' &&
+        `${t('googleIntegration.services.calendar')}: ${scopeValueLabel('calendar', grants.calendar)}`,
+      grants.drive !== 'none' &&
+        `${t('googleIntegration.services.drive')}: ${scopeValueLabel('drive', grants.drive)}`,
+    ].filter(Boolean).join(' · ');
+  }
 
   const oauth = useOAuthFlow();
 
@@ -102,7 +114,7 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
   async function connect() {
     setLocalError('');
     if (!anyGranted) {
-      setLocalError('Enable at least one of Gmail, Calendar, or Drive.');
+      setLocalError(t('googleIntegration.enableOneService'));
       return;
     }
     const base = editingAccountId
@@ -127,7 +139,7 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
         api<{ agents: Agent[] }>('/api/agents').then(data => setAgents(data.agents)).catch(() => {});
       }
     } catch (err: unknown) {
-      setLocalError(err instanceof Error ? err.message : 'Disconnect failed');
+      setLocalError(err instanceof Error ? err.message : t('googleIntegration.disconnectFailed'));
     } finally {
       setDisconnecting('');
     }
@@ -150,7 +162,7 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
       const data = await api<{ agents: Agent[] }>('/api/agents');
       setAgents(data.agents);
     } catch (err: unknown) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to update agent');
+      setLocalError(err instanceof Error ? err.message : t('googleIntegration.updateAgentFailed'));
     } finally {
       setSavingAgent('');
     }
@@ -179,8 +191,8 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
             <p className="text-white font-medium">{integration.name}</p>
             <p className="text-gray-400 text-xs mt-0.5">
               {accounts.length === 0
-                ? integration.description
-                : `${accounts.length} account${accounts.length > 1 ? 's' : ''} connected`}
+                ? t('googleIntegration.description')
+                : t('googleIntegration.accountsConnected', { count: accounts.length })}
             </p>
           </div>
         </div>
@@ -188,24 +200,24 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
           {accounts.length === 0 && !hasAppCreds && (
             <button onClick={openCredForm} disabled={isRunning}
               className="text-xs px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition disabled:opacity-50">
-              Setup
+              {t('googleIntegration.setup')}
             </button>
           )}
           {accounts.length === 0 && hasAppCreds && (
             <button onClick={() => openScopePicker()} disabled={isRunning}
               className="text-xs px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition disabled:opacity-50">
-              {isRunning ? 'Connecting...' : 'Connect'}
+              {isRunning ? t('googleIntegration.connecting') : t('googleIntegration.connect')}
             </button>
           )}
           {accounts.length > 0 && (
             <>
               <button onClick={() => openScopePicker()} disabled={isRunning}
                 className="text-xs px-3 py-1.5 rounded-lg bg-brand text-white hover:opacity-90 transition disabled:opacity-50">
-                + Add Account
+                {t('googleIntegration.addAccount')}
               </button>
               <button onClick={openCredForm}
                 className="text-xs px-2 py-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition">
-                Edit credentials
+                {t('googleIntegration.editCredentials')}
               </button>
             </>
           )}
@@ -220,9 +232,9 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
       {isRunning && (
         <p className="mt-2 text-indigo-300 text-xs flex items-center gap-2">
           <span className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block" />
-          {oauth.state.status === 'starting' && 'Preparing authorization...'}
-          {oauth.state.status === 'awaiting_user' && 'Complete authorization in the popup...'}
-          {oauth.state.status === 'completing' && 'Finalizing connection...'}
+          {oauth.state.status === 'starting' && t('googleIntegration.preparingAuthorization')}
+          {oauth.state.status === 'awaiting_user' && t('googleIntegration.completeAuthorization')}
+          {oauth.state.status === 'completing' && t('googleIntegration.finalizingConnection')}
         </p>
       )}
 
@@ -247,7 +259,7 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
                 <p className="text-white text-xs font-medium">
                   {acct.email}
                   {acct.connection_status === 'broken' && (
-                    <span className="ml-2 text-red-400 text-[10px] bg-red-900/20 px-1.5 py-0.5 rounded">Connection lost</span>
+                    <span className="ml-2 text-red-400 text-[10px] bg-red-900/20 px-1.5 py-0.5 rounded">{t('googleIntegration.connectionLost')}</span>
                   )}
                 </p>
                 <p className="text-gray-500 text-[11px] mt-0.5">{scopeSummary(acct.scope_grants)}</p>
@@ -255,11 +267,11 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
               <div className="flex items-center gap-1.5">
                 <button onClick={() => openScopePicker(acct.id, acct)} disabled={isRunning}
                   className="text-[11px] px-2 py-1 rounded text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition disabled:opacity-50">
-                  {acct.connection_status === 'broken' ? 'Reconnect' : 'Change scopes'}
+                  {acct.connection_status === 'broken' ? t('googleIntegration.reconnect') : t('googleIntegration.changeScopes')}
                 </button>
                 <button onClick={() => disconnectAccount(acct.id)} disabled={disconnecting === acct.id || isRunning}
                   className="text-[11px] px-2 py-1 rounded text-gray-500 hover:text-red-400 hover:bg-gray-700 transition disabled:opacity-50">
-                  {disconnecting === acct.id ? '...' : 'Disconnect'}
+                  {disconnecting === acct.id ? '...' : t('googleIntegration.disconnect')}
                 </button>
               </div>
             </div>
@@ -273,11 +285,11 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
           <button onClick={() => setAssignmentsOpen(!assignmentsOpen)}
             className="text-xs text-gray-400 hover:text-gray-200 transition flex items-center gap-1">
             <span className={`transition-transform ${assignmentsOpen ? 'rotate-90' : ''}`}>&#9654;</span>
-            Agent Assignments
+            {t('googleIntegration.agentAssignments')}
           </button>
           {assignmentsOpen && (
             <div className="mt-2 space-y-2">
-              {agents.length === 0 && <p className="text-gray-500 text-xs">No agents created yet.</p>}
+              {agents.length === 0 && <p className="text-gray-500 text-xs">{t('googleIntegration.noAgents')}</p>}
               {agents.map(agent => {
                 const ga = agent.google_accounts || {};
                 return (
@@ -290,10 +302,14 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
                         return (
                           <div key={svc}>
                             <label className="text-gray-500 text-[10px] uppercase tracking-wide block mb-0.5">
-                              {svc === 'gmail' ? 'Gmail' : svc === 'calendar' ? 'Calendar' : 'Drive'}
+                              {svc === 'gmail'
+                                ? t('googleIntegration.services.gmail')
+                                : svc === 'calendar'
+                                  ? t('googleIntegration.services.calendarFull')
+                                  : t('googleIntegration.services.driveFull')}
                             </label>
                             {available.length === 0 && (
-                              <span className="text-gray-600 text-[10px]">No accounts</span>
+                              <span className="text-gray-600 text-[10px]">{t('googleIntegration.noAccounts')}</span>
                             )}
                             <div className="space-y-0.5">
                               {available.map((a, i) => (
@@ -305,7 +321,7 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
                                     disabled={savingAgent === agent.id}
                                     className="rounded border-gray-600 bg-gray-800 text-indigo-500 w-3 h-3 accent-indigo-500"
                                   />
-                                  <span>{a.email}{selected.includes(a.id) && i === 0 && selected[0] === a.id && selected.length > 1 ? ' (default)' : ''}</span>
+                                  <span>{a.email}{selected.includes(a.id) && i === 0 && selected[0] === a.id && selected.length > 1 ? ` (${t('googleIntegration.default')})` : ''}</span>
                                 </label>
                               ))}
                             </div>
@@ -326,24 +342,38 @@ export function GoogleIntegrationCard({ integration, onChanged }: Props) {
         <div className="mt-4 pt-4 border-t border-gray-700 space-y-4">
           <p className="text-gray-400 text-xs">
             {editingAccountId
-              ? 'Update the access levels for this account. You\'ll re-authorize on Google\'s consent screen.'
-              : 'Pick the access levels for the new Google account.'}
+              ? t('googleIntegration.updateScopesDescription')
+              : t('googleIntegration.newAccountScopesDescription')}
           </p>
-          <ScopeGroup title="Gmail" options={GMAIL_OPTIONS} value={gmail}
-            onChange={(v) => setGmail(v as GmailScopeLevel)} />
-          <ScopeGroup title="Google Calendar" options={CALENDAR_OPTIONS} value={calendar}
-            onChange={(v) => setCalendar(v as CalendarScopeLevel)} />
-          <ScopeGroup title="Google Drive" options={DRIVE_OPTIONS} value={drive}
-            onChange={(v) => setDrive(v as DriveScopeLevel)} />
+          <ScopeGroup
+            title={t('googleIntegration.services.gmail')}
+            options={gmailOptions}
+            value={gmail}
+            onChange={(v) => setGmail(v as GmailScopeLevel)}
+          />
+
+          <ScopeGroup
+            title={t('googleIntegration.services.calendarFull')}
+            options={calendarOptions}
+            value={calendar}
+            onChange={(v) => setCalendar(v as CalendarScopeLevel)}
+          />
+
+          <ScopeGroup
+            title={t('googleIntegration.services.driveFull')}
+            options={driveOptions}
+            value={drive}
+            onChange={(v) => setDrive(v as DriveScopeLevel)}
+          />
 
           <div className="flex gap-2 pt-2">
             <button onClick={() => { setPickerOpen(false); setEditingAccountId(''); }} disabled={isRunning}
               className="flex-1 py-2 text-sm rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-700 transition disabled:opacity-50">
-              Cancel
+              {t('googleIntegration.cancel')}
             </button>
             <button onClick={connect} disabled={isRunning || !anyGranted}
               className="flex-1 py-2 text-sm rounded-lg bg-brand text-white font-medium disabled:opacity-50">
-              {isRunning ? 'Connecting...' : editingAccountId ? 'Reconnect' : 'Connect Google Account'}
+              {isRunning ? t('googleIntegration.connecting') : editingAccountId ? t('googleIntegration.reconnect') : t('googleIntegration.connectGoogleAccount')}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { toast } from '../../shared/toast';
 
@@ -62,6 +63,7 @@ function OnboardingWizard({ agentId, agentName, onUpdate }: {
   agentName: string;
   onUpdate: () => void;
 }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<WizardStep>('create-bot');
   const [tokenInput, setTokenInput] = useState('');
   const [connecting, setConnecting] = useState(false);
@@ -88,7 +90,7 @@ function OnboardingWizard({ agentId, agentName, onUpdate }: {
         body: JSON.stringify({ agent_id: agentId, bot_token: tokenInput.trim() }),
       });
       if (!result.webhook_ok) {
-        setError(result.error || 'Webhook registration failed — check that your server is publicly accessible.');
+        setError(result.error || t('telegramSettings.webhookFailed'));
         return;
       }
       setConnectedUsername(result.bot_username);
@@ -96,7 +98,7 @@ function OnboardingWizard({ agentId, agentName, onUpdate }: {
       onUpdate();
       setStep('link-account');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to validate token');
+      setError(err instanceof Error ? err.message : t('telegramSettings.validateTokenFailed'));
     } finally {
       setConnecting(false);
     }
@@ -114,9 +116,11 @@ function OnboardingWizard({ agentId, agentName, onUpdate }: {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl" style={{ backgroundColor: `${TELEGRAM_BLUE}20` }}>
           <TelegramIcon size={32} />
         </div>
-        <h2 className="text-xl font-bold text-white">Connect to Telegram</h2>
+        <h2 className="text-xl font-bold text-white">{t('telegramSettings.connectTitle')}</h2>
         <p className="text-gray-400 text-sm">
-          Let people message <span className="text-white font-medium">{agentName}</span> directly on Telegram
+          {t('telegramSettings.connectDescriptionPrefix')}{' '}
+          <span className="text-white font-medium">{agentName}</span>{' '}
+          {t('telegramSettings.connectDescriptionSuffix')}
         </p>
       </div>
 
@@ -176,31 +180,32 @@ function OnboardingWizard({ agentId, agentName, onUpdate }: {
 // ── Step 1: Create Your Telegram Bot ──────────────────────────────────────────
 
 function StepCreateBot({ onNext }: { onNext: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 space-y-4">
-        <h3 className="text-white font-semibold text-base">Step 1: Create Your Telegram Bot</h3>
+        <h3 className="text-white font-semibold text-base">{t('telegramSettings.step1Title')}</h3>
 
         <ol className="space-y-3 text-sm">
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">1</span>
-            <span className="text-gray-300">Open Telegram and search for <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">@BotFather</span></span>
+            <span className="text-gray-300">{t('telegramSettings.step1OpenTelegram')} <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">@BotFather</span></span>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">2</span>
-            <span className="text-gray-300">Send <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">/newbot</span></span>
+            <span className="text-gray-300">{t('telegramSettings.step1Send')} <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">/newbot</span></span>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">3</span>
-            <span className="text-gray-300">Choose a name (e.g., "My Business Assistant")</span>
+            <span className="text-gray-300">{t('telegramSettings.step1ChooseName')}</span>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">4</span>
-            <span className="text-gray-300">Choose a username ending in <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">bot</span> (e.g., <span className="font-mono text-white">mybiz_assistant_bot</span>)</span>
+            <span className="text-gray-300">{t('telegramSettings.step1ChooseUsernamePrefix')} <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">bot</span> {t('telegramSettings.step1ChooseUsernameMiddle')} <span className="font-mono text-white">mybiz_assistant_bot</span>{t('telegramSettings.step1ChooseUsernameSuffix')}</span>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">5</span>
-            <span className="text-gray-300">BotFather will give you a <span className="text-white font-medium">bot token</span> — copy it</span>
+            <span className="text-gray-300">{t('telegramSettings.step1TokenPrefix')} <span className="text-white font-medium">bot token</span> — {t('telegramSettings.step1TokenSuffix')}</span>
           </li>
         </ol>
 
@@ -208,8 +213,8 @@ function StepCreateBot({ onNext }: { onNext: () => void }) {
         <div className="rounded-lg bg-gray-900 border border-gray-700 aspect-video flex items-center justify-center">
           <div className="text-center text-gray-500 text-sm">
             <div className="text-2xl mb-1">🤖</div>
-            <div className="font-medium">BotFather Conversation</div>
-            <div className="text-xs text-gray-600 mt-0.5">Screenshot placeholder</div>
+            <div className="font-medium">{t('telegramSettings.botFatherConversation')}</div>
+            <div className="text-xs text-gray-600 mt-0.5">{t('telegramSettings.screenshotPlaceholder')}</div>
           </div>
         </div>
 
@@ -217,8 +222,8 @@ function StepCreateBot({ onNext }: { onNext: () => void }) {
         <div className="rounded-lg bg-gray-900 border border-gray-700 aspect-[16/7] flex items-center justify-center">
           <div className="text-center text-gray-500 text-sm">
             <div className="text-2xl mb-1">🔑</div>
-            <div className="font-medium">Bot Token Response</div>
-            <div className="text-xs text-gray-600 mt-0.5">Screenshot placeholder</div>
+            <div className="font-medium">{t('telegramSettings.botTokenResponse')}</div>
+            <div className="text-xs text-gray-600 mt-0.5">{t('telegramSettings.screenshotPlaceholder')}</div>
           </div>
         </div>
       </div>
@@ -228,7 +233,7 @@ function StepCreateBot({ onNext }: { onNext: () => void }) {
         className="w-full py-3 rounded-xl font-semibold text-white transition hover:opacity-90"
         style={{ backgroundColor: TELEGRAM_BLUE }}
       >
-        I have my bot token — Next
+        {t('telegramSettings.haveTokenNext')}
       </button>
     </div>
   );
@@ -245,12 +250,13 @@ function StepPasteToken({ tokenInput, setTokenInput, connecting, error, onConnec
   onConnect: () => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 space-y-4">
-        <h3 className="text-white font-semibold text-base">Step 2: Paste Your Bot Token</h3>
+        <h3 className="text-white font-semibold text-base">{t('telegramSettings.step2Title')}</h3>
         <p className="text-gray-400 text-sm">
-          Paste the token that BotFather gave you. It looks like:
+          {t('telegramSettings.step2Description')}
         </p>
         <div className="font-mono text-xs text-gray-500 bg-gray-900 rounded-lg px-3 py-2 border border-gray-700">
           123456789:ABCdefGHIjklMNOpqrsTUVwxyz
@@ -261,7 +267,7 @@ function StepPasteToken({ tokenInput, setTokenInput, connecting, error, onConnec
           value={tokenInput}
           onChange={e => setTokenInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onConnect()}
-          placeholder="Paste your bot token here"
+          placeholder={t('telegramSettings.tokenPlaceholder')}
           className="w-full bg-gray-900 border border-gray-600 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#0088cc] font-mono transition"
           autoFocus
         />
@@ -276,8 +282,8 @@ function StepPasteToken({ tokenInput, setTokenInput, connecting, error, onConnec
         <div className="rounded-lg bg-gray-900 border border-gray-700 aspect-[16/7] flex items-center justify-center">
           <div className="text-center text-gray-500 text-sm">
             <div className="text-2xl mb-1">📋</div>
-            <div className="font-medium">Where to Find the Token</div>
-            <div className="text-xs text-gray-600 mt-0.5">Screenshot placeholder</div>
+            <div className="font-medium">{t('telegramSettings.whereToken')}</div>
+            <div className="text-xs text-gray-600 mt-0.5">{t('telegramSettings.screenshotPlaceholder')}</div>
           </div>
         </div>
       </div>
@@ -287,7 +293,7 @@ function StepPasteToken({ tokenInput, setTokenInput, connecting, error, onConnec
           onClick={onBack}
           className="flex-1 py-3 rounded-xl font-semibold text-gray-400 border border-gray-700 hover:bg-gray-800 transition"
         >
-          Back
+          {t('telegramSettings.back')}
         </button>
         <button
           onClick={onConnect}
@@ -298,9 +304,9 @@ function StepPasteToken({ tokenInput, setTokenInput, connecting, error, onConnec
           {connecting ? (
             <span className="flex items-center justify-center gap-2">
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Validating...
+              {t('telegramSettings.validating')}
             </span>
-          ) : 'Connect'}
+          ) : t('telegramSettings.connect')}
         </button>
       </div>
     </div>
@@ -317,6 +323,7 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
   agentName: string;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const [minutesLeft, setMinutesLeft] = useState(10);
   const [checking, setChecking] = useState(false);
   const [linked, setLinked] = useState(false);
@@ -367,9 +374,10 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
       <div className="space-y-4">
         <div className="bg-green-900/20 border border-green-800/50 rounded-xl p-5 text-center space-y-3">
           <div className="text-4xl">🎉</div>
-          <h3 className="text-white font-semibold text-lg">Account Linked!</h3>
+          <h3 className="text-white font-semibold text-lg">{t('telegramSettings.accountLinked')}</h3>
           <p className="text-green-300 text-sm">
-            Messages to <span className="font-mono font-bold">@{botUsername}</span> will be handled by <span className="font-bold">{agentName}</span>.
+            {t('telegramSettings.messagesToPrefix')}{' '}<span className="font-mono font-bold">@{botUsername}</span>{' '}
+            {t('telegramSettings.messagesToMiddle')}{' '}<span className="font-bold">{agentName}</span>.
           </p>
         </div>
         <button
@@ -377,7 +385,7 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
           className="w-full py-3 rounded-xl font-semibold text-white transition hover:opacity-90"
           style={{ backgroundColor: TELEGRAM_BLUE }}
         >
-          Continue
+          {t('telegramSettings.continue')}
         </button>
       </div>
     );
@@ -387,28 +395,29 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
     <div className="space-y-4">
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-white font-semibold text-base">Step 3: Link Your Telegram Account</h3>
+          <h3 className="text-white font-semibold text-base">{t('telegramSettings.step3Title')}</h3>
           <span className="text-xs bg-green-900/40 text-green-400 border border-green-700/40 rounded-full px-2 py-0.5">
-            Bot connected!
+            {t('telegramSettings.botConnected')}
           </span>
         </div>
 
         <p className="text-gray-300 text-sm">
-          Your bot <span className="font-mono font-bold text-white">@{botUsername}</span> is ready. Now link your Telegram account:
+          {t('telegramSettings.botReadyPrefix')}{' '}<span className="font-mono font-bold text-white">@{botUsername}</span>{' '}
+          {t('telegramSettings.botReadySuffix')}
         </p>
 
         <ol className="space-y-3 text-sm">
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">1</span>
-            <span className="text-gray-300">Open Telegram</span>
+            <span className="text-gray-300">{t('telegramSettings.openTelegram')}</span>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">2</span>
-            <span className="text-gray-300">Search for <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">@{botUsername}</span></span>
+            <span className="text-gray-300">{t('telegramSettings.searchFor')} <span className="font-mono bg-gray-700 px-1.5 py-0.5 rounded text-white">@{botUsername}</span></span>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center text-xs font-bold">3</span>
-            <span className="text-gray-300">Send any message (e.g., "Hello!")</span>
+            <span className="text-gray-300">{t('telegramSettings.sendAnyMessage')}</span>
           </li>
         </ol>
 
@@ -417,8 +426,8 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
           <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
           <span className="text-yellow-300 text-sm">
             {minutesLeft > 0
-              ? `Registration window open — ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''} remaining`
-              : 'Registration window expired — reset below'}
+              ? t('telegramSettings.registrationOpen', { count: minutesLeft })
+              : t('telegramSettings.registrationExpired')}
           </span>
         </div>
 
@@ -427,15 +436,15 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
           <div className="rounded-lg bg-gray-900 border border-gray-700 aspect-[4/3] flex items-center justify-center">
             <div className="text-center text-gray-500 text-xs">
               <div className="text-xl mb-1">🔍</div>
-              <div>Search for bot</div>
-              <div className="text-gray-600">Screenshot</div>
+              <div>{t('telegramSettings.searchForBot')}</div>
+              <div className="text-gray-600">{t('telegramSettings.screenshot')}</div>
             </div>
           </div>
           <div className="rounded-lg bg-gray-900 border border-gray-700 aspect-[4/3] flex items-center justify-center">
             <div className="text-center text-gray-500 text-xs">
               <div className="text-xl mb-1">💬</div>
-              <div>Send first message</div>
-              <div className="text-gray-600">Screenshot</div>
+              <div>{t('telegramSettings.sendFirstMessage')}</div>
+              <div className="text-gray-600">{t('telegramSettings.screenshot')}</div>
             </div>
           </div>
         </div>
@@ -452,7 +461,7 @@ function StepLinkAccount({ botUsername, expiresAt, agentId, agentName, onDone }:
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             Checking...
           </span>
-        ) : "I've sent a message"}
+        ) : t('telegramSettings.sentMessage')}
       </button>
     </div>
   );
@@ -465,6 +474,7 @@ function StepAllSet({ agentName, botUsername }: {
   agentName: string;
   botUsername: string;
 }) {
+  const { t } = useTranslation();
   const [showPushPrompt, setShowPushPrompt] = useState(false);
   const [pushDone, setPushDone] = useState(false);
 
@@ -478,19 +488,19 @@ function StepAllSet({ agentName, botUsername }: {
     <div className="space-y-4">
       <div className="bg-gradient-to-b from-[#0088cc]/10 to-transparent rounded-xl border border-[#0088cc]/30 p-6 text-center space-y-4">
         <div className="text-5xl">🚀</div>
-        <h3 className="text-white font-bold text-xl">All Set!</h3>
+        <h3 className="text-white font-bold text-xl">{t('telegramSettings.allSet')}</h3>
         <p className="text-gray-300 text-sm">
-          Your agent <span className="text-white font-bold">{agentName}</span> is now live on Telegram as{' '}
-          <span className="font-mono font-bold text-[#0088cc]">@{botUsername}</span>
+          {t('telegramSettings.agentLivePrefix')}{' '}<span className="text-white font-bold">{agentName}</span>{' '}
+          {t('telegramSettings.agentLiveMiddle')}{' '}<span className="font-mono font-bold text-[#0088cc]">@{botUsername}</span>
         </p>
         <p className="text-gray-400 text-xs">
-          Messages sent to the bot will be answered by your agent with full access to tools and knowledge.
+          {t('telegramSettings.botAnswerDescription')}
         </p>
       </div>
 
       {showPushPrompt && !pushDone && (
         <div className="rounded-xl border border-gray-600 p-4 space-y-3">
-          <p className="text-gray-300 text-sm">Enable web push notifications too?</p>
+          <p className="text-gray-300 text-sm">{t('telegramSettings.enablePushPrompt')}</p>
           <div className="flex gap-2">
             <button
               onClick={async () => {
@@ -501,13 +511,13 @@ function StepAllSet({ agentName, botUsername }: {
               className="flex-1 py-2 rounded-lg text-sm font-medium text-white"
               style={{ backgroundColor: '#C8D1D9', color: '#0A0C0F' }}
             >
-              Enable
+              {t('telegramSettings.enable')}
             </button>
             <button
               onClick={() => setShowPushPrompt(false)}
               className="flex-1 py-2 rounded-lg text-sm font-medium text-gray-400 border border-gray-600"
             >
-              Skip
+              {t('telegramSettings.skip')}
             </button>
           </div>
         </div>
@@ -520,7 +530,7 @@ function StepAllSet({ agentName, botUsername }: {
         className="block w-full py-3 rounded-xl font-semibold text-white text-center transition hover:opacity-90"
         style={{ backgroundColor: TELEGRAM_BLUE }}
       >
-        Open @{botUsername} in Telegram
+        {t('telegramSettings.openBot', { username: botUsername })}
       </a>
     </div>
   );
@@ -537,6 +547,7 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
   groupEnabled: boolean;
   onUpdate: () => void;
 }) {
+  const { t } = useTranslation();
   const [toggling, setToggling] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [showConfirmDisconnect, setShowConfirmDisconnect] = useState(false);
@@ -552,7 +563,7 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
         body: JSON.stringify({ telegram_group_enabled: !groupEnabled }),
       });
       onUpdate();
-    } catch { toast.error('Failed to update group setting.'); }
+    } catch { toast.error(t('telegramSettings.updateGroupFailed')); }
     finally { setTogglingGroup(false); }
   }
 
@@ -564,7 +575,7 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
         body: JSON.stringify({ telegram_enabled: !telegramEnabled }),
       });
       onUpdate();
-    } catch { toast.error('Failed to update Telegram setting.'); }
+    } catch { toast.error(t('telegramSettings.updateTelegramFailed')); }
     finally { setToggling(false); }
   }
 
@@ -573,7 +584,7 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
     try {
       await api(`/api/telegram/bot-token/${agentId}`, { method: 'DELETE' });
       onUpdate();
-    } catch { toast.error('Failed to disconnect Telegram.'); }
+    } catch { toast.error(t('telegramSettings.disconnectFailed')); }
     finally {
       setDisconnecting(false);
       setShowConfirmDisconnect(false);
@@ -590,7 +601,7 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
       });
       setResetSuccess(true);
       setTimeout(() => setResetSuccess(false), 5000);
-    } catch { toast.error('Failed to reset registration.'); }
+    } catch { toast.error(t('telegramSettings.resetRegistrationFailed')); }
     finally { setResetting(false); }
   }
 
@@ -620,15 +631,15 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
               ? 'bg-green-900/40 text-green-400 border border-green-700/40'
               : 'bg-gray-700 text-gray-400 border border-gray-600'
           }`}>
-            {telegramEnabled ? 'Active' : 'Disabled'}
+            {telegramEnabled ? t('telegramSettings.active') : t('telegramSettings.disabled')}
           </span>
         </div>
 
         {/* Enable/disable toggle */}
         <div className="flex items-center justify-between py-2 border-t border-gray-700">
           <div>
-            <p className="text-white text-sm font-medium">Telegram Messaging</p>
-            <p className="text-gray-500 text-xs">Respond to messages on Telegram</p>
+            <p className="text-white text-sm font-medium">{t('telegramSettings.telegramMessaging')}</p>
+            <p className="text-gray-500 text-xs">{t('telegramSettings.respondTelegram')}</p>
           </div>
           <button
             onClick={handleToggle}
@@ -646,42 +657,37 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-sm text-[#0088cc] hover:underline"
         >
-          <span>Open in Telegram</span>
+          <span>{t('telegramSettings.openInTelegram')}</span>
           <span className="text-xs">↗</span>
         </a>
       </div>
 
       {/* Registration management */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 space-y-3">
-        <h3 className="text-white text-sm font-semibold">Account Linking</h3>
-        <p className="text-gray-400 text-xs">
-          Reset the registration window to link a different Telegram account to this agent.
-        </p>
+        <h3 className="text-white text-sm font-semibold">{t('telegramSettings.accountLinking')}</h3>
+        <p className="text-gray-400 text-xs">{t('telegramSettings.accountLinkingDescription')}</p>
         <button
           onClick={handleResetRegistration}
           disabled={resetting}
           className="text-sm px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition disabled:opacity-50"
         >
-          {resetting ? 'Resetting...' : 'Reset Registration Window'}
+          {resetting ? t('telegramSettings.resetting') : t('telegramSettings.resetRegistrationWindow')}
         </button>
         {resetSuccess && (
-          <p className="text-green-400 text-xs">Registration window reopened for 10 minutes. Message the bot to link your account.</p>
+          <p className="text-green-400 text-xs">{t('telegramSettings.registrationReopened')}</p>
         )}
       </div>
 
       {/* Group Chats */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 space-y-4">
-        <h3 className="text-white text-sm font-semibold">Group Chats</h3>
-        <p className="text-gray-400 text-xs">
-          Allow this bot to respond in Telegram groups when @mentioned or replied to.
-          Anyone in the group can interact with the agent and its tools.
-        </p>
+        <h3 className="text-white text-sm font-semibold">{t('telegramSettings.groupChats')}</h3>
+        <p className="text-gray-400 text-xs">{t('telegramSettings.groupChatsDescription')}</p>
 
         {/* Group enabled toggle */}
         <div className="flex items-center justify-between py-2 border-t border-gray-700">
           <div>
-            <p className="text-white text-sm font-medium">Enable Group Chats</p>
-            <p className="text-gray-500 text-xs">Respond to messages in group conversations</p>
+            <p className="text-white text-sm font-medium">{t('telegramSettings.enableGroupChats')}</p>
+            <p className="text-gray-500 text-xs">{t('telegramSettings.respondGroupChats')}</p>
           </div>
           <button
             onClick={handleToggleGroup}
@@ -696,10 +702,8 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
 
       {/* Disconnect */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 space-y-3">
-        <h3 className="text-white text-sm font-semibold">Disconnect Bot</h3>
-        <p className="text-gray-400 text-xs">
-          Remove the Telegram bot connection. The bot will stop responding to messages.
-        </p>
+        <h3 className="text-white text-sm font-semibold">{t('telegramSettings.disconnectBot')}</h3>
+        <p className="text-gray-400 text-xs">{t('telegramSettings.disconnectBotDescription')}</p>
         {!showConfirmDisconnect ? (
           <button
             onClick={() => setShowConfirmDisconnect(true)}
@@ -714,7 +718,7 @@ function ManagementView({ agentId, agentName, botUsername, telegramEnabled, grou
               disabled={disconnecting}
               className="text-sm px-4 py-2 rounded-md border border-ch-coral/25 text-ch-coral bg-transparent hover:bg-ch-coral/10 transition disabled:opacity-50"
             >
-              {disconnecting ? 'Disconnecting...' : 'Confirm Disconnect'}
+              {disconnecting ? t('telegramSettings.disconnecting') : t('telegramSettings.confirmDisconnect')}
             </button>
             <button
               onClick={() => setShowConfirmDisconnect(false)}

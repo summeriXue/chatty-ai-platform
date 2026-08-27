@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../core/api/client';
 import type { CrmTask } from '../core/types';
 import { TaskForm } from './components/TaskForm';
@@ -22,6 +23,7 @@ import {
 type Filter = 'all' | 'pending' | 'due_today' | 'overdue' | 'completed';
 
 export function TasksPage() {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -64,7 +66,7 @@ export function TasksPage() {
         await api(`/api/crm/tasks/${task.id}/complete`, { method: 'PUT' });
       }
     } catch {
-      toast.error('Failed to update task.');
+      toast.error(t('crmTasks.errors.updateTask'));
       return;
     }
     load();
@@ -73,22 +75,22 @@ export function TasksPage() {
   const today = new Date().toISOString().split('T')[0];
 
   const FILTER_TABS: { key: Filter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'pending', label: 'Pending' },
-    { key: 'due_today', label: 'Due Today' },
-    { key: 'overdue', label: 'Overdue' },
-    { key: 'completed', label: 'Done' },
+    { key: 'all', label: t('crmTasks.filters.all') },
+    { key: 'pending', label: t('crmTasks.filters.pending') },
+    { key: 'due_today', label: t('crmTasks.filters.dueToday') },
+    { key: 'overdue', label: t('crmTasks.filters.overdue') },
+    { key: 'completed', label: t('crmTasks.filters.done') },
   ];
 
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 44px', maxWidth: 900 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 24 }}>
-        <h1 style={pageHeading(isMobile)}>Tasks</h1>
+        <h1 style={pageHeading(isMobile)}>{t('crmTasks.title')}</h1>
         <button onClick={() => setShowCreate(true)} style={{
           ...btnPrimary,
           padding: '7px 14px', fontSize: 13,
         }}>
-          <IconPlus size={13} strokeWidth={2.25} /> {isMobile ? 'Add' : 'Add Task'}
+          <IconPlus size={13} strokeWidth={2.25} /> {isMobile ? t('crmTasks.addShort') : t('crmTasks.addTask')}
         </button>
       </div>
 
@@ -107,11 +109,11 @@ export function TasksPage() {
           <div className="w-6 h-6 border-2 border-ch-accent border-t-transparent rounded-full animate-spin" />
         </div>
       ) : loadFailed && tasks.length === 0 ? (
-        <LoadError label="Couldn't load tasks" onRetry={load} />
+        <LoadError label={t('crmTasks.loadFailed')} onRetry={load} />
       ) : tasks.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 0' }}>
           <p style={{ color: INK_DIM, fontSize: 14 }}>
-            {filter === 'all' ? 'No tasks yet.' : `No ${filter.replace('_', ' ')} tasks.`}
+            {filter === 'all' ? t('crmTasks.empty.all') : t(`crmTasks.empty.${filter}`)}
           </p>
         </div>
       ) : (
@@ -141,7 +143,7 @@ export function TasksPage() {
                       fontWeight: !task.completed && task.due_date < today ? 600 : undefined,
                     }}>{task.due_date}</span>
                   )}
-                  {task.completed && <span style={{ color: SAGE }}>Completed</span>}
+                  {task.completed && <span style={{ color: SAGE }}>{t('crmTasks.completed')}</span>}
                 </div>
               </div>
             ))}
@@ -233,19 +235,19 @@ export function TasksPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {selectedTask.contact_name && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ ...mono(10), color: INK_DIM }}>Contact</span>
+                  <span style={{ ...mono(10), color: INK_DIM }}>{t('crmTasks.detail.contact')}</span>
                   <span style={{ fontSize: 13, color: INK }}>{selectedTask.contact_name}</span>
                 </div>
               )}
               {selectedTask.deal_title && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ ...mono(10), color: INK_DIM }}>Deal</span>
+                  <span style={{ ...mono(10), color: INK_DIM }}>{t('crmTasks.detail.deal')}</span>
                   <span style={{ fontSize: 13, color: INK }}>{selectedTask.deal_title}</span>
                 </div>
               )}
               {selectedTask.due_date && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ ...mono(10), color: INK_DIM }}>Due</span>
+                  <span style={{ ...mono(10), color: INK_DIM }}>{t('crmTasks.detail.due')}</span>
                   <span style={{
                     fontSize: 13,
                     color: !selectedTask.completed && selectedTask.due_date < today ? CORAL : INK,
@@ -262,7 +264,7 @@ export function TasksPage() {
                   ...btnSecondary,
                   padding: '10px 16px', borderRadius: 6, fontSize: 13,
                 }}
-              >Close</button>
+              >{t('crmTasks.detail.close')}</button>
               <button
                 onClick={() => setEditTask(selectedTask)}
                 style={{
@@ -270,7 +272,7 @@ export function TasksPage() {
                   border: `1px solid ${LINE_STRONG}`, background: 'transparent',
                   color: INK, fontSize: 13, cursor: 'pointer',
                 }}
-              >Edit</button>
+              >{t('crmTasks.detail.edit')}</button>
               <button
                 onClick={async () => {
                   await toggleComplete(selectedTask);
@@ -282,7 +284,7 @@ export function TasksPage() {
                   color: selectedTask.completed ? INK : ACCENT_INK,
                   border: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                 }}
-              >{selectedTask.completed ? 'Mark Incomplete' : 'Mark Complete'}</button>
+              >{selectedTask.completed ? t('crmTasks.detail.markIncomplete') : t('crmTasks.detail.markComplete')}</button>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import { labelStyle, inputStyle, CORAL } from '../../shared/styles';
 import { formModalOverlay, formModalContent, formTitle, btnPrimary, btnSecondary } from '../styles';
@@ -14,6 +15,7 @@ interface Props {
 const STAGES = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
 
 export function DealForm({ deal, contactId, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const isEdit = !!deal;
   const [title, setTitle] = useState(deal?.title || '');
   const [stage, setStage] = useState(deal?.stage || 'lead');
@@ -28,68 +30,204 @@ export function DealForm({ deal, contactId, onClose, onSaved }: Props) {
 
   useEffect(() => {
     api<{ contacts: CrmContact[] }>('/api/crm/contacts?limit=200')
-      .then(d => setContacts(d.contacts)).catch(() => {});
+      .then(d => setContacts(d.contacts))
+      .catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) { setError('Title is required'); return; }
-    setSaving(true); setError('');
+
+    if (!title.trim()) {
+      setError(t('crmDealForm.errors.titleRequired'));
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
     try {
       const body: Record<string, unknown> = {
-        title, stage, value: parseFloat(value) || 0,
+        title,
+        stage,
+        value: parseFloat(value) || 0,
         probability: parseInt(probability) || 0,
-        expected_close_date: expectedClose, notes,
+        expected_close_date: expectedClose,
+        notes,
       };
+
       if (selectedContact) body.contact_id = selectedContact;
+
       if (isEdit) {
-        await api(`/api/crm/deals/${deal.id}`, { method: 'PUT', body: JSON.stringify(body) });
+        await api(`/api/crm/deals/${deal.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        });
       } else {
-        await api('/api/crm/deals', { method: 'POST', body: JSON.stringify(body) });
+        await api('/api/crm/deals', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
       }
+
       onSaved();
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to save'); }
-    setSaving(false);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('crmDealForm.errors.saveFailed'),
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <div style={formModalOverlay} onClick={onClose}>
-      <form onClick={e => e.stopPropagation()} onSubmit={handleSubmit} style={formModalContent()}>
+      <form
+        onClick={e => e.stopPropagation()}
+        onSubmit={handleSubmit}
+        style={formModalContent()}
+      >
         <h2 style={formTitle}>
-          {isEdit ? 'Edit Deal' : 'New Deal'}
+          {isEdit
+            ? t('crmDealForm.editTitle')
+            : t('crmDealForm.newTitle')}
         </h2>
-        {error && <p style={{ color: CORAL, fontSize: 12, marginBottom: 12 }}>{error}</p>}
+
+        {error && (
+          <p style={{ color: CORAL, fontSize: 12, marginBottom: 12 }}>
+            {error}
+          </p>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div><label style={labelStyle}>Title *</label><input value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} /></div>
           <div>
-            <label style={labelStyle}>Contact</label>
-            <select value={selectedContact ?? ''} onChange={e => setSelectedContact(e.target.value ? Number(e.target.value) : null)} style={inputStyle}>
-              <option value="">No contact</option>
-              {contacts.map(c => <option key={c.id} value={c.id}>{c.name}{c.company ? ` (${c.company})` : ''}</option>)}
+            <label style={labelStyle}>
+              {t('crmDealForm.fields.title')} *
+            </label>
+            <input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>
+              {t('crmDealForm.fields.contact')}
+            </label>
+            <select
+              value={selectedContact ?? ''}
+              onChange={e => setSelectedContact(e.target.value ? Number(e.target.value) : null)}
+              style={inputStyle}
+            >
+              <option value="">
+                {t('crmDealForm.noContact')}
+              </option>
+              {contacts.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.company ? ` (${c.company})` : ''}
+                </option>
+              ))}
             </select>
           </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={labelStyle}>Stage</label>
-              <select value={stage} onChange={e => setStage(e.target.value)} style={{ ...inputStyle, textTransform: 'capitalize' }}>
-                {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+              <label style={labelStyle}>
+                {t('crmDealForm.fields.stage')}
+              </label>
+              <select
+                value={stage}
+                onChange={e => setStage(e.target.value)}
+                style={inputStyle}
+              >
+                {STAGES.map(s => (
+                  <option key={s} value={s}>
+                    {t(`crmDealForm.stages.${s}`, { defaultValue: s })}
+                  </option>
+                ))}
               </select>
             </div>
-            <div><label style={labelStyle}>Value ($)</label><input type="number" value={value} onChange={e => setValue(e.target.value)} style={inputStyle} /></div>
+
+            <div>
+              <label style={labelStyle}>
+                {t('crmDealForm.fields.value')}
+              </label>
+              <input
+                type="number"
+                value={value}
+                onChange={e => setValue(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
           </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={labelStyle}>Probability (%)</label><input type="number" min="0" max="100" value={probability} onChange={e => setProbability(e.target.value)} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Expected Close</label><input type="date" value={expectedClose} onChange={e => setExpectedClose(e.target.value)} style={inputStyle} /></div>
+            <div>
+              <label style={labelStyle}>
+                {t('crmDealForm.fields.probability')}
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={probability}
+                onChange={e => setProbability(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                {t('crmDealForm.fields.expectedClose')}
+              </label>
+              <input
+                type="date"
+                value={expectedClose}
+                onChange={e => setExpectedClose(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
           </div>
-          <div><label style={labelStyle}>Notes</label><textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'none' }} /></div>
+
+          <div>
+            <label style={labelStyle}>
+              {t('crmDealForm.fields.notes')}
+            </label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={2}
+              style={{ ...inputStyle, resize: 'none' }}
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-          <button type="button" onClick={onClose} style={{ ...btnSecondary, flex: 1 }}>Cancel</button>
-          <button type="submit" disabled={saving} style={{
-            ...btnPrimary, flex: 1, opacity: saving ? 0.5 : 1,
-          }}>{saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}</button>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ ...btnSecondary, flex: 1 }}
+          >
+            {t('crmDealForm.cancel')}
+          </button>
+
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              ...btnPrimary,
+              flex: 1,
+              opacity: saving ? 0.5 : 1,
+            }}
+          >
+            {saving
+              ? t('crmDealForm.saving')
+              : isEdit
+                ? t('crmDealForm.update')
+                : t('crmDealForm.create')}
+          </button>
         </div>
       </form>
     </div>

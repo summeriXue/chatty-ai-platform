@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AgentAlert } from '../../core/types';
+import { timeAgo } from '../utils/dateFormat';
 
 interface Props {
   alerts: AgentAlert[];
@@ -7,27 +9,25 @@ interface Props {
   onDiscuss: (alertId: string) => void;
 }
 
-function timeAgo(iso: string): string {
-  const d = new Date(iso + 'Z');
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
-}
-
-function sourceLabel(source: string): string {
+function sourceLabel(source: string, t: (key: string) => string): string {
   switch (source) {
-    case 'heartbeat_failure': return 'Heartbeat failing';
-    case 'heartbeat': return 'Heartbeat';
-    case 'cron': return 'Scheduled action';
-    case 'post_message': return 'Agent message';
-    case 'reminder': return 'Reminder';
-    default: return 'Alert';
+    case 'heartbeat_failure':
+      return t('alertBanner.sources.heartbeatFailure');
+    case 'heartbeat':
+      return t('alertBanner.sources.heartbeat');
+    case 'cron':
+      return t('alertBanner.sources.scheduledAction');
+    case 'post_message':
+      return t('alertBanner.sources.agentMessage');
+    case 'reminder':
+      return t('alertBanner.sources.reminder');
+    default:
+      return t('alertBanner.sources.alert');
   }
 }
 
 export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   if (alerts.length === 0) return null;
@@ -66,7 +66,7 @@ export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
           fontWeight: 600,
           flexShrink: 0,
         }}>
-          {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
+          {t('alertBanner.alertCount', { count: alerts.length })}
         </span>
         {!expanded && (
           <span style={{
@@ -79,7 +79,7 @@ export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
             flex: 1,
             minWidth: 0,
           }}>
-            {sourceLabel(latest.source)}: {latest.title} — {timeAgo(latest.created_at)}
+            {sourceLabel(latest.source, t)}: {latest.title} — {timeAgo(latest.created_at, i18n.language)}
           </span>
         )}
       </div>
@@ -103,7 +103,7 @@ export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
                   letterSpacing: '0.05em',
                   marginBottom: 2,
                 }}>
-                  {sourceLabel(alert.source)}
+                  {sourceLabel(alert.source, t)}
                 </div>
                 <div style={{
                   fontSize: 12, color: '#EDF0F4',
@@ -122,7 +122,7 @@ export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
                   marginTop: 2,
                   fontFamily: "'JetBrains Mono', monospace",
                 }}>
-                  {timeAgo(alert.created_at)}
+                  {timeAgo(alert.created_at, i18n.language)}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexShrink: 0, paddingTop: 2 }}>
@@ -137,7 +137,7 @@ export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
                     fontWeight: 600,
                   }}
                 >
-                  Discuss
+                  {t('alertBanner.discuss')}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDismiss(alert.id); }}
@@ -149,7 +149,7 @@ export default function AlertBanner({ alerts, onDismiss, onDiscuss }: Props) {
                     fontFamily: "'JetBrains Mono', monospace",
                   }}
                 >
-                  Dismiss
+                  {t('alertBanner.dismiss')}
                 </button>
               </div>
             </div>

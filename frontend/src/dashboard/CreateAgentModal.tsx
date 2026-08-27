@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import type { Agent } from '../core/types';
@@ -27,6 +28,8 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) {
+  const { t } = useTranslation();
+
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
   const [preset, setPreset] = useState<'general' | 'technical_engineer'>('general');
@@ -48,7 +51,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
       const roleParam = (title.trim() || suggestedTitle) ? `?role=${encodeURIComponent(title.trim() || suggestedTitle || '')}` : '';
       navigate(`/agent/${agent.id}${roleParam}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create agent');
+      setError(err instanceof Error ? err.message : t('createAgent.createFailed'));
       setLoading(false);
     }
   }
@@ -74,13 +77,13 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
           fontFamily: "'Fraunces', Georgia, serif",
           fontSize: 24, fontWeight: 400, letterSpacing: '-0.02em',
           marginBottom: 24, color: '#EDF0F4',
-        }}>Commission Agent</h2>
+        }}>{t('createAgent.title')}</h2>
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
 
             <div>
-              <label style={labelStyle}>Agent type</label>
+              <label style={labelStyle}>{t('createAgent.agentType')}</label>
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -104,7 +107,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                   }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 500 }}>
-                    General
+                    {t('createAgent.general')}
                   </div>
 
                   <div style={{
@@ -112,7 +115,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                     marginTop: 3,
                     color: 'rgba(237,240,244,0.38)',
                   }}>
-                    General-purpose assistant
+                    {t('createAgent.generalDesc')}
                   </div>
                 </button>
 
@@ -137,7 +140,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                   }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 500 }}>
-                    Technical Engineer
+                    {t('createAgent.technicalEngineer')}
                   </div>
 
                   <div style={{
@@ -145,19 +148,19 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                     marginTop: 3,
                     color: 'rgba(237,240,244,0.38)',
                   }}>
-                    Code, architecture and debugging
+                    {t('createAgent.technicalEngineerDesc')}
                   </div>
                 </button>
               </div>
             </div>
 
             <div>
-              <label style={labelStyle}>Agent name *</label>
+              <label style={labelStyle}>{t('createAgent.agentName')}</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g. Arthur, Penelope, Rhea"
+                placeholder={t('createAgent.namePlaceholder')}
                 autoFocus
                 maxLength={60}
                 style={inputStyle}
@@ -165,12 +168,12 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
             </div>
 
             <div>
-              <label style={labelStyle}>Title / Role</label>
+              <label style={labelStyle}>{t('createAgent.titleRole')}</label>
               <input
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder={suggestedTitle || 'e.g. AP Clerk, Sales Rep'}
+                placeholder={suggestedTitle || t('createAgent.rolePlaceholder')}
                 maxLength={80}
                 style={{ ...inputStyle, color: title ? '#EDF0F4' : undefined }}
               />
@@ -179,7 +182,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                 color: 'rgba(237,240,244,0.28)',
                 marginTop: 4,
               }}>
-                This helps your agent understand its role during onboarding.
+                {t('createAgent.roleHint')}
               </p>
             </div>
 
@@ -198,7 +201,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                 cursor: 'pointer', fontSize: 13,
               }}
             >
-              Cancel
+              {t('createAgent.cancel')}
             </button>
             <button
               type="submit"
@@ -210,7 +213,7 @@ export function CreateAgentModal({ suggestedTitle, onClose, onCreated }: Props) 
                 opacity: (loading || !name.trim()) ? 0.5 : 1,
               }}
             >
-              {loading ? 'Creating...' : 'Commission'}
+              {loading ? t('createAgent.creating') : t('createAgent.commission')}
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../core/api/client';
 import type { ProviderStatus } from '../../core/types';
 import { IconCheck, IconCircle, IconArrowRight } from '../../shared/icons';
@@ -19,7 +20,11 @@ interface ProviderDef {
   id: string;
   name: string;
   subtitle: string;
-  methods: { id: AuthMethod; label: string; description: string }[];
+  methods: {
+    id: AuthMethod;
+    label: string;
+    description: string;
+  }[];
 }
 
 const PROVIDERS: ProviderDef[] = [
@@ -28,7 +33,11 @@ const PROVIDERS: ProviderDef[] = [
     name: 'Anthropic',
     subtitle: 'Claude Sonnet, Opus',
     methods: [
-      { id: 'api-key', label: 'API Key', description: 'Paste an API key from console.anthropic.com' },
+      {
+        id: 'api-key',
+        label: 'API Key',
+        description: 'Paste an API key from console.anthropic.com',
+      },
     ],
   },
   {
@@ -36,8 +45,16 @@ const PROVIDERS: ProviderDef[] = [
     name: 'OpenAI',
     subtitle: 'GPT-4o, o1',
     methods: [
-      { id: 'api-key', label: 'API Key', description: 'Paste an API key from platform.openai.com' },
-      { id: 'cli-sync', label: 'Import from CLI', description: 'Import credentials from the OpenAI CLI if installed' },
+      {
+        id: 'api-key',
+        label: 'API Key',
+        description: 'Paste an API key from platform.openai.com',
+      },
+      {
+        id: 'cli-sync',
+        label: 'Import from CLI',
+        description: 'Import credentials from the OpenAI CLI if installed',
+      },
     ],
   },
   {
@@ -45,7 +62,11 @@ const PROVIDERS: ProviderDef[] = [
     name: 'Google',
     subtitle: 'Gemini Pro, Flash',
     methods: [
-      { id: 'api-key', label: 'API Key', description: 'Paste an API key from aistudio.google.com' },
+      {
+        id: 'api-key',
+        label: 'API Key',
+        description: 'Paste an API key from aistudio.google.com',
+      },
     ],
   },
   {
@@ -93,6 +114,7 @@ const mono = (size: number, color = 'rgba(237,240,244,0.38)') => ({
 });
 
 export function ProviderStep({ onComplete }: Props) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<ProviderStatus | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [activeMethod, setActiveMethod] = useState<Record<string, AuthMethod>>({});
@@ -145,7 +167,7 @@ export function ProviderStep({ onComplete }: Props) {
       });
       setKeyValue(''); reload();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid API key');
+      setError(err instanceof Error ? err.message : t('providers.invalidApiKey'));
     } finally { setLoading(false); }
   }
 
@@ -155,8 +177,21 @@ export function ProviderStep({ onComplete }: Props) {
       await api('/api/providers/openai/sync-cli', { method: 'POST' });
       reload();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No CLI credentials found');
+      setError(err instanceof Error ? err.message : t('onboarding.provider.noCliCredentials'));
     } finally { setLoading(false); }
+  }
+
+  function methodLabel(provider: ProviderDef, m: ProviderDef['methods'][number]): string {
+    if (m.id === 'api-key') return t('providers.apiKey');
+    switch (provider.id) {
+      case 'openai':
+        if (m.id === 'cli-sync') return t('onboarding.provider.methodImportCli');
+        break;
+      case 'ollama':
+        if (m.id === 'ollama-setup') return t('onboarding.provider.methodLocal');
+        break;
+    }
+    return m.label;
   }
 
   function renderAuthForm(provider: ProviderDef) {
@@ -177,16 +212,16 @@ export function ProviderStep({ onComplete }: Props) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ background: 'rgba(20,24,30,0.78)', border: '1px solid rgba(230,235,242,0.07)', borderRadius: 6, padding: 16 }}>
-            <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.62)', marginBottom: 8 }}>1. Open your terminal and run:</p>
+            <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.62)', marginBottom: 8 }}>{t('onboarding.provider.setupTokenStepRun')}</p>
             <code style={{
               display: 'block', background: 'rgba(34,40,48,0.55)', padding: '8px 12px',
               borderRadius: 4, fontSize: 13, color: 'var(--color-ch-accent, #C8D1D9)',
               fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             }}>claude setup-token</code>
-            <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.62)', marginTop: 12 }}>2. Copy the token and paste it below:</p>
+            <p style={{ fontSize: 13, color: 'rgba(237,240,244,0.62)', marginTop: 12 }}>{t('onboarding.provider.setupTokenStepPaste')}</p>
           </div>
           <input type="password" value={tokenValue} onChange={e => setTokenValue(e.target.value)}
-            placeholder="Paste your setup token here" onKeyDown={e => e.key === 'Enter' && submitSetupToken()}
+            placeholder={t('onboarding.provider.setupTokenPlaceholder')} onKeyDown={e => e.key === 'Enter' && submitSetupToken()}
             style={{
               width: '100%', boxSizing: 'border-box', background: 'rgba(34,40,48,0.55)',
               border: '1px solid rgba(230,235,242,0.14)', color: '#EDF0F4', borderRadius: 4,
@@ -198,7 +233,11 @@ export function ProviderStep({ onComplete }: Props) {
             width: '100%', padding: '10px 16px', background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013',
             border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 500, cursor: 'pointer',
             opacity: (loading || !tokenValue.trim()) ? 0.5 : 1,
-          }}>{loading ? 'Validating...' : 'Connect'}</button>
+          }}>
+              {loading
+                ? t('providers.validating')
+                : t('providers.connect')}
+            </button>
         </div>
       );
     }
@@ -208,27 +247,27 @@ export function ProviderStep({ onComplete }: Props) {
         anthropic: {
           placeholder: 'sk-ant-...',
           link: 'https://console.anthropic.com/settings/keys',
-          linkLabel: 'Open Anthropic Console',
+          linkLabel: t('onboarding.provider.linkAnthropic'),
         },
         openai: {
           placeholder: 'sk-...',
           link: 'https://platform.openai.com/api-keys',
-          linkLabel: 'Open OpenAI Platform',
+          linkLabel: t('onboarding.provider.linkOpenai'),
         },
         google: {
           placeholder: 'AIza...',
           link: 'https://aistudio.google.com/apikey',
-          linkLabel: 'Open Google AI Studio',
+          linkLabel: t('onboarding.provider.linkGoogle'),
         },
         deepseek: {
           placeholder: 'sk-...',
           link: 'https://platform.deepseek.com/api_keys',
-          linkLabel: 'Open DeepSeek Platform',
+          linkLabel: t('onboarding.provider.linkDeepseek'),
         },
         kimi: {
           placeholder: 'sk-...',
           link: 'https://platform.moonshot.ai/console/api-keys',
-          linkLabel: 'Open Kimi Platform',
+          linkLabel: t('onboarding.provider.linkKimi'),
         },
       };
       const c = config[provider.id];
@@ -250,7 +289,7 @@ export function ProviderStep({ onComplete }: Props) {
             width: '100%', padding: '10px 16px', background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013',
             border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 500, cursor: 'pointer',
             opacity: (loading || !keyValue.trim()) ? 0.5 : 1,
-          }}>{loading ? 'Validating...' : 'Connect'}</button>
+          }}>{loading ? t('providers.validating') : t('providers.connect')}</button>
         </div>
       );
     }
@@ -259,14 +298,14 @@ export function ProviderStep({ onComplete }: Props) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ color: 'rgba(237,240,244,0.62)', fontSize: 13 }}>
-            If you have the OpenAI CLI installed and signed in, Chatty can import your credentials automatically.
+            {t('onboarding.provider.cliSyncIntro')}
           </p>
           {error && <p style={{ color: '#D97757', fontSize: 12 }}>{error}</p>}
           <button onClick={syncOpenAICli} disabled={loading} style={{
             width: '100%', padding: '10px 16px', background: 'var(--color-ch-accent, #C8D1D9)', color: '#0E1013',
             border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 500, cursor: 'pointer',
             opacity: loading ? 0.5 : 1,
-          }}>{loading ? 'Searching...' : 'Import from CLI'}</button>
+          }}>{loading ? t('onboarding.provider.searching') : t('onboarding.provider.methodImportCli')}</button>
         </div>
       );
     }
@@ -276,16 +315,16 @@ export function ProviderStep({ onComplete }: Props) {
 
   return (
     <div>
-      <div style={mono(10, 'rgba(237,240,244,0.38)')}>Connect your model</div>
+      <div style={mono(10, 'rgba(237,240,244,0.38)')}>{t('onboarding.provider.connectYourModel')}</div>
       <h1 style={{
         fontFamily: "'Fraunces', Georgia, serif",
         fontSize: 44, fontWeight: 400, letterSpacing: '-0.025em',
         lineHeight: 1.05, margin: '14px 0 12px', color: '#EDF0F4',
       }}>
-        Where does <span style={{ fontStyle: 'italic', color: '#D4A85A' }}>the thinking</span> happen?
+        {t('onboarding.provider.headingBefore')} <span style={{ fontStyle: 'italic', color: '#D4A85A' }}>{t('onboarding.provider.headingEmphasis')}</span> {t('onboarding.provider.headingAfter')}
       </h1>
       <p style={{ fontSize: 15, color: 'rgba(237,240,244,0.62)', lineHeight: 1.5, marginBottom: 32, maxWidth: 560 }}>
-        Chatty routes agents through the model you connect. You can change this later, or run different agents on different providers.
+        {t('onboarding.provider.intro')}
       </p>
 
       {anyConnected && (
@@ -296,7 +335,7 @@ export function ProviderStep({ onComplete }: Props) {
           borderRadius: 6,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8EA589' }} />
-          <p style={{ fontSize: 13, color: '#8EA589' }}>Provider connected. Connect more below or continue.</p>
+          <p style={{ fontSize: 13, color: '#8EA589' }}>{t('onboarding.provider.connectedBanner')}</p>
         </div>
       )}
 
@@ -305,6 +344,14 @@ export function ProviderStep({ onComplete }: Props) {
           const profile = status?.profiles?.[p.id];
           const isConnected = profile?.configured ?? false;
           const isExpanded = expanded === p.id;
+
+          const subtitle = p.id === 'deepseek'
+            ? t('onboarding.provider.subtitleDeepseek')
+            : p.id === 'kimi'
+              ? t('onboarding.provider.subtitleKimi')
+              : p.id === 'ollama'
+                ? t('onboarding.provider.subtitleOllama')
+                : p.subtitle;
 
           return (
             <div key={p.id} style={{
@@ -333,7 +380,7 @@ export function ProviderStep({ onComplete }: Props) {
                     fontFamily: "'Fraunces', Georgia, serif",
                     fontSize: 18, letterSpacing: '-0.01em', color: '#EDF0F4',
                   }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)', marginTop: 2 }}>{p.subtitle}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(237,240,244,0.62)', marginTop: 2 }}>{subtitle}</div>
                 </div>
               </div>
 
@@ -353,7 +400,7 @@ export function ProviderStep({ onComplete }: Props) {
                               border: `1px solid ${isActive ? 'rgba(200,209,217,0.3)' : 'rgba(230,235,242,0.14)'}`,
                               cursor: 'pointer',
                             }}
-                          >{m.label}</button>
+                          >{methodLabel(p, m)}</button>
                         );
                       })}
                     </div>
@@ -378,13 +425,13 @@ export function ProviderStep({ onComplete }: Props) {
             opacity: anyConnected ? 1 : 0.3,
           }}
         >
-          Continue <IconArrowRight size={15} strokeWidth={2.5} />
+          {t('onboarding.provider.continue')} <IconArrowRight size={15} strokeWidth={2.5} />
         </button>
       </div>
 
       {!anyConnected && (
         <p style={{ fontSize: 12, color: 'rgba(237,240,244,0.38)', textAlign: 'center', marginTop: 12 }}>
-          Connect at least one provider to continue
+          {t('onboarding.provider.connectOneRequired')}
         </p>
       )}
     </div>

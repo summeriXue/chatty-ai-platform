@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ActivityRecord } from '../../hooks/useHeartbeat';
+import { timeAgo } from '../../utils/dateFormat';
 import { FONT_SANS, FONT_MONO, INK, INK_DIM, INK_MUTE, BG_ELEV, LINE_STRONG, SAGE, GOLD, CORAL } from '../../../shared/styles';
 
 const statusColors: Record<string, string> = {
@@ -8,15 +10,6 @@ const statusColors: Record<string, string> = {
   error: CORAL,
   skipped: INK_DIM,
 };
-
-function timeAgo(iso: string): string {
-  const d = new Date(iso + 'Z');
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
-}
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -29,17 +22,19 @@ interface Props {
 }
 
 export function HeartbeatHistory({ history }: Props) {
+  const { t, i18n } = useTranslation();
+
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
     <div style={{ padding: '16px 24px' }}>
       <span style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: INK_DIM, display: 'block', marginBottom: 12 }}>
-        RECENT RUNS
+        {t('heartbeatHistory.title')}
       </span>
 
       {history.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>No heartbeat runs yet.</p>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: INK_DIM }}>{t('heartbeatHistory.empty')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -61,9 +56,11 @@ export function HeartbeatHistory({ history }: Props) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontFamily: FONT_SANS, fontSize: 12, fontWeight: 500, color: INK, textTransform: 'capitalize' }}>
-                        {rec.status.replace('_', ' ')}
+                        {t(`heartbeatHistory.status.${rec.status}`, {
+                          defaultValue: rec.status.replace('_', ' '),
+                        })}
                       </span>
-                      <span style={{ fontFamily: FONT_SANS, fontSize: 12, color: INK_DIM }}>{timeAgo(rec.started_at)}</span>
+                      <span style={{ fontFamily: FONT_SANS, fontSize: 12, color: INK_DIM }}>{timeAgo(rec.started_at, i18n.language)}</span>
                     </div>
                     {rec.result_summary && (
                       <p style={{
@@ -76,7 +73,11 @@ export function HeartbeatHistory({ history }: Props) {
                   <div style={{ fontFamily: FONT_SANS, fontSize: 11, color: INK_DIM, flexShrink: 0, textAlign: 'right', whiteSpace: 'nowrap' }}>
                     {rec.duration_ms ? `${(rec.duration_ms / 1000).toFixed(1)}s` : ''}
                     {Array.isArray(rec.tool_calls) && rec.tool_calls.filter(tc => tc && typeof tc === 'object' && tc.tool).length > 0
-                      ? ` · ${rec.tool_calls.filter(tc => tc && typeof tc === 'object' && tc.tool).length} tools`
+                      ? ` · ${t('heartbeatHistory.toolCount', {
+                          count: rec.tool_calls.filter(
+                            tc => tc && typeof tc === 'object' && tc.tool
+                          ).length,
+                        })}`
                       : ''}
                   </div>
 
@@ -92,9 +93,9 @@ export function HeartbeatHistory({ history }: Props) {
                 {isExpanded && (
                   <div style={{ padding: '0 14px 14px', borderTop: `1px solid ${LINE_STRONG}` }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 10, fontFamily: FONT_SANS, fontSize: 11, color: INK_DIM }}>
-                      {rec.model_used && <span>Model: {rec.model_used.split('-').slice(-2).join('-')}</span>}
-                      <span>Tokens: {formatTokens(rec.input_tokens + rec.output_tokens)}</span>
-                      <span>{new Date(rec.started_at + 'Z').toLocaleString()}</span>
+                      {rec.model_used && <span>{t('heartbeatHistory.model')}: {rec.model_used.split('-').slice(-2).join('-')}</span>}
+                      <span>{t('heartbeatHistory.tokens')}: {formatTokens(rec.input_tokens + rec.output_tokens)}</span>
+                      <span>{new Date(rec.started_at + 'Z').toLocaleString(i18n.language)}</span>
                     </div>
 
                     {rec.result_full && (

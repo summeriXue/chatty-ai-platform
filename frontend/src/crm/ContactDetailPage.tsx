@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import type { CrmContact } from '../core/types';
@@ -24,6 +25,7 @@ import {
 } from './styles';
 
 export function ContactDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -59,7 +61,7 @@ export function ContactDetailPage() {
       setLogNote('');
       load();
     } catch {
-      toast.error('Failed to log activity.');
+      toast.error(t('crmContactDetail.errors.logActivity'));
     } finally {
       setLogging(false);
     }
@@ -67,16 +69,16 @@ export function ContactDetailPage() {
 
   async function handleDelete() {
     const ok = await confirmDialog({
-      title: 'Delete contact',
-      message: `This will permanently delete ${contact?.name || 'this contact'} and their activity history. This cannot be undone.`,
-      confirmLabel: 'Delete contact',
+      title: t('crmContactDetail.deleteDialog.title'),
+      message: t('crmContactDetail.deleteDialog.message', { name: contact?.name || t('crmContactDetail.deleteDialog.thisContact') }),
+      confirmLabel: t('crmContactDetail.deleteDialog.confirm'),
       danger: true,
     });
     if (!ok) return;
     try {
       await api(`/api/crm/contacts/${id}`, { method: 'DELETE' });
     } catch {
-      toast.error('Failed to delete contact.');
+      toast.error(t('crmContactDetail.errors.deleteContact'));
       return;
     }
     navigate('/crm/contacts');
@@ -90,7 +92,7 @@ export function ContactDetailPage() {
     );
   }
 
-  if (!contact) return <p style={{ color: INK_MUTE, padding: 32 }}>Contact not found.</p>;
+  if (!contact) return <p style={{ color: INK_MUTE, padding: 32 }}>{t('crmContactDetail.notFound')}</p>;
 
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 44px', maxWidth: 900 }}>
@@ -100,7 +102,7 @@ export function ContactDetailPage() {
         fontSize: 13, cursor: 'pointer', marginBottom: 16,
         display: 'flex', alignItems: 'center', gap: 6,
       }}>
-        <IconArrowLeft size={14} strokeWidth={1.85} /> Contacts
+        <IconArrowLeft size={14} strokeWidth={1.85} /> {t('crmContactDetail.backToContacts')}
       </button>
 
       {/* Header */}
@@ -114,15 +116,15 @@ export function ContactDetailPage() {
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button onClick={() => setShowEdit(true)} style={{
               ...btnSecondary, ...btnSmall,
-            }}>Edit</button>
+            }}>{t('crmContactDetail.edit')}</button>
             <button onClick={handleDelete} style={{
               ...btnDanger, ...btnSmall,
-            }}>Delete</button>
+            }}>{t('crmContactDetail.delete')}</button>
           </div>
         </div>
         {contact.title && (
           <p style={{ fontSize: 14, color: INK_MUTE, marginTop: 4 }}>
-            {contact.title}{contact.company ? ` at ${contact.company}` : ''}
+            {contact.title}{contact.company ? t('crmContactDetail.atCompany', { company: contact.company }) : ''}
           </p>
         )}
         {!contact.title && contact.company && (
@@ -152,7 +154,7 @@ export function ContactDetailPage() {
           ...cardStyle,
           padding: isMobile ? 14 : 16, marginBottom: isMobile ? 20 : 24,
         }}>
-          <p style={{ ...mono(10), marginBottom: 6 }}>Notes</p>
+          <p style={{ ...mono(10), marginBottom: 6 }}>{t('crmContactDetail.notes')}</p>
           <p style={{ fontSize: 13, color: INK_MUTE, whiteSpace: 'pre-wrap', lineHeight: 1.5, margin: 0 }}>{contact.notes}</p>
         </div>
       )}
@@ -162,15 +164,15 @@ export function ContactDetailPage() {
         {/* Deals */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={mono(10, INK_DIM)}>Deals</span>
+            <span style={mono(10, INK_DIM)}>{t('crmContactDetail.deals')}</span>
             <button onClick={() => setShowAddDeal(true)} style={{
               background: 'none', border: 'none', color: ACCENT,
               fontSize: 12, cursor: 'pointer',
-            }}>+ Add</button>
+            }}>{t('crmContactDetail.add')}</button>
           </div>
           <div style={{ borderTop: `1px solid ${LINE}` }}>
             {!contact.deals?.length ? (
-              <p style={{ color: INK_DIM, fontSize: 12, padding: '16px 0' }}>No deals yet.</p>
+              <p style={{ color: INK_DIM, fontSize: 12, padding: '16px 0' }}>{t('crmContactDetail.noDeals')}</p>
             ) : (
               contact.deals.map(d => (
                 <div key={d.id} style={{
@@ -201,15 +203,15 @@ export function ContactDetailPage() {
         {/* Tasks */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={mono(10, INK_DIM)}>Tasks</span>
+            <span style={mono(10, INK_DIM)}>{t('crmContactDetail.tasks')}</span>
             <button onClick={() => setShowAddTask(true)} style={{
               background: 'none', border: 'none', color: ACCENT,
               fontSize: 12, cursor: 'pointer',
-            }}>+ Add</button>
+            }}>{t('crmContactDetail.add')}</button>
           </div>
           <div style={{ borderTop: `1px solid ${LINE}` }}>
             {!contact.tasks?.length ? (
-              <p style={{ color: INK_DIM, fontSize: 12, padding: '16px 0' }}>No tasks yet.</p>
+              <p style={{ color: INK_DIM, fontSize: 12, padding: '16px 0' }}>{t('crmContactDetail.noTasks')}</p>
             ) : (
               contact.tasks.map(t => (
                 <div key={t.id} style={{
@@ -246,7 +248,7 @@ export function ContactDetailPage() {
       <div style={{
         marginTop: 24, borderTop: `1px solid ${LINE}`, paddingTop: 24,
       }}>
-        <span style={{ ...mono(10, INK_DIM), display: 'block', marginBottom: 12 }}>Log Activity</span>
+        <span style={{ ...mono(10, INK_DIM), display: 'block', marginBottom: 12 }}>{t('crmContactDetail.logActivity')}</span>
         <div style={{ display: 'flex', gap: 8, marginBottom: logActivity ? 8 : 0, flexWrap: 'wrap' }}>
           {['call', 'email', 'meeting', 'note'].map(type => (
             <button key={type} onClick={() => setLogActivity(type)} style={{
@@ -255,12 +257,12 @@ export function ContactDetailPage() {
               color: logActivity === type ? ACCENT_INK : INK_MUTE,
               border: logActivity === type ? 'none' : `1px solid ${LINE_STRONG}`,
               cursor: 'pointer',
-            }}>{type}</button>
+            }}>{t(`crmContactDetail.activityTypes.${type}`)}</button>
           ))}
         </div>
         {logActivity && (
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input placeholder="Add a note..." value={logNote} onChange={e => setLogNote(e.target.value)}
+            <input placeholder={t('crmContactDetail.notePlaceholder')} value={logNote} onChange={e => setLogNote(e.target.value)}
               style={{
                 ...inputStyle,
                 flex: 1, width: undefined, fontSize: 13,
@@ -270,14 +272,14 @@ export function ContactDetailPage() {
               ...btnPrimary,
               padding: '8px 16px', fontSize: 13,
               opacity: logging ? 0.5 : 1,
-            }}>{logging ? 'Saving...' : 'Log'}</button>
+            }}>{logging ? t('crmContactDetail.saving') : t('crmContactDetail.log')}</button>
           </div>
         )}
       </div>
 
       {/* Activity history */}
       <div style={{ marginTop: 24, borderTop: `1px solid ${LINE}`, paddingTop: 24 }}>
-        <span style={{ ...mono(10, INK_DIM), display: 'block', marginBottom: 12 }}>Activity History</span>
+        <span style={{ ...mono(10, INK_DIM), display: 'block', marginBottom: 12 }}>{t('crmContactDetail.activityHistory')}</span>
         <ActivityTimeline activities={contact.activity || []} onUpdate={load} />
       </div>
 

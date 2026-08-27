@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../core/api/client';
 import { confirmDialog } from '../shared/confirm';
@@ -28,6 +29,7 @@ interface WebbyStatus {
 type Tab = 'chat' | 'knowledge' | 'preview';
 
 export function WebbyPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [status, setStatus] = useState<WebbyStatus | null>(null);
   const [statusError, setStatusError] = useState(false);
@@ -68,7 +70,7 @@ export function WebbyPage() {
       setStatus(prev => prev ? { ...prev, exists: true, agent_id: data.agent_id } : null);
       chat.setTrainingMode(true);
     } catch {
-      toast.error('Failed to create agent.');
+      toast.error(t('webbyPage.errors.createAgent'));
     } finally {
       setCreating(false);
     }
@@ -82,17 +84,19 @@ export function WebbyPage() {
 
   async function handleDeleteConversation(id: string) {
     const ok = await confirmDialog({
-      title: 'Delete conversation',
-      message: 'This conversation and its messages will be permanently deleted.',
-      confirmLabel: 'Delete',
+      title: t('webbyPage.deleteDialog.title'),
+      message: t('webbyPage.deleteDialog.message'),
+      confirmLabel: t('webbyPage.deleteDialog.confirm'),
       danger: true,
     });
     if (!ok) return;
+
     const res = await convs.deleteConversation(id);
     if (!res.ok) {
-      toast.error('Failed to delete conversation.');
+      toast.error(t('webbyPage.errors.deleteConversation'));
       return;
     }
+
     // wasActive comes from the hook's ref (not this render's closure), so a
     // conversation opened mid-DELETE won't get its view wrongly cleared.
     if (res.wasActive) chat.clear();
@@ -108,7 +112,7 @@ export function WebbyPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-ch-bg">
         {statusError
-          ? <LoadError label="Couldn't load Webby status" onRetry={loadStatus} />
+          ? <LoadError label={t('webbyPage.loadFailed')} onRetry={loadStatus} />
           : <div className="w-6 h-6 border-2 border-ch-accent border-t-transparent rounded-full animate-spin" />}
       </div>
     );
@@ -119,29 +123,35 @@ export function WebbyPage() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-ch-bg text-center px-6">
         <div className="text-6xl mb-6">🌐</div>
-        <h1 className="text-2xl font-bold text-white mb-2">Meet Webby</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">
+          {t('webbyPage.setup.title')}
+        </h1>
         <p className="text-ch-ink-mute max-w-md mb-8">
-          Webby manages your website through GitHub. Describe what you want changed
-          in plain language — no coding required.
+          {t('webbyPage.setup.description')}
         </p>
         <div className="bg-ch-bg-elev border border-ch-line-strong rounded-md p-4 text-left text-sm text-ch-ink-mute mb-8 max-w-md">
-          <p className="font-medium text-ch-ink-mute mb-2">Phase 1 — Preview</p>
-          <p>GitHub editing tools are stubs in this version. Webby can be onboarded and chat,
-          but file editing and pull requests require Phase 2.</p>
+          <p className="font-medium text-ch-ink-mute mb-2">
+            {t('webbyPage.setup.phaseTitle')}
+          </p>
+          <p>
+            {t('webbyPage.setup.phaseDescription')}
+          </p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => navigate('/')}
             className="px-4 py-2 rounded-lg border border-ch-line-strong text-ch-ink-mute hover:text-white text-sm transition"
           >
-            Back to Dashboard
+            {t('webbyPage.setup.backToDashboard')}
           </button>
           <button
             onClick={handleCreate}
             disabled={creating}
             className="px-5 py-2 rounded-lg bg-brand text-white text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
           >
-            {creating ? 'Setting up...' : 'Set Up Webby'}
+            {creating
+              ? t('webbyPage.setup.settingUp')
+              : t('webbyPage.setup.setUpWebby')}
           </button>
         </div>
       </div>
@@ -166,12 +176,12 @@ export function WebbyPage() {
         <span className="font-semibold text-white">Webby</span>
 
         <span className="text-xs bg-yellow-900/40 text-yellow-500 border border-yellow-700/30 rounded-full px-2 py-0.5">
-          Phase 1 Stub
+          {t('webbyPage.badges.phase1Stub')}
         </span>
 
         {chat.trainingMode && (
           <span className="text-xs bg-blue-900/40 text-blue-400 border border-blue-700/40 rounded-full px-2.5 py-0.5 animate-pulse">
-            Onboarding
+            {t('webbyPage.badges.onboarding')}
           </span>
         )}
 
@@ -181,13 +191,13 @@ export function WebbyPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition capitalize ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition ${
                 activeTab === tab
                   ? 'bg-ch-bg-raised text-white'
                   : 'text-ch-ink-mute hover:text-white'
               }`}
             >
-              {tab}
+              {t(`webbyPage.tabs.${tab}`)}
             </button>
           ))}
         </div>

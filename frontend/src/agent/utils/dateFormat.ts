@@ -30,52 +30,101 @@ function localDaysAgo(then: Date, now: Date): number {
   return Math.round((b - a) / 86_400_000);
 }
 
-function localTime(d: Date): string {
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
-
-export function formatSidebarTime(value: string | number | null | undefined): string {
-  if (value === 0) return '';
-  const d = parseServerTimestamp(value);
-  if (!d) return '';
-  const days = localDaysAgo(d, new Date());
-  if (days <= 0) return localTime(d);
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return d.toLocaleDateString('en-US', { weekday: 'short' });
-  return d.toLocaleDateString('en-US', {
-    month: 'numeric', day: 'numeric', year: '2-digit',
+function localTime(d: Date, locale = 'en-US'): string {
+  return d.toLocaleTimeString(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
   });
 }
 
-export function formatBubbleTime(value: string | number | null | undefined): string {
+export function formatSidebarTime(
+  value: string | number | null | undefined,
+  locale = 'en-US',
+): string {
   if (value === 0) return '';
   const d = parseServerTimestamp(value);
   if (!d) return '';
-  return localTime(d);
+
+  const days = localDaysAgo(d, new Date());
+
+  if (days <= 0) return localTime(d, locale);
+  if (days === 1) return locale === 'zh-CN' ? '昨天' : 'Yesterday';
+
+  if (days < 7) {
+    return d.toLocaleDateString(locale, { weekday: 'short' });
+  }
+
+  return d.toLocaleDateString(locale, {
+    month: 'numeric',
+    day: 'numeric',
+    year: '2-digit',
+  });
 }
 
-export function timeAgo(value: string | number | null | undefined): string {
+export function formatBubbleTime(
+  value: string | number | null | undefined,
+  locale = 'en-US',
+): string {
+  if (value === 0) return '';
   const d = parseServerTimestamp(value);
   if (!d) return '';
+
+  return localTime(d, locale);
+}
+
+export function timeAgo(
+  value: string | number | null | undefined,
+  locale = 'en-US',
+): string {
+  const d = parseServerTimestamp(value);
+  if (!d) return '';
+
   const diff = Date.now() - d.getTime();
+
+  if (locale === 'zh-CN') {
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+    return `${Math.floor(diff / 86400000)} 天前`;
+  }
+
   if (diff < 60000) return 'Just now';
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   return `${Math.floor(diff / 86400000)}d ago`;
 }
 
-export function formatDateDivider(value: string | number | null | undefined): string {
+export function formatDateDivider(
+  value: string | number | null | undefined,
+  locale = 'en-US',
+): string {
   if (value === 0) return '';
+
   const d = parseServerTimestamp(value);
   if (!d) return '';
+
   const now = new Date();
   const days = localDaysAgo(d, now);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days <= 6) return d.toLocaleDateString('en-US', { weekday: 'long' });
+
+  if (days <= 0) {
+    return locale === 'zh-CN' ? '今天' : 'Today';
+  }
+
+  if (days === 1) {
+    return locale === 'zh-CN' ? '昨天' : 'Yesterday';
+  }
+
+  if (days <= 6) {
+    return d.toLocaleDateString(locale, {
+      weekday: 'long',
+    });
+  }
+
   const sameYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
+
+  return d.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
     ...(sameYear ? {} : { year: 'numeric' }),
   });
 }
