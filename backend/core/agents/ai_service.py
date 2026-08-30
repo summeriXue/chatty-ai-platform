@@ -1512,8 +1512,10 @@ async def chat(
 
     # ── Tool execution loop ───────────────────────────────────────────
     max_iterations = 20
+
     iteration = 0
-    all_tool_calls: list[dict] = []  # Accumulate across iterations for the activity log
+    all_tool_calls: list[dict] = []
+
     _max_ctx_tokens = 0  # Max main-turn context fullness, persisted for compaction
 
     # Track successful non-memory write actions within this user turn.
@@ -1536,18 +1538,26 @@ async def chat(
 
     while iteration < max_iterations:
         iteration += 1
+
         tool_calls_this_turn: list[dict] = []
         turn_text = ""
-        iter_msg_id = None  # this iteration's saved assistant row (results attached post-exec)
+        iter_msg_id = None
 
         # Stream one turn from the provider
-        async for event in provider.stream_turn(current_messages, provider_tools, system_prompt):
+        async for event in provider.stream_turn(
+            current_messages,
+            provider_tools,
+            system_prompt,
+        ):
             etype = event.get("type")
 
             if etype == "text":
                 turn_text += event["text"]
                 accumulated_text += event["text"]
-                yield _sse({"type": "text", "text": event["text"]})
+                yield _sse({
+                    "type": "text",
+                    "text": event["text"],
+                })
 
             elif etype == "tool_start":
                 yield _sse({
@@ -1562,6 +1572,7 @@ async def chat(
                     (t.get("description", "") for t in tool_defs if t["name"] == tool_name_for_desc),
                     "",
                 )
+
                 yield _sse({
                     "type": "tool_args",
                     "tool": event["tool"],
@@ -1678,17 +1689,40 @@ async def chat(
                     return
 
             elif etype == "error":
-                _log_chat_completion(config.slug, conversation_id, "chat", "error",
-                                    event.get("error", "Unknown error"), all_tool_calls, model_used,
-                                    total_input_tokens, total_output_tokens, chat_start_time, provider_name)
-                yield _sse({"type": "error", "error": event.get("error", "Unknown error")})
+                _log_chat_completion(
+                    config.slug,
+                    conversation_id,
+                    "chat",
+                    "error",
+                    event.get("error", "Unknown error"),
+                    all_tool_calls,
+                    model_used,
+                    total_input_tokens,
+                    total_output_tokens,
+                    chat_start_time,
+                    provider_name,
+                )
+                yield _sse({
+                    "type": "error",
+                    "error": event.get("error", "Unknown error"),
+                })
                 return
 
         # ── Execute tool calls ────────────────────────────────────────
         if not tool_calls_this_turn:
-            _log_chat_completion(config.slug, conversation_id, "chat", "ok",
-                                accumulated_text, all_tool_calls, model_used,
-                                total_input_tokens, total_output_tokens, chat_start_time, provider_name)
+            _log_chat_completion(
+                config.slug,
+                conversation_id,
+                "chat",
+                "ok",
+                accumulated_text,
+                all_tool_calls,
+                model_used,
+                total_input_tokens,
+                total_output_tokens,
+                chat_start_time,
+                provider_name,
+            )
             if not training_mode and not plan_mode and not import_mode:
                 from core.agents.playbooks.review import maybe_schedule_review
                 _review_msgs = (chat_service.get_clean_history(conversation_id)
@@ -1806,6 +1840,7 @@ async def chat(
                         if usage_event:
                             yield _sse(usage_event)
                         break
+
                 # Persist the plan-mode wrap-up narration so the thread keeps
                 # context after the plan is presented (the pending write-confirm
                 # wrap-up is persisted the same way below).
@@ -2551,7 +2586,7 @@ async def run_sync(
         current_messages = list(messages)
 
     accumulated_text = ""
-    all_tool_calls: list[dict] = []
+    all_tool_calls: list[dict] = []  # Accumulate across iterations for the activity log
     total_input_tokens = 0
     total_output_tokens = 0
     _max_ctx_tokens = 0  # Max main-turn context fullness, persisted for compaction
@@ -2561,7 +2596,7 @@ async def run_sync(
         tool_calls_this_turn: list[dict] = []
         turn_text = ""
         stop_reason = "stop"
-        iter_msg_id = None  # this iteration's saved assistant row
+        iter_msg_id = None  # this iteration's saved assistant row (results attached post-exec)
 
         # Stream one turn, collecting all events
         async for event in provider.stream_turn(current_messages, provider_tools, system_prompt):
