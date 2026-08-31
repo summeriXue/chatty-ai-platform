@@ -355,6 +355,14 @@ class MemoryDB:
             self.db_path, self.gcs_key, init_fn=self._setup_connection,
         )
 
+    def close(self) -> None:
+        """Close the SQLite connection and remove this instance from the cache."""
+        if self._connection is not None:
+            self._connection.close()
+            self._connection = None
+
+        _instances.pop(str(self.data_dir), None)
+
     def backup_to_gcs(self) -> None:
         """Create a consistent snapshot and upload to GCS."""
         safe_backup_sqlite(

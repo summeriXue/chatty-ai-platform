@@ -26,6 +26,11 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "agents"
 
+# Background vector-backfill task currently running for each agent.
+# Keeping the task handle lets agent deletion cancel the work before
+# closing and removing the underlying memory database.
+_memory_backfill_tasks: dict[str, asyncio.Task] = {}
+
 
 def _agent_dir(slug: str) -> Path:
     return DATA_DIR / slug
@@ -121,11 +126,26 @@ def _get_initialized_memory_db(slug: str):
     if db.vec_available:
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(_backfill_vectors(db))
+            task = loop.create_task(_backfill_vectors(db))
+            _memory_backfill_tasks[slug] = task
+            task.add_done_callback(
+                lambda done_task, agent_slug=slug: _forget_memory_backfill_task(
+                    agent_slug,
+                    done_task,
+                )
+            )
         except RuntimeError:
             pass  # No event loop — backfill will happen on first async access
 
     return db
+
+def _forget_memory_backfill_task(
+    slug: str,
+    task: asyncio.Task,
+) -> None:
+    """Drop a completed backfill task from the per-agent task registry."""
+    if _memory_backfill_tasks.get(slug) is task:
+        _memory_backfill_tasks.pop(slug, None)
 
 
 async def _backfill_vectors(db):
@@ -158,6 +178,38 @@ def get_chat_service(slug: str) -> ChatHistoryService:
     """Return an initialized ChatHistoryService for the given agent slug."""
     db = _get_initialized_db(slug)
     return ChatHistoryService(db)
+
+
+async def close_agent_resources(slug: str) -> None:
+    """Release runtime resources owned by a single agent before deletion."""
+
+    # Stop background work before closing the MemoryDB connection it uses.
+    task = _memory_backfill_tasks.pop(slug, None)
+    if task is not None and not task.done():
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    # MemoryDB also keeps its own module-level instance registry.
+    # Use that registry so cleanup does not initialize a DB solely for deletion.
+    from core.agents.memory.db import get_instance
+
+    memory_db = get_instance(str(_context_dir(slug)))
+    if memory_db is not None:
+        memory_db.close()
+
+    # ChatHistoryDB has no separate instance registry. If chat.db exists,
+    # obtain the cached DB (or initialize it if necessary), then close it.
+    chat_db_path = _agent_dir(slug) / "chat.db"
+    if chat_db_path.exists():
+        chat_db = _get_initialized_db(slug)
+        chat_db.close()
+
+    # Preserve the existing cache invalidation behavior after the target
+    # connection has been explicitly closed.
+    invalidate_cache(slug)
 
 
 def invalidate_cache(slug: str) -> None:

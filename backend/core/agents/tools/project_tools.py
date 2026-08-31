@@ -75,6 +75,13 @@ def search_project_code(
         ".next",
     }
 
+    # Runtime and evaluation artifacts that should not become source-code evidence.
+    ignored_relative_dirs = {
+        ("backend", "data"),
+        ("evals", "cases"),
+        ("evals", "results"),
+    }
+
     results: list[dict] = []
 
     for path in root.rglob("*"):
@@ -90,6 +97,12 @@ def search_project_code(
             continue
 
         if any(part in ignored_dirs for part in relative.parts):
+            continue
+
+        if any(
+            relative.parts[:len(ignored)] == ignored
+            for ignored in ignored_relative_dirs
+        ):
             continue
 
         # Avoid binary / obviously irrelevant files in the first version.

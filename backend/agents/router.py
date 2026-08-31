@@ -49,6 +49,7 @@ from .engine import (
     get_chat_service,
     ensure_memory_db,
     invalidate_cache,
+    close_agent_resources,
     DATA_DIR,
 )
 from .templates import seed_context_files
@@ -366,12 +367,18 @@ async def delete_agent(agent_id: str, user=Depends(get_current_user)):
     """Delete an agent and all its data."""
     agent = _get_agent_or_404(agent_id)
     slug = agent["slug"]
+
+    # Runtime resources must be released by the backend process that owns
+    # their SQLite connections before Windows can remove the agent directory.
+    await close_agent_resources(slug)
+
     agent_db.delete_agent(agent_id)
-    invalidate_cache(slug)
+
     agent_dir = DATA_DIR / slug
     if agent_dir.exists():
         shutil.rmtree(agent_dir)
         logger.info("Deleted agent data directory: %s", agent_dir)
+
     return {"deleted": True, "agent_id": agent_id}
 
 
