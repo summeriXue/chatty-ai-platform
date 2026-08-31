@@ -1,0 +1,214 @@
+[
+  {
+    "id": "TECH-REQ-01",
+    "category": "requirement_understanding",
+    "prompt": "Chatty 设置模型的时候，本地模型和云端模型现在都混在一起显示。我希望设置模型时能很直观地区分本地模型和云端模型。你先看看现在是怎么实现的，然后判断应该怎么调整比较合理。先不要修改代码。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "requirement_understanding",
+      "clarification_judgment",
+      "autonomous_investigation",
+      "evidence_judgment",
+      "change_decision",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-REQ-02",
+    "category": "symptom_to_engineering_problem",
+    "prompt": "我点完 Approve 以后工具明明执行成功了，但有时候 Agent 就停在那里了，我还得自己输入继续。帮我看看为什么。先不要改代码。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "requirement_understanding",
+      "clarification_judgment",
+      "autonomous_investigation",
+      "evidence_judgment",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-REF-01",
+    "category": "technical_reference_resolution",
+    "prompt": "之前那个模型切换的地方能不能改简单点？你先自己看看现在是怎么实现的，不要改代码。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "requirement_understanding",
+      "clarification_judgment",
+      "autonomous_investigation"
+    ]
+  },
+  {
+    "id": "TECH-CLARIFY-01",
+    "category": "product_ambiguity",
+    "prompt": "我想让本地模型和云模型都能用，你看看应该怎么改。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": true
+    },
+    "scoring": [
+      "requirement_understanding",
+      "clarification_judgment",
+      "autonomous_investigation",
+      "change_decision"
+    ]
+  },
+  {
+    "id": "TECH-CLARIFY-02",
+    "category": "engineering_uncertainty",
+    "prompt": "设置页模型选择有点乱，你先看看现在是怎么实现的，判断哪里不合理。先不要改。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "requirement_understanding",
+      "clarification_judgment",
+      "autonomous_investigation"
+    ]
+  },
+  {
+    "id": "TECH-INV-01",
+    "category": "root_cause_investigation",
+    "prompt": "有时候我切换模型以后，界面上看起来已经切过去了，但后面实际回复感觉还是原来的模型。你帮我查一下现在模型切换到底是怎么走的，看看可能是哪一层出问题。先不要改代码。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "requirement_understanding",
+      "autonomous_investigation",
+      "evidence_judgment",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-ARCH-01",
+    "category": "architecture_judgment",
+    "prompt": "本地模型跟 DeepSeek、OpenAI 这些感觉不是一类东西，我在想是不是应该给本地模型单独做一套 provider 系统。你先看一下现在的架构，再判断有没有必要这么做。不要改代码。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "requirement_understanding",
+      "autonomous_investigation",
+      "evidence_judgment",
+      "change_decision"
+    ]
+  },
+  {
+    "id": "TECH-SCOPE-01",
+    "category": "minimal_change_scope",
+    "prompt": "把设置页里的本地模型和云端模型区分得更清楚一点，直接帮我改，但不要做不相关的架构重构。",
+    "mode": "write",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": true,
+      "should_clarify": false,
+      "should_validate": true
+    },
+    "scoring": [
+      "requirement_understanding",
+      "autonomous_investigation",
+      "change_decision",
+      "validation",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-WRITE-01",
+    "category": "full_engineering_loop",
+    "prompt": "Chatty 设置模型的时候，本地模型和云端模型现在都混在一起显示。我希望设置模型时能很直观地区分本地模型和云端模型。请你先调查现在的实现，然后选择最小、合理的方案直接完成修改，并进行必要的验证。不要为了实现这个需求做不相关的架构重构。",
+    "mode": "write",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": true,
+      "should_clarify": false,
+      "should_validate": true
+    },
+    "scoring": [
+      "requirement_understanding",
+      "clarification_judgment",
+      "autonomous_investigation",
+      "evidence_judgment",
+      "change_decision",
+      "validation",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-VALID-01",
+    "category": "validation_strategy",
+    "prompt": "帮我对设置页做一个小的前端调整，改完以后自己选择合适的方式验证，不要为了一个局部改动把所有测试都跑一遍。",
+    "mode": "write",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": true,
+      "should_clarify": false,
+      "should_validate": true
+    },
+    "scoring": [
+      "change_decision",
+      "validation",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-REPAIR-01",
+    "category": "validation_failure_recovery",
+    "prompt": "帮我完成一个小的真实代码修改。修改后请做必要验证，如果验证失败，不要直接停下，先判断是实现问题、测试问题还是环境问题，再决定怎么处理。",
+    "mode": "write",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": true,
+      "should_clarify": false,
+      "should_validate": true,
+      "should_recover_from_validation_failure": true
+    },
+    "scoring": [
+      "autonomous_investigation",
+      "change_decision",
+      "validation",
+      "convergence"
+    ]
+  },
+  {
+    "id": "TECH-CONV-01",
+    "category": "execution_convergence",
+    "prompt": "帮我确认一下 Tech Agent 当前的 personality 是从哪里加载出来的，以及现有 Tech 实例运行时到底优先用 preset 还是数据库里的 personality。找到足够证据后直接给结论，不要修改代码。",
+    "mode": "read_only",
+    "expected": {
+      "should_investigate": true,
+      "should_modify": false,
+      "should_clarify": false
+    },
+    "scoring": [
+      "autonomous_investigation",
+      "evidence_judgment",
+      "convergence"
+    ]
+  }
+]

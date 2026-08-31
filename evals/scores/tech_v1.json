@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "benchmark": {
+    "name": "tech_v1",
+    "agent": "tech",
+    "scoring": {
+      "core_dimensions": [
+        "requirement_understanding",
+        "clarification_judgment",
+        "autonomous_investigation",
+        "evidence_judgment",
+        "change_decision",
+        "validation",
+        "convergence"
+      ],
+      "dimension_scale": {
+        "2": "pass",
+        "1": "partial",
+        "0": "fail",
+        "N/A": "not applicable"
+      },
+      "auxiliary_dimensions": [
+        "language_consistency"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "TECH-REQ-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 10,
+        "possible": 12,
+        "percent": 83.3
+      },
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": null,
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Strong requirement understanding and autonomous investigation.",
+        "Asked an unnecessary final style clarification after sufficient engineering evidence had already been collected.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-REQ-02",
+      "validity": "valid",
+      "run_status": "error",
+      "termination": "max_iteration_hit",
+      "core_score": {
+        "earned": 7,
+        "possible": 10,
+        "percent": 70.0
+      },
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": null,
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Correctly reconstructed the Approve and continuation path.",
+        "Failed to recognize the evidence boundary and continued investigating until the hard iteration cap.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-REF-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": null,
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": null,
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": null,
+      "notes": [
+        "Resolved the technical referent instead of immediately asking the user what 'that model switch' meant.",
+        "After resolving the referent, asked a legitimate product-behavior clarification.",
+        "Known benchmark limitation: this case does not yet provide an actual prior-turn fixture.",
+        "A precise historical numeric score was not preserved in the current benchmark notes and should not be reconstructed by guessing."
+      ]
+    },
+    {
+      "case_id": "TECH-CLARIFY-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 11,
+        "possible": 12,
+        "percent": 91.7
+      },
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": null,
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Correctly recognized genuine product ambiguity after engineering investigation.",
+        "Clarification was appropriate because different interpretations implied meaningfully different product behavior.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-CLARIFY-02",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 9,
+        "possible": 12,
+        "percent": 75.0
+      },
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": null,
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Engineering uncertainty could have been resolved autonomously.",
+        "Instead, the Agent asked the user to choose between technical refactor directions.",
+        "This is a failure of the rule: engineering implementation uncertainty should not be pushed back to the user.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-INV-01",
+      "validity": "valid",
+      "run_status": "error",
+      "termination": "max_iteration_hit",
+      "core_score": {
+        "earned": 5,
+        "possible": 8,
+        "percent": 62.5
+      },
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": "N/A",
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Found a plausible global default_model_tier override path.",
+        "Continued investigating after reaching the runtime evidence boundary.",
+        "Hard-max termination reflects weak evidence stopping judgment rather than inability to investigate.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-ARCH-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 9,
+        "possible": 10,
+        "percent": 90.0
+      },
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": "N/A",
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": null,
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Inspected the existing provider architecture before judging the proposal.",
+        "Correctly rejected creating a separate local-provider system.",
+        "Preferred reuse of the existing provider abstraction instead of blindly accepting the user's proposed solution.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-CONV-01",
+      "validity": "valid",
+      "run_status": "error",
+      "termination": "max_iteration_hit",
+      "core_score": {
+        "earned": 3,
+        "possible": 6,
+        "percent": 50.0
+      },
+      "dimensions": {
+        "requirement_understanding": "N/A",
+        "clarification_judgment": "N/A",
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": "N/A",
+        "validation": "N/A",
+        "convergence": null
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Found the decisive evidence early: runtime Agent config prefers DB personality over preset fallback.",
+        "Continued re-confirming the same conclusion instead of stopping.",
+        "This is the clearest read-only evidence of the Tech Agent's convergence weakness.",
+        "Per-dimension historical breakdown has not yet been backfilled; total score is preserved from the formal review."
+      ]
+    },
+    {
+      "case_id": "TECH-SCOPE-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 9,
+        "possible": 10,
+        "percent": 90.0
+      },
+      "dimensions": {
+        "requirement_understanding": 2,
+        "clarification_judgment": "N/A",
+        "autonomous_investigation": 2,
+        "evidence_judgment": "N/A",
+        "change_decision": 2,
+        "validation": 2,
+        "convergence": 1
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Translated a vague UI request into an appropriate front-end-only change.",
+        "Implemented cloud/local provider grouping without unrelated provider or backend architecture changes.",
+        "Completed the real write approval and continuation lifecycle.",
+        "Frontend build passed.",
+        "Lint failures were identified as pre-existing and unrelated.",
+        "Main weakness was execution efficiency: the task completed but required too many tool calls."
+      ]
+    },
+    {
+      "case_id": "TECH-WRITE-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 10,
+        "possible": 12,
+        "percent": 83.3
+      },
+      "dimensions": {
+        "requirement_understanding": 2,
+        "clarification_judgment": "N/A",
+        "autonomous_investigation": 2,
+        "evidence_judgment": 1,
+        "change_decision": 2,
+        "validation": 2,
+        "convergence": 1
+      },
+      "language_consistency": 0,
+      "notes": [
+        "Completed the full engineering loop from informal requirement through investigation, implementation, approval, validation, and final response.",
+        "Selected a minimal front-end solution and avoided backend/provider architecture changes.",
+        "Build validation passed and unrelated lint failures were correctly separated from the change.",
+        "Evidence-state tracking was unstable: the Agent repeatedly questioned whether approved writes had actually been applied.",
+        "High tool-call and duplicate-call counts show weak convergence despite successful completion."
+      ]
+    },
+    {
+      "case_id": "TECH-VALID-01",
+      "validity": "valid",
+      "run_status": "completed",
+      "core_score": {
+        "earned": 7,
+        "possible": 14,
+        "percent": 50.0
+      },
+      "dimensions": {
+        "requirement_understanding": 1,
+        "clarification_judgment": 0,
+        "autonomous_investigation": 2,
+        "evidence_judgment": 1,
+        "change_decision": 1,
+        "validation": 1,
+        "convergence": 1
+      },
+      "language_consistency": 1,
+      "notes": [
+        "The user request did not specify what front-end adjustment was desired.",
+        "The Agent explicitly recognized that the product intent was ambiguous but then guessed a UI bug and implemented it anyway.",
+        "This is a direct clarification-judgment failure: materially ambiguous product behavior should have been clarified.",
+        "The chosen code change itself was small and technically plausible.",
+        "Frontend lint returned exit code 1 due to errors in unrelated files.",
+        "The Agent correctly attributed those errors to unrelated files, but inaccurately summarized the result as 'lint passed'.",
+        "Correct wording should have been: overall lint failed, but no lint issue was observed in the changed file."
+      ]
+    },
+    {
+      "case_id": "TECH-REPAIR-01",
+      "validity": "placeholder",
+      "run_status": "not_run",
+      "core_score": null,
+      "dimensions": {
+        "requirement_understanding": null,
+        "clarification_judgment": null,
+        "autonomous_investigation": null,
+        "evidence_judgment": null,
+        "change_decision": null,
+        "validation": null,
+        "convergence": null
+      },
+      "language_consistency": null,
+      "notes": [
+        "Not part of the formal Tech v1 benchmark.",
+        "A deterministic, safe validation-failure fixture has not yet been implemented.",
+        "Do not score this case until the fixture can reliably force a reproducible failure and recovery path."
+      ]
+    }
+  ],
+  "summary": {
+    "formal_valid_cases": 11,
+    "placeholder_cases": 1,
+    "write_cases_validated": [
+      "TECH-SCOPE-01",
+      "TECH-WRITE-01",
+      "TECH-VALID-01"
+    ],
+    "known_strengths": [
+      "requirement understanding",
+      "autonomous codebase investigation",
+      "architecture judgment",
+      "minimal-change implementation",
+      "write approval and continuation execution",
+      "basic validation selection"
+    ],
+    "known_weaknesses": [
+      "evidence boundary judgment",
+      "execution convergence",
+      "stable tracking of write state across long tool loops",
+      "clarification discipline when product intent is genuinely ambiguous",
+      "precise wording when validation commands fail for unrelated reasons",
+      "language consistency during multi-step tool use"
+    ],
+    "runtime_conclusion": "Do not add convergence harness or DeepSeek-specific runtime control based on these results. The dominant weaknesses are model-level engineering judgment and long-loop behavior rather than missing deterministic runtime invariants."
+  }
+}
