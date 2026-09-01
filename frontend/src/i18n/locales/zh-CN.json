@@ -227,6 +227,7 @@
     "getGoogleApiKey": "前往 aistudio.google.com 获取 API Key",
     "getDeepSeekApiKey": "前往 platform.deepseek.com 获取 API Key",
     "getKimiApiKey": "前往 Kimi API Platform 获取 API Key",
+    "getGLMApiKey": "前往智谱 AI 开放平台获取 API Key",
     "model": "模型",
     "tiers": "模型分层（用于自动分流和每个 Agent 的 top/mid/light 配置）",
     "tierTop": "高",

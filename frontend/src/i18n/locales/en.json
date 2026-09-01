@@ -227,6 +227,7 @@
     "getGoogleApiKey": "Get your API key at aistudio.google.com",
     "getDeepSeekApiKey": "Get your API key at platform.deepseek.com",
     "getKimiApiKey": "Get your API key at Kimi API Platform",
+    "getGLMApiKey": "Get your API key at Zhipu AI Open Platform",
     "model": "Model",
     "tiers": "Tiers (used by auto-triage & per-agent top/mid/light)",
     "tierTop": "Top",

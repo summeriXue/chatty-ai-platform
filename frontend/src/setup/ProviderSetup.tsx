@@ -15,6 +15,7 @@ const PROVIDER_ICONS: Record<string, React.ComponentType<{ size?: number; classN
   openai: IconZap,
   deepseek: IconZap,
   kimi: IconSparkle,
+  glm: IconGlobe,
   google: IconSparkle,
   together: IconGlobe,
   ollama: IconHome,
@@ -72,6 +73,12 @@ export function ProviderSetup() {
     {
       id: 'kimi',
       name: 'Kimi',
+      tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
+      defaultTab: 'api-key' as AuthTab,
+    },
+    {
+      id: 'glm',
+      name: 'GLM',
       tabs: [{ id: 'api-key' as AuthTab, label: t('providers.apiKey') }],
       defaultTab: 'api-key' as AuthTab,
     },
@@ -184,7 +191,9 @@ export function ProviderSetup() {
             {!isConnected ? renderConnectUI(p) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <ModelSelector provider={p.id} currentModel={currentModel} onChanged={reload} />
-                {p.id !== 'ollama' && <TierPicker provider={p.id} onChanged={reload} />}
+                {p.id !== 'ollama' && p.id !== 'glm' && (
+                  <TierPicker provider={p.id} onChanged={reload} />
+                )}
                 {!isActive && (
                   <button onClick={async () => {
                     await api('/api/providers/active', { method: 'PUT', body: JSON.stringify({ provider: p.id, model: currentModel || '' }) });

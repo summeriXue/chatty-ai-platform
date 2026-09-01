@@ -333,6 +333,56 @@ async def connect_deepseek_key(
     }
 
 
+# -- Connect GLM (API key) ----------------------------------------------------
+
+class GLMKeyRequest(BaseModel):
+    api_key: str
+    model: str = "glm-5.3"
+
+
+@router.post("/glm/connect")
+@router.post("/glm/connect-key")
+async def connect_glm_key(
+    body: GLMKeyRequest,
+    user=Depends(get_current_user)
+):
+    """Validate and store a Zhipu GLM API key."""
+
+    from core.providers.glm_provider import GLMProvider
+
+    logger.info("GLM connect-key model=%s", body.model)
+
+    provider = GLMProvider(
+        access_token=body.api_key,
+        model=body.model
+    )
+
+    if not await provider.validate():
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid GLM API key"
+        )
+
+    store = CredentialStore()
+
+    store.set_api_key(
+        "glm",
+        body.api_key,
+        model=body.model
+    )
+
+    model = await _materialize_inferred_tiers(
+        "glm",
+        body.model
+    )
+
+    return {
+        "ok": True,
+        "provider": "glm",
+        "model": model
+    }
+
+
 # -- Connect Kimi (API key) ---------------------------------------------------
 
 class KimiKeyRequest(BaseModel):
@@ -467,7 +517,16 @@ async def connect_together(body: TogetherConnectRequest, user=Depends(get_curren
 @router.post("/{provider}/disconnect")
 async def disconnect_provider(provider: str, user=Depends(get_current_user)):
     """Remove credentials for a provider."""
-    if provider not in ("anthropic", "openai", "google", "deepseek", "ollama", "together"):
+    if provider not in (
+        "anthropic",
+        "openai",
+        "google",
+        "deepseek",
+        "kimi",
+        "glm",
+        "ollama",
+        "together",
+    ):
         raise HTTPException(status_code=404, detail="Unknown provider")
 
     store = CredentialStore()

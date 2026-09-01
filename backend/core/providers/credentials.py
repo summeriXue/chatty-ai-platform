@@ -5,7 +5,7 @@ Reads and writes data/auth-profiles.json.
 
 Schema:
 {
-    "active_provider": "anthropic" | "openai" | "google"| "deepseek",
+    "active_provider": "anthropic" | "openai" | "google"| "deepseek"| "glm",
     "active_model": "claude-opus-4-8",
     "profiles": {
         "anthropic:default": {"type": "api_key", "key": "sk-ant-..."}
@@ -14,6 +14,7 @@ Schema:
                            | {"type": "oauth", "access": "...", "refresh": "...", "expires": 1234567890},
         "google:default":    {"type": "oauth", "access": "...", "refresh": "...", "expires": 1234567890},
         "deepseek:default":  {"type": "api_key", "key": "sk-..."}
+        "glm:default": {"type": "api_key", "key": "..."}
     }
 }
 """
@@ -37,6 +38,7 @@ PROVIDER_DEFAULTS = {
     "anthropic": "claude-opus-4-8",
     "openai": "gpt-5.4",
     "deepseek": "deepseek-v4-flash",
+    "glm": "glm-5.3",
     "google": "gemini-2.5-flash",
     "ollama": "",
     "together": "Qwen/Qwen3.5-9B",

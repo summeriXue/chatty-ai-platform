@@ -17,6 +17,7 @@ const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google (Gemini)',
   deepseek: 'DeepSeek',
   kimi: 'Kimi',
+  glm: 'GLM',
   ollama: 'Ollama (Local)',
 };
 

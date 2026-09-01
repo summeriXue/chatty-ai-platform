@@ -13,6 +13,7 @@ const API_KEY_LINKS: Record<string, string> = {
   google: 'https://aistudio.google.com/apikey',
   deepseek: 'https://platform.deepseek.com/api_keys',
   kimi: 'https://platform.moonshot.ai/console/api-keys',
+  glm: 'https://open.bigmodel.cn/usercenter/apikeys',
 };
 
 const inputStyle: React.CSSProperties = {
@@ -58,6 +59,7 @@ export function ApiKeyEntry({ provider, onConnected }: Props) {
       google: t('providers.getGoogleApiKey'),
       deepseek: t('providers.getDeepSeekApiKey'),
       kimi: t('providers.getKimiApiKey'),
+      glm: t('providers.getGLMApiKey'),
     };
 
     return labels[providerId] || '';

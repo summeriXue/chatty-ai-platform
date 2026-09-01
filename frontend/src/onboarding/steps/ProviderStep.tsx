@@ -94,6 +94,18 @@ const PROVIDERS: ProviderDef[] = [
     ],
   },
   {
+    id: 'glm',
+    name: 'GLM',
+    subtitle: 'Zhipu AI chat and reasoning models',
+    methods: [
+      {
+        id: 'api-key',
+        label: 'API Key',
+        description: 'Paste your Zhipu AI API key',
+      },
+    ],
+  },
+  {
     id: 'ollama',
     name: 'Ollama',
     subtitle: 'Run models locally - no API key',
