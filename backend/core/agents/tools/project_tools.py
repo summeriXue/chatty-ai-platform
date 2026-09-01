@@ -22,13 +22,42 @@ def _resolve_project_path(project_root: str, relative_path: str) -> Path | None:
     return target
 
 
+# Project-internal runtime/evaluation artifacts that must not be exposed
+# to agents as source-code evidence.
+_PRIVATE_PROJECT_DIRS = {
+    ("backend", "data"),
+    ("evals", "cases"),
+    ("evals", "results"),
+    ("evals", "scores"),
+}
+
+
+def _is_private_project_path(relative_path: Path) -> bool:
+    """Return True when a project-relative path is hidden from agent tools."""
+    parts = relative_path.parts
+
+    return any(
+        parts[:len(private_dir)] == private_dir
+        for private_dir in _PRIVATE_PROJECT_DIRS
+    )
+
+
 def read_project_file(project_root: str, relative_path: str) -> dict:
     """Read a UTF-8 text file inside the configured project root."""
 
+    root = Path(project_root).resolve()
     path = _resolve_project_path(project_root, relative_path)
 
     if path is None:
         return {"error": "Path is outside the project root"}
+
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        return {"error": "Path is outside the project root"}
+
+    if _is_private_project_path(relative):
+        return {"error": f"File '{relative_path}' is not accessible"}
 
     if not path.exists():
         return {"error": f"File '{relative_path}' not found"}
@@ -75,13 +104,6 @@ def search_project_code(
         ".next",
     }
 
-    # Runtime and evaluation artifacts that should not become source-code evidence.
-    ignored_relative_dirs = {
-        ("backend", "data"),
-        ("evals", "cases"),
-        ("evals", "results"),
-    }
-
     results: list[dict] = []
 
     for path in root.rglob("*"):
@@ -99,10 +121,7 @@ def search_project_code(
         if any(part in ignored_dirs for part in relative.parts):
             continue
 
-        if any(
-            relative.parts[:len(ignored)] == ignored
-            for ignored in ignored_relative_dirs
-        ):
+        if _is_private_project_path(relative):
             continue
 
         # Avoid binary / obviously irrelevant files in the first version.
@@ -167,9 +186,12 @@ def list_project_files(
     target = (root / relative_dir).resolve()
 
     try:
-        target.relative_to(root)
+        target_relative = target.relative_to(root)
     except ValueError:
         return {"error": "Path is outside the project root"}
+
+    if _is_private_project_path(target_relative):
+        return {"error": f"Directory '{directory}' is not accessible"}
 
     if not target.exists():
         return {"error": f"Directory '{directory}' not found"}
@@ -208,6 +230,9 @@ def list_project_files(
         try:
             relative = path.relative_to(root)
         except ValueError:
+            continue
+
+        if _is_private_project_path(relative):
             continue
 
         entries.append({
