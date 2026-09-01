@@ -1,0 +1,57 @@
+{
+  "benchmark": "tech_model_comparison",
+  "models": [
+    "deepseek-v4-flash",
+    "glm-5.3"
+  ],
+  "cases": {
+    "TECH-CONV-01": {
+      "deepseek": {
+        "score": 3,
+        "max_score": 6,
+        "percent": 50.0,
+        "completed": false,
+        "max_iteration_hit": true
+      },
+      "glm-5.3": {
+        "score": 6,
+        "max_score": 6,
+        "percent": 100.0,
+        "completed": true,
+        "max_iteration_hit": false
+      }
+    },
+    "TECH-VALID-01": {
+      "deepseek": {
+        "score": 7,
+        "max_score": 14,
+        "percent": 50.0,
+        "completed": true,
+        "max_iteration_hit": false
+      },
+      "glm-5.3": {
+        "score": 9,
+        "max_score": 14,
+        "percent": 64.3,
+        "completed": true,
+        "max_iteration_hit": false
+      }
+    },
+    "TECH-WRITE-01": {
+      "deepseek": {
+        "score": 10,
+        "max_score": 12,
+        "percent": 83.3,
+        "completed": true,
+        "max_iteration_hit": false
+      },
+      "glm-5.3": {
+        "score": 5,
+        "max_score": 12,
+        "percent": 41.7,
+        "completed": false,
+        "max_iteration_hit": true
+      }
+    }
+  }
+}
