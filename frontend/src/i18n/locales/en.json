@@ -948,6 +948,7 @@
   },
   "conversationSidebar": {
     "search": "Search...",
+    "newChat": "New chat",
     "loadFailed": "Couldn't load conversations",
     "noResults": "No results found",
     "noConversations": "No conversations yet",

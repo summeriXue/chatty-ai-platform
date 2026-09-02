@@ -948,6 +948,7 @@
   },
   "conversationSidebar": {
     "search": "搜索...",
+    "newChat": "新建对话",
     "loadFailed": "无法加载对话",
     "noResults": "未找到结果",
     "noConversations": "还没有对话",
