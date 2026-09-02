@@ -146,7 +146,7 @@ export function ConversationSidebar({
           cursor: 'pointer',
         }}
       >
-        + {t('conversationSidebar.newChat')}
+        + New chat
       </div>
 
       {/* Conversation list */}
