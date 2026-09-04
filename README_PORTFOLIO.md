@@ -494,7 +494,7 @@ Upstream: https://github.com/WWilson1017/chatty
 ## Quick Start
 
 ``` bash
-git clone <your-portfolio-repository-url>
+git clone https://github.com/summeriXue/chatty-ai-platform.git
 cd chatty
 python run.py
 ```
