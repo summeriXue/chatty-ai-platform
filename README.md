@@ -6,7 +6,7 @@
 **核心目标不是做一个代码问答机器人，而是把大模型接入一个受控、可恢复、可验证的工程执行
 Runtime。**
 
-> 🎬 **Demo Video：** 已完成，发布链接待补充
+> 🎬 **Demo Video：[Bilibili｜Chatty Engineering Agent Demo](https://www.bilibili.com/video/BV15rt66yEuD/)**
 > 🧪 **Demo Stability Check：** 正式录制前独立运行 3 次，3/3 完成完整工程流程
 
 ```{=html}
