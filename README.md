@@ -9,9 +9,6 @@ Runtime。**
 > 🎬 **Demo Video：[Bilibili｜Chatty Engineering Agent Demo](https://www.bilibili.com/video/BV15rt66yEuD/)**
 > 🧪 **Demo Stability Check：** 正式录制前独立运行 3 次，3/3 完成完整工程流程
 
-```{=html}
-<!-- 正式录制后可在这里加入 docs/images/engineering-agent-demo.gif -->
-```
 ## Highlights
 
 -   **Extended Provider Architecture** --- 在 Chatty 原有 Provider
@@ -49,8 +46,7 @@ Result 处理逻辑。
 
 ### 2. Engineering Agent & Project Tooling
 
-构建面向已有代码库的 Tech Agent，
-使其能够从自然语言需求出发完成工程调查和受控修改。
+构建面向已有代码库的 Tech Agent，使其能够从自然语言需求出发完成工程调查和受控修改。
 
 ``` text
 Natural-language Request
@@ -113,8 +109,7 @@ max-iteration 等真实运行结果。
 
 ## Architecture
 
-![Chatty Engineering Agent
-Architecture](docs/images/chatty-engineering-agent-architecture.png)
+![Chatty Engineering Agent Architecture](docs/images/chatty-engineering-agent-architecture.png)
 
 整体设计将 **模型决策能力** 与 **工程执行 Runtime** 分离：
 
@@ -272,7 +267,7 @@ Tool Result 之后继续。
 使用独立 controlled fixture 验证该流程：
 
 > **用户需求：**\
-> 中文界面下，把项目页面的标题改成"项目 ·Demo"，英文界面保持原样，其他内容和行为不要改。
+> 中文界面下，把项目页面的标题改成"项目 · Demo"，英文界面保持原样，其他内容和行为不要改。
 
 Agent 自主调查后定位到已有 i18n 资源，并只修改中文 locale：
 
@@ -395,7 +390,7 @@ Eval 直接通过真实 Chatty Agent Runtime
 
 这个对比不是为了给模型做综合排名，而是观察：
 
-> **在固定 Agent Runtime 后，不同模型在工程判断、Tool Loop收敛和写操作任务上的行为差异。**
+> **在固定 Agent Runtime 后，不同模型在工程判断、Tool Loop 收敛和写操作任务上的行为差异。**
 
 ------------------------------------------------------------------------
 
