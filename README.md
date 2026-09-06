@@ -14,15 +14,15 @@ Runtime。**
 ```
 ## Highlights
 
+-   **Extended Provider Architecture** --- 在 Chatty 原有 Provider
+    架构基础上扩展 OpenAI-Compatible 抽象，并接入 DeepSeek、Kimi、GLM
+    等模型，同时完善 Ollama 本地模型使用路径。
 -   **Engineering Agent** ---
     将用户的大白话需求转化为工程任务，自主搜索、阅读代码并基于现有架构决定实现方案。
 -   **Controlled Write Workflow** --- 项目写操作采用
     `Preview → Approve → Apply`，模型不能未经确认直接修改代码。
 -   **Continuation Recovery** --- 写操作成功后先持久化 Tool
     Result；即使前端刷新中断当前请求，也能从已完成的副作用之后继续，避免重复写入。
--   **Extended Provider Architecture** --- 在 Chatty 原有 Provider
-    架构基础上扩展 OpenAI-Compatible 抽象，并接入 DeepSeek、Kimi、GLM
-    等模型，同时完善 Ollama 本地模型使用路径。
 -   **Technical Agent Eval** --- 建立 11-case Tech v1 Eval，通过真实
     Chatty Runtime 评估需求理解、调查、工程决策、验证与收敛等行为。
 
@@ -49,8 +49,8 @@ Result 处理逻辑。
 
 ### 2. Engineering Agent & Project Tooling
 
-构建面向已有代码库的 Tech
-Agent，使其能够从自然语言需求出发完成工程调查和受控修改。
+构建面向已有代码库的 Tech Agent，
+使其能够从自然语言需求出发完成工程调查和受控修改。
 
 ``` text
 Natural-language Request
@@ -272,8 +272,7 @@ Tool Result 之后继续。
 使用独立 controlled fixture 验证该流程：
 
 > **用户需求：**\
-> 中文界面下，把项目页面的标题改成"项目 ·
-> Demo"，英文界面保持原样，其他内容和行为不要改。
+> 中文界面下，把项目页面的标题改成"项目 ·Demo"，英文界面保持原样，其他内容和行为不要改。
 
 Agent 自主调查后定位到已有 i18n 资源，并只修改中文 locale：
 
@@ -396,8 +395,7 @@ Eval 直接通过真实 Chatty Agent Runtime
 
 这个对比不是为了给模型做综合排名，而是观察：
 
-> **在固定 Agent Runtime 后，不同模型在工程判断、Tool Loop
-> 收敛和写操作任务上的行为差异。**
+> **在固定 Agent Runtime 后，不同模型在工程判断、Tool Loop收敛和写操作任务上的行为差异。**
 
 ------------------------------------------------------------------------
 
